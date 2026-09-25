@@ -1,0 +1,63 @@
+# Roadmap & Milestones
+
+Work is organized into milestones, each a set of independently grabbable tasks with acceptance criteria. Tasks within a milestone are mostly parallelizable; dependencies are noted. Grab a task, branch, open a PR requesting `@gillzj00`. Do not implement anything gated on an [Open Question](../domain-model.md#open-questions) until it is resolved.
+
+Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
+
+## M0 — Foundations
+
+- [ ] **M0.1 Terraform bootstrap** (`infra/bootstrap/`): S3 state bucket (versioned, encrypted), DynamoDB lock table, GitHub OIDC provider, CI IAM role scoped to this repo. Human-run once. AC: `terraform apply` in bootstrap succeeds; outputs the role ARN and state bucket.
+- [ ] **M0.2 Remote state + dev stack skeleton** (`infra/environments/dev/`): backend config pointing at the bootstrap bucket; providers; empty stack that plans clean. AC: `terraform init && plan` succeeds in CI using OIDC.
+- [ ] **M0.3 Terraform CI** (`.github/workflows/terraform.yml`): fmt check + validate + plan on PR (plan posted to PR), apply on merge to `main`, via OIDC. AC: PR shows a plan; merge applies. (Skeleton provided.)
+- [ ] **M0.4 Backend project scaffold** (`backend/`): TypeScript, test runner, lint/typecheck, bundler for Lambda, `shared/` types matching `docs/api.md`. AC: `npm test`/`lint`/`build` run green on an empty suite.
+- [ ] **M0.5 Backend CI** (`.github/workflows/backend-ci.yml`): install, typecheck, lint, test on PRs touching `backend/`. (Skeleton provided.)
+- [ ] **M0.6 iOS project scaffold** (`ios/`): SwiftUI app, SwiftData store, unit test target, app skeleton (tab shell). AC: builds and tests pass in CI.
+- [ ] **M0.7 iOS CI** (`.github/workflows/ios-ci.yml`): build + test on PRs touching `ios/`. (Skeleton provided.)
+
+## M1 — Accounts & auth  (depends on M0)
+
+- [ ] **M1.1 Cognito + Sign in with Apple** (Terraform module `infra/modules/cognito`): user pool, app client, Apple IdP, API Gateway JWT authorizer wiring.
+- [ ] **M1.2 Profile API**: `GET/PUT /me` (display name, handicap index, Venmo handle) with the DynamoDB user item.
+- [ ] **M1.3 iOS auth flow**: Sign in with Apple, token storage in Keychain, authenticated API client.
+- [ ] **M1.4 iOS profile screen**: view/edit profile incl. handicap index and Venmo handle.
+
+## M2 — Courses & scorecards  (depends on M0; parallel with M1)
+
+- [ ] **M2.1 CourseProvider adapter**: GolfCourseAPI client behind the interface; normalize to Open Course schema; API key from SSM/Secrets.
+- [ ] **M2.2 Course caching**: write-through cache to DynamoDB `COURSE#`; `GET /courses` search + `GET /courses/{id}`.
+- [ ] **M2.3 Manual course entry + corrections**: `POST /courses`, `POST /courses/{id}/corrections`.
+- [ ] **M2.4 iOS course search + scorecard view**: search, select tee, render the scorecard (par + stroke index per hole).
+
+## M3 — Rounds & scoring  (depends on M1, M2)
+
+- [ ] **M3.1 Round lifecycle API**: create round (+ join code), join, add guest player, get round.
+- [ ] **M3.2 Scoring API**: `PUT /rounds/{id}/scores` with per-game flags; recompute endpoint.
+- [ ] **M3.3 WebSocket sync**: `$connect`/`$disconnect`/actions, connection registry, fan-out (DynamoDB Streams). AC: two clients see each other's scores live.
+- [ ] **M3.4 iOS round flow**: create/join, hole-by-hole scoring UI incl. Wad/Greenies flags, live group view.
+- [ ] **M3.5 iOS offline queue**: mutations persist locally and replay on reconnect; full-round reconcile on reconnect.
+
+## M4 — Game engines  (pure logic; can start once domain model is confirmed, parallel with M3)
+
+- [ ] **M4.1 Handicap allocation**: course handicap computation + tick allocation. Table-driven unit tests incl. the 15-vs-7 example and >18 wrap-around.
+- [ ] **M4.2 Skins engine**: net winner per hole, pushes/carryovers, settlement. Blocked on Open Questions 4 and 5.
+- [ ] **M4.3 Wad engine**: holder/value tracking, transfers (+$2), reset every 9, end-of-nine settlement. Blocked on Open Questions 1-3.
+- [ ] **M4.4 Greenies engine**: per par-3 earn logic + round-robin wash settlement. Confirm Open Question 6 (definitional only).
+- [ ] **M4.5 Settlement aggregator**: combine all games into net positions + minimal pairwise transfers (integer cents).
+
+## M5 — Settlement & payout  (depends on M4)
+
+- [ ] **M5.1 Settlement API**: `GET /rounds/{id}/settlement`, mark transfer paid.
+- [ ] **M5.2 iOS settlement screen**: show who owes whom; Venmo deep links pre-filled; mark paid; graceful fallback if Venmo absent.
+
+## M6 — Polish  (depends on prior)
+
+- [ ] **M6.1 Round history** (GSI1) + iOS history screen.
+- [ ] **M6.2 Push notifications** (turn/settlement reminders) - optional.
+- [ ] **M6.3 Edge cases**: player leaves mid-round, score corrections, recompute integrity.
+- [ ] **M6.4 App Store readiness**: privacy manifest, icons, TestFlight.
+
+## Suggested first agents
+
+1. M0.1-M0.3 (infra + CI) - unblocks everything.
+2. M0.4-M0.7 (project scaffolds) - unblocks feature work.
+3. M4.1 + M4.4 (handicap + greenies engines) - pure logic, unblocked, high value.
