@@ -1,0 +1,48 @@
+name: iOS CI
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      # Activates once the Xcode project is scaffolded (M0.6). Until then this
+      # job is a no-op so PRs are not blocked.
+      - name: Guard - skip if no Xcode project
+        id: guard
+        run: |
+          if ls ios/*.xcodeproj ios/*.xcworkspace >/dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "iOS project not scaffolded yet; skipping"
+          fi
+
+      - name: Select Xcode
+        if: steps.guard.outputs.present == 'true'
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build and test
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          xcodebuild test \
+            -scheme Wad \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO | xcpretty || xcodebuild test \
+            -scheme Wad \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO

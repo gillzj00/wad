@@ -1,0 +1,58 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # The steps below activate once the backend is scaffolded (M0.4).
+      # Until package.json exists this job is a no-op so PRs are not blocked.
+      - name: Guard - skip if no package.json
+        id: guard
+        run: |
+          if [ -f package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "backend not scaffolded yet; skipping"
+          fi
+
+      - name: Install
+        if: steps.guard.outputs.present == 'true'
+        run: npm ci
+
+      - name: Typecheck
+        if: steps.guard.outputs.present == 'true'
+        run: npm run typecheck --if-present
+
+      - name: Lint
+        if: steps.guard.outputs.present == 'true'
+        run: npm run lint --if-present
+
+      - name: Test
+        if: steps.guard.outputs.present == 'true'
+        run: npm test --if-present
