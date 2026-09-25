@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+
+# Node / backend
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform.lock.hcl.bak
+
+# Xcode / Swift
+ios/**/build/
+ios/**/DerivedData/
+ios/**/*.xcuserstate
+ios/**/xcuserdata/
+ios/**/.swiftpm/
+*.xcworkspace/xcuserdata/
+.build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
