@@ -8,7 +8,7 @@ Last updated: 2026-09-29
 
 **Phase 1 demo is complete and ready to install** (merged in #16, #18, #20, #22). Waiting for @gillzj00 to connect the phone; then run `ios/scripts/install-device.sh`. Delete any older install of Wad from the phone first (schema changed, no migration).
 
-**Phase 2 — backend:** the four listed items are merged (#24, #26, #28, #30); a follow-up for the documented handicap override route is in flight. After that, remaining milestones (M1, M2.2/M2.4 deploy, M3.3, M3.4/M3.5, M5.2, M6) depend on auth, deploys or iOS sign-in and wait on Apple Developer Program enrollment or a decision from @gillzj00. Original scope: M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
+**Phase 2 — backend:** the four listed items are merged (#24, #26, #28, #30); the documented handicap override route followed (#32). Remaining milestones (M1, M2.2/M2.4 deploy, M3.3, M3.4/M3.5, M5.2, M6) depend on auth, deploys or iOS sign-in and wait on Apple Developer Program enrollment or a decision from @gillzj00. Original scope: M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
 
 ## Phase 1 task list
 
@@ -28,11 +28,11 @@ Last updated: 2026-09-29
 | M2.3 | Manual course entry + corrections (code and tests; not deployed) | done | #24 |
 | M3.2 | Scoring API (code and tests; not deployed) | done | #28 |
 | M5.1 | Settlement API (code and tests; not deployed) | done | #30 |
-| M3.1b | Per-round handicap override route (documented in api.md, was missing) | in flight | - |
+| M3.1b | Per-round handicap override route (code and tests; not deployed) | done | #32 |
 
 ## Task in flight
 
-- M3.1b handicap override (subagent, own worktree, branch `feat/handicap-override`)
+- none (waiting on @gillzj00 to choose what to queue next)
 
 ## Open PRs
 
@@ -54,6 +54,7 @@ Last updated: 2026-09-29
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
 - What to queue after Phase 2 (asked 2026-09-29). Candidates that need no Apple enrollment and no deploy: M1.2 profile API handler (code only); wiring the demo app's settlement to Venmo deep links (M5.2, local only); a round history screen in the demo app; test coverage for setup validation and round delete.
+- Handicap override choices to confirm (#32): any player in the round may set or clear any player's override; whole numbers from -10 to 54; the round response shows the effective course handicap plus `courseHandicapOverride`.
 - M5.1 choices to confirm (implemented and documented in #30): settlement is provisional until every hole is scored and there are no issues; marking paid is refused until then (409); payer or payee may mark paid/unpaid, any player for a guest's transfer; an unresolved skins carryover is exposed and does not block final; a transfer id is derived from round, payer, payee and amount so a score correction makes old paid markers stale instead of moving them.
 - M3.1 choices to confirm (docs were silent; implemented and documented in #26): 9-hole rounds rejected with 400 (Open Question 3 unresolved); 4-player cap enforced, 2-player minimum not enforced at the API; creating or joining needs a profile with display name and handicap index (409 otherwise; assumes the M1.2 attribute names); on a tee without rating/slope the course handicap and ticks are null (no per-round override in the API yet); course must already be stored; join codes are 6 characters and valid 48 hours; joining is not blocked by round status or existing scores.
 - M2.3 choices to confirm (docs were silent; implemented and documented in #24): corrections are stored as pending suggestions and never change the course; corrections return 404 unless the course is already stored; manual courses are 18 holes, par 3-5, 1-12 tees; tee gender defaults to male; manual courses are reachable by id only (no search) and there is no API yet to review or apply corrections.
