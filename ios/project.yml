@@ -6,6 +6,9 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
