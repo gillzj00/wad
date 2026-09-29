@@ -18,6 +18,7 @@
 		3FB43802011FCC28A6DB1DEF /* PaymentText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F1F7A1BBD8ECECCD3E7C71 /* PaymentText.swift */; };
 		41BC16092F0EF4F55B9EBE34 /* PaymentStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8F63B16EA5B6B33275EA28 /* PaymentStatus.swift */; };
 		46518D3A459852119782FD68 /* RoundSettlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616E2202702B51E142873C6F /* RoundSettlement.swift */; };
+		46A969E40B729DB0BB795091 /* SettlementPaymentsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */; };
 		5190BB98939D0884E93F8DFF /* PaymentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842F500205F4A8AA7401C957 /* PaymentSheet.swift */; };
 		55EC62C22D5C97DCF8546966 /* RoundScorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CFDB4A7DE9A3404B98DEC46 /* RoundScorerTests.swift */; };
 		57C2188B51FC32580E11CA65 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912E188A28C6D1226061D662 /* RootView.swift */; };
@@ -117,6 +118,7 @@
 		BF48B724C43F7D8EA1D73131 /* RoundDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDraft.swift; sourceTree = "<group>"; };
 		C4F09760D77B321EFB56F66D /* HoleScoringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoleScoringView.swift; sourceTree = "<group>"; };
 		C5FB6ED545DD1295664F678A /* PaymentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentTests.swift; sourceTree = "<group>"; };
+		CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementPaymentsUITests.swift; sourceTree = "<group>"; };
 		CFDF6B0261F3395203ECD8C3 /* RoundStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundStatusTests.swift; sourceTree = "<group>"; };
 		DBEE989B137FBC0B4C0ED77F /* VenmoLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoLink.swift; sourceTree = "<group>"; };
 		DC5DC97A91548EBAA368015E /* RoundScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundScorer.swift; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				B0542DE1346DEE445F2D3968 /* RoundWalkthroughUITests.swift */,
+				CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */,
 				696EB2E81E002A03D9AF4916 /* SetupValidationAndDeleteUITests.swift */,
 			);
 			path = WadUITests;
@@ -471,6 +474,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FFA8B5C3895E731606266FF /* RoundWalkthroughUITests.swift in Sources */,
+				46A969E40B729DB0BB795091 /* SettlementPaymentsUITests.swift in Sources */,
 				82FBF45AFFB792646D65DC3C /* SetupValidationAndDeleteUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -44,6 +44,8 @@ struct PaymentSheet: View {
 
                     Label(PaymentText.state(transfer), systemImage: transfer.isPaid ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(transfer.isPaid ? .green : .secondary)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(PaymentText.state(transfer))
                         .accessibilityIdentifier("payment.state")
                 }
 
@@ -134,7 +136,6 @@ struct PaymentSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .disabled(recipient == nil)
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
         .accessibilityValue(detail)
         .accessibilityIdentifier("payment.venmo.\(kind.rawValue)")

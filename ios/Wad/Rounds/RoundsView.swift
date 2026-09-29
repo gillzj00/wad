@@ -168,7 +168,12 @@ struct RoundHistoryRow: View {
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                 if let settled = summary.settledText {
-                    Label(settled, systemImage: summary.settled == .allSettled ? "checkmark.seal.fill" : "circle.dashed")
+                    Label {
+                        Text(settled)
+                    } icon: {
+                        Image(systemName: summary.settled == .allSettled ? "checkmark.seal.fill" : "circle.dashed")
+                            .accessibilityHidden(true)
+                    }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(color(summary.settled))
                 }

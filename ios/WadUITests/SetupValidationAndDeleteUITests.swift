@@ -169,11 +169,19 @@ final class SetupValidationAndDeleteUITests: XCTestCase {
         XCTAssertEqual(label(of: "debug.storeCounts"), "Stored: 0 rounds, 0 holes, 0 players, 0 scores")
     }
 
+    /// Deleting asks first: Cancel keeps the round, "Delete round" deletes it.
     private func delete(_ row: XCUIElement) {
-        row.swipeLeft()
-        let delete = app.buttons["Delete"]
-        XCTAssertTrue(appears(delete))
-        delete.tap()
+        let confirmation = app.alerts["Delete this round?"]
+        for answer in ["Cancel", "Delete round"] {
+            row.swipeLeft()
+            let delete = app.buttons["Delete"]
+            XCTAssertTrue(appears(delete))
+            delete.tap()
+            XCTAssertTrue(appears(confirmation))
+            XCTAssertTrue(row.exists)
+            confirmation.buttons[answer].tap()
+            XCTAssertTrue(disappears(confirmation))
+        }
         XCTAssertTrue(disappears(row))
     }
 

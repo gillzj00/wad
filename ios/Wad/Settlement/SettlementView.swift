@@ -95,6 +95,8 @@ struct SettlementView: View {
                 Label("All settled", systemImage: "checkmark.seal.fill")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.green)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("All settled")
                     .accessibilityIdentifier("settlement.allSettled")
             }
             if settlement.payments.isEmpty {
