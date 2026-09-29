@@ -69,7 +69,9 @@ final class RoundWalkthroughUITests: XCTestCase {
         scrollTo(par)
         par.buttons["3"].tap()
 
-        app.buttons["setup.strokeIndexes"].tap()
+        let strokeIndexes = app.buttons["setup.strokeIndexes"]
+        scrollTo(strokeIndexes, direction: .down)
+        strokeIndexes.tap()
         let inOrder = app.buttons["Number 1 to 18 in order"]
         XCTAssertTrue(inOrder.waitForExistence(timeout: 5))
         inOrder.tap()
@@ -220,6 +222,8 @@ final class RoundWalkthroughUITests: XCTestCase {
     /// Swipes the screen's list until the element can be tapped.
     private func scrollTo(_ element: XCUIElement, direction: Direction = .up) {
         let list = app.collectionViews.firstMatch
+        // Rows appear a moment after a screen or the keyboard changes; only scroll for rows that are off screen.
+        _ = element.waitForExistence(timeout: 2)
         for _ in 0..<8 {
             if isReachable(element) { break }
             let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: direction == .up ? 0.6 : 0.4))
