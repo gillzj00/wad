@@ -154,7 +154,7 @@ export function fakeDb(seed: Item[] = []) {
             item[names[match[1]!]!] = values[match[2]!];
           }
           items.set(keyOf(key), item);
-          return {};
+          return cmd.input.ReturnValues === "ALL_NEW" ? { Attributes: { ...item } } : {};
         }
         case "TransactWriteCommand": {
           const failure = failures.shift();
