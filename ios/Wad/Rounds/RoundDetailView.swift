@@ -22,11 +22,19 @@ struct RoundDetailView: View {
         let scorecard = Scorecard(round: round)
         List {
             Section {
+                header(scorecard)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+            }
+
+            Group {
+            Section {
                 NavigationLink(value: RoundsRoute.scoring(round)) {
                     Label(
                         scorecard.completedHoleCount == 0 ? "Score round" : "Continue scoring",
                         systemImage: "pencil.and.list.clipboard"
                     )
+                    .font(.headline)
                 }
                 .accessibilityIdentifier("detail.scoreRound")
                 LabeledContent(
@@ -42,21 +50,27 @@ struct RoundDetailView: View {
                 }
                 .accessibilityIdentifier("detail.settlement")
             } header: {
-                Text("Round")
+                SectionHeader("Round", systemImage: "flag.fill")
             }
 
-            Section("Scorecard") {
+            Section {
                 ScorecardView(scorecard: scorecard)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 8))
+                    .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+            } header: {
+                SectionHeader("Scorecard", systemImage: "tablecells")
+            } footer: {
+                SectionFooter("A circle is a birdie and two an eagle or better. A square is a bogey and two a double bogey or worse.")
             }
 
-            Section("Course") {
+            Section {
                 LabeledContent("Name", value: round.courseName)
                 LabeledContent("Holes", value: "\(round.holes.count)")
                 LabeledContent("Par", value: "\(round.totalPar)")
                 if let tee = round.engineTeeRating {
                     LabeledContent("Rating / slope", value: "\(SetupText.display(handicapIndex: tee.courseRating)) / \(tee.slope)")
                 }
+            } header: {
+                SectionHeader("Course", systemImage: "map")
             }
 
             Section {
@@ -67,7 +81,7 @@ struct RoundDetailView: View {
                             if let index = player.handicapIndex {
                                 Text("Index \(SetupText.display(handicapIndex: index))")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Theme.Palette.inkSecondary)
                             }
                         }
                         Spacer()
@@ -75,7 +89,7 @@ struct RoundDetailView: View {
                             Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
                             Text(ticksText(totalTicks?[player.playerID]))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Theme.Palette.inkSecondary)
                         }
                         .monospacedDigit()
                     }
@@ -92,27 +106,63 @@ struct RoundDetailView: View {
                     .accessibilityIdentifier("detail.venmoHandle.\(player.displayName)")
                 }
             } header: {
-                Text("Players")
+                SectionHeader("Players", systemImage: "person.2.fill")
             } footer: {
                 if totalTicks == nil {
-                    Text("Ticks could not be computed.")
+                    SectionFooter("Ticks could not be computed.")
                 } else {
-                    Text("Ticks are strokes received relative to the lowest course handicap in the group.")
+                    SectionFooter("Ticks are strokes received relative to the lowest course handicap in the group.")
                 }
             }
 
-            Section("Games") {
+            Section {
                 LabeledContent("Wad start", value: "$" + Money.dollars(fromCents: round.wadStartCents))
                 LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
                 LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
                 LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+            } header: {
+                SectionHeader("Games", systemImage: "dollarsign.circle")
             }
+            }
+            .themedRows()
         }
+        .labeledContentStyle(ThemedLabeledContentStyle())
+        .themedList()
         .navigationTitle(round.courseName)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $handleEdit) { edit in
             VenmoHandleEditor(round: round, edit: edit)
         }
+    }
+
+    /// The course, the day and how far the round is.
+    private func header(_ scorecard: Scorecard) -> some View {
+        Card(emphasized: true) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                Text(round.courseName)
+                    .font(Theme.Typography.display)
+                Text(RoundHistoryRow.date(round.startedAt))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.Palette.onGreen.opacity(0.85))
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Spacing.s) { facts(scorecard) }
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s) { facts(scorecard) }
+                }
+                .padding(.top, Theme.Spacing.xs)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func facts(_ scorecard: Scorecard) -> some View {
+        StatPill(text: "Par \(round.totalPar)", tone: .onGreen)
+        StatPill(text: "\(round.players.count) players", systemImage: "person.2.fill", tone: .onGreen)
+        StatPill(
+            text: "\(scorecard.completedHoleCount) of \(scorecard.holeCount) holes",
+            systemImage: "flag.fill",
+            tone: .onGreen
+        )
     }
 
     private func ticksText(_ ticks: Int?) -> String {
