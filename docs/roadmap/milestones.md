@@ -25,7 +25,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 - [x] **M2.1 CourseProvider adapter**: GolfCourseAPI client behind the interface; normalize to our `Course` type; API key from SSM.
 - [~] **M2.2 Course caching**: write-through cache to DynamoDB `COURSE#`, cached searches; `GET /courses` search + `GET /courses/{id}`. Handler code done; **deploying it (Lambda + HTTP API) waits on auth (M1.1)** so the provider quota is not exposed on a public endpoint.
-- [ ] **M2.3 Manual course entry + corrections**: `POST /courses`, `POST /courses/{id}/corrections`.
+- [x] **M2.3 Manual course entry + corrections**: `POST /courses`, `POST /courses/{id}/corrections`. Handler code done; corrections are stored as pending suggestions. Deploying waits on auth (M1.1), like M2.2.
 - [ ] **M2.4 iOS course search + scorecard view**: search, select tee, render the scorecard (par + stroke index per hole).
 
 ## M3 — Rounds & scoring  (depends on M1, M2)
