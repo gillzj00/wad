@@ -134,6 +134,7 @@ struct CourseStepView: View {
             TextField("Course name", text: $draft.courseName)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
+                .accessibilityIdentifier("setup.courseName")
             NumberRow(title: "Rating", prompt: "Optional", text: $draft.ratingText, keyboard: .decimalPad)
             NumberRow(title: "Slope", prompt: "Optional", text: $draft.slopeText, keyboard: .numberPad)
         } footer: {
@@ -159,6 +160,7 @@ struct CourseStepView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .accessibilityIdentifier("setup.hole.\(hole.number).par")
                     TextField("SI", text: $hole.strokeIndexText)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
@@ -226,13 +228,15 @@ struct PlayersStepView: View {
                 TextField("Name", text: $player.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
+                    .accessibilityIdentifier("setup.player.\(number(of: player)).name")
 
                 if draft.tee != nil {
                     NumberRow(
                         title: "Handicap index",
                         prompt: "15.4",
                         text: $player.handicapIndexText,
-                        keyboard: .numbersAndPunctuation
+                        keyboard: .numbersAndPunctuation,
+                        identifier: "setup.player.\(number(of: player)).handicapIndex"
                     )
                     LabeledContent("Computed course handicap", value: computedCourseHandicap(for: player))
                     Toggle("Override for this round", isOn: $player.overridesCourseHandicap)
@@ -276,7 +280,8 @@ struct PlayersStepView: View {
             title: "Course handicap",
             prompt: "Whole number",
             text: player.courseHandicapText,
-            keyboard: .numbersAndPunctuation
+            keyboard: .numbersAndPunctuation,
+            identifier: "setup.player.\(number(of: player.wrappedValue)).courseHandicap"
         )
     }
 
@@ -333,6 +338,7 @@ struct NumberRow: View {
     let prompt: String
     @Binding var text: String
     let keyboard: UIKeyboardType
+    var identifier: String?
 
     var body: some View {
         LabeledContent(title) {
@@ -342,6 +348,7 @@ struct NumberRow: View {
                 .textInputAutocapitalization(.never)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
+                .accessibilityIdentifier(identifier ?? title)
         }
     }
 }
