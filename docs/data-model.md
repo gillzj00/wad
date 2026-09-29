@@ -9,7 +9,8 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Entity | PK | SK | Notes |
 | --- | --- | --- | --- |
 | User profile | `USER#<userId>` | `PROFILE` | `userId` = Cognito `sub`. Holds display name, handicap index, Venmo handle. |
-| Course | `COURSE#<courseId>` | `PROFILE` | Cached scorecard (per-tee par, stroke index, yardage, rating, slope). `courseId` from the provider or a generated id for manual entries. |
+| Course | `COURSE#<courseId>` | `PROFILE` | Cached scorecard in `course` (the `Course` type in `backend/src/shared/types.ts`: per-tee par, stroke index, yardage, rating, slope). `courseId` is `gca-<provider id>` for GolfCourseAPI courses or `man-<id>` for manual entries. Kept indefinitely; course data is static. |
+| Course search | `COURSESEARCH#<normalized query>` | `RESULTS` | Cached provider search results. Has `ttl` (7 days); also checked on read because DynamoDB deletes expired items lazily. |
 | Round | `ROUND#<roundId>` | `META` | Course id, tee, date, status, base amounts and enabled games. |
 | Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Course handicap for this round, computed ticks per hole, join time. |
 | Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross strokes for one hole. |

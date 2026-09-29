@@ -19,8 +19,16 @@ Key URLs: https://golfcourseapi.com Â· https://api.golfcourseapi.com/docs/api/ Â
 
 ## Implementation notes
 
-- Wrap the provider behind a `CourseProvider` interface (`search(query)`, `getCourse(id)`), so switching/adding providers later is isolated. The API key lives in Secrets/SSM, never in the repo.
-- On `getCourse`, **write-through cache** the normalized course into DynamoDB (`COURSE#<id>`); serve subsequent reads from cache. Store a `source` and `fetchedAt`.
-- Normalize provider payloads into the Open Course shape at the adapter boundary so the rest of the system (and the client) sees one schema regardless of source.
+- The provider sits behind a `CourseProvider` interface (`search(query)`, `getCourse(id)`) in `backend/src/services/courses/`, so switching or adding providers is isolated. The API key is an SSM SecureString at `/wad/<env>/golfcourseapi/key`, read by the Lambda at cold start; never in the repo.
+- On `getCourse`, **write-through cache** the normalized course into DynamoDB (`COURSE#<id>`) and serve later reads from cache. Search results are cached too (`COURSESEARCH#<query>`, 7 days), because the free tier allows only about 35 requests a day; queries shorter than 3 characters are rejected.
+- Provider payloads are normalized at the adapter into our own `Course` type (`backend/src/shared/types.ts`), so the rest of the system sees one schema regardless of source. Our ids are `gca-<provider id>` so another source can be added without collisions.
+
+### GolfCourseAPI specifics (verified against the live API, 2026-09-29)
+
+- Auth: `Authorization: Bearer <key>`. Endpoints: `GET /v1/search?search_query=`, `GET /v1/courses/{id}`. Ids are 8-character lowercase strings.
+- The published spec shows `GET /v1/courses/{id}` returning the course unwrapped; the live API wraps it as `{ "course": ... }`. The adapter accepts both.
+- Tees are grouped into `male` and `female`, and **each tee has its own holes**: pars and stroke indexes (`handicap`) can differ between tees, even within a gender. A round must therefore pin one tee and use that tee's pars and stroke indexes.
+- Search results carry only tee counts, so showing a scorecard always needs a course fetch.
+- Responses carry no rate-limit headers; a `429` maps to `503 course_provider_rate_limited` for our clients.
 - Manual courses get a generated `courseId` and `source: "manual"`; corrections are stored as `COURSE#<id>` correction items for later review/merge (do not silently overwrite provider data).
 - **Compliance:** never expose a bulk export/dump of course data from our API (respect the no-redistribution terms). The client fetches courses one at a time for use in rounds.

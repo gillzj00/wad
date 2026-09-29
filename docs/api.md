@@ -14,13 +14,15 @@ Base path: `/v1`.
 - `PUT /me` -> update `{ displayName, handicapIndex, venmoHandle }`
 
 ### Courses
-- `GET /courses?q=<search>` -> list of course summaries (proxied+cached from provider)
-- `GET /courses/{courseId}` -> full course incl. tees and per-hole par/strokeIndex/yardage
+- `GET /courses?q=<search>` -> `{ courses: CourseSummary[] }`, proxied from the provider and cached for 7 days per normalized query. `q` must be at least 3 characters (`400 query_too_short`); clients should debounce, since the provider's free tier allows only a few dozen requests a day.
+- `GET /courses/{courseId}` -> `{ course: Course }`: tees (each with its own pars and stroke indexes, grouped by `gender`) and per-hole par/strokeIndex/yardage. A tee with `strokeIndexValid: false` cannot be used for handicap strokes. `404 course_not_found` if unknown.
+- Provider failures: `503 course_provider_rate_limited` when the provider's daily limit is hit, `502 course_provider_unavailable` otherwise.
+- Shapes are the `CourseSummary` / `Course` types in `backend/src/shared/types.ts`.
 - `POST /courses` -> create a manual course (same schema) when the provider lacks it
 - `POST /courses/{courseId}/corrections` -> submit a correction to a cached course
 
 ### Rounds
-- `POST /rounds` -> create `{ courseId, tee, date, holes: 9 | 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents } } }`; a game is enabled by including it. Returns round + `joinCode`
+- `POST /rounds` -> create `{ courseId, teeId, date, holes: 9 | 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents } } }`; a game is enabled by including it. Returns round + `joinCode`
 - `GET /rounds/{roundId}` -> full round (meta, players, scores, hole events, current game state)
 - `POST /rounds/join` -> `{ joinCode }` joins the caller to a round
 - `POST /rounds/{roundId}/players` -> add a guest/non-app player (name + handicap index)
