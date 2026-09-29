@@ -9,7 +9,7 @@ The app must be cost-effective when there is essentially one user, but scale wit
 
 ## Decision
 
-Backend is serverless: **API Gateway** (HTTP + WebSocket) -> **AWS Lambda** (TypeScript, Node 20) -> **DynamoDB** single table. Pay-per-use across the board.
+Backend is serverless: **API Gateway** (HTTP + WebSocket) -> **AWS Lambda** (TypeScript, Node 22) -> **DynamoDB** single table. Pay-per-use across the board.
 
 ## Alternatives considered
 
