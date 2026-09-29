@@ -72,7 +72,9 @@ describe("RoundService.createRound", () => {
       ],
       scores: [],
       holes: [],
+      state: round.state,
     });
+    expect(Object.keys(round.state).sort()).toEqual(["greenies", "skins", "wad"]);
     expect(items.get("JOINCODE#ABCD2F|ROUND")).toMatchObject({ roundId: "r_id1", ttl: NOW_S + JOIN_CODE_TTL_SECONDS });
     expect(items.get("ROUND#r_id1|META")).toMatchObject({ playerCount: 1, tee: { teeId: "male-blue", courseRating: 72.1, slope: 131, par: 72 } });
     expect((items.get("ROUND#r_id1|META")!.tee as { holes: unknown[] }).holes).toHaveLength(18);
