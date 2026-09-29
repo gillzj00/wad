@@ -39,7 +39,10 @@ export interface PlayerRecord {
   userId: UserId;
   displayName: string;
   handicapIndex: number;
+  /** Computed from the handicap index and the tee; null on a tee with no rating and slope. */
   courseHandicap: number | null;
+  /** The group's per-round override; null when there is none. */
+  courseHandicapOverride: number | null;
   guest: boolean;
   joinedAt: string;
 }
@@ -72,6 +75,12 @@ export interface PaidMarker {
 export type MarkPaidResult = "marked" | "already_marked";
 export type CreateRoundResult = "created" | "join_code_taken";
 export type AddPlayerResult = "added" | "already_member" | "round_full";
+export type SetOverrideResult = "updated" | "player_not_found";
+
+/** The handicap the games use: the override when there is one, else the computed course handicap. */
+export function effectiveCourseHandicap(player: Pick<PlayerRecord, "courseHandicap" | "courseHandicapOverride">): number | null {
+  return player.courseHandicapOverride ?? player.courseHandicap;
+}
 
 export interface RoundStore {
   getCourse(courseId: string): Promise<Course | null>;
@@ -88,6 +97,8 @@ export interface RoundStore {
   deleteScore(roundId: string, hole: number, userId: UserId): Promise<void>;
   /** Sets only the given fields of the hole's events, leaving the other as it is. Last writer wins per field. */
   setHoleEvents(roundId: string, hole: number, fields: HoleEventFields, change: Change): Promise<void>;
+  /** Sets or clears (null) the player's override, leaving the computed course handicap as it is. Last writer wins. */
+  setCourseHandicapOverride(roundId: string, userId: UserId, override: number | null, change: Change): Promise<SetOverrideResult>;
   /** Null for a user without a profile or without a Venmo handle. */
   getVenmoHandle(userId: UserId): Promise<string | null>;
   listPaidMarkers(roundId: string): Promise<PaidMarker[]>;
@@ -110,6 +121,7 @@ export type RoundRef = Pick<RoundMeta, "roundId" | "createdAt">;
 type Item = Record<string, unknown>;
 
 const NOT_EXISTS = "attribute_not_exists(PK)";
+const EXISTS = "attribute_exists(PK)";
 const PAID_PREFIX = "SETTLEMENT#PAID#";
 
 /** Which items of a cancelled transaction failed their condition; null for any other error. */
@@ -283,6 +295,26 @@ export class DynamoRoundStore implements RoundStore {
     );
   }
 
+  async setCourseHandicapOverride(roundId: string, userId: UserId, override: number | null, change: Change): Promise<SetOverrideResult> {
+    try {
+      await this.db.send(
+        new UpdateCommand({
+          TableName: this.tableName,
+          Key: { PK: `ROUND#${roundId}`, SK: `PLAYER#${userId}` },
+          UpdateExpression: "SET #override = :override, #at = :at, #by = :by",
+          // An update creates a missing item, so without this a write for an unknown player would add a broken one.
+          ConditionExpression: EXISTS,
+          ExpressionAttributeNames: { "#override": "courseHandicapOverride", "#at": "courseHandicapOverrideAt", "#by": "courseHandicapOverrideBy" },
+          ExpressionAttributeValues: { ":override": override, ":at": change.at, ":by": change.by },
+        }),
+      );
+      return "updated";
+    } catch (err) {
+      if (err instanceof Error && err.name === "ConditionalCheckFailedException") return "player_not_found";
+      throw err;
+    }
+  }
+
   async getVenmoHandle(userId: UserId): Promise<string | null> {
     const item = await this.get(`USER#${userId}`, "PROFILE");
     const handle = typeof item?.venmoHandle === "string" ? item.venmoHandle.trim() : "";
@@ -385,6 +417,7 @@ function toPlayer(item: Item): PlayerRecord {
     displayName: item.displayName as string,
     handicapIndex: item.handicapIndex as number,
     courseHandicap: (item.courseHandicap as number | null | undefined) ?? null,
+    courseHandicapOverride: (item.courseHandicapOverride as number | null | undefined) ?? null,
     guest: item.guest === true,
     joinedAt: item.joinedAt as string,
   };

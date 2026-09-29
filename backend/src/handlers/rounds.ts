@@ -1,6 +1,7 @@
 // Routes: POST /v1/rounds, GET /v1/rounds/{roundId}, POST /v1/rounds/join,
 // POST /v1/rounds/{roundId}/players, PUT /v1/rounds/{roundId}/scores,
-// PUT /v1/rounds/{roundId}/holes/{hole}, POST /v1/rounds/{roundId}/recompute
+// PUT /v1/rounds/{roundId}/holes/{hole}, POST /v1/rounds/{roundId}/recompute,
+// PUT /v1/rounds/{roundId}/players/{userId}/handicap
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
@@ -18,6 +19,7 @@ const ROUTES = new Set([
   "PUT /v1/rounds/{roundId}/scores",
   "PUT /v1/rounds/{roundId}/holes/{hole}",
   "POST /v1/rounds/{roundId}/recompute",
+  "PUT /v1/rounds/{roundId}/players/{userId}/handicap",
 ]);
 
 const STATUS: Record<RoundErrorKind, number> = { validation: 400, not_found: 404, forbidden: 403, conflict: 409 };
@@ -54,6 +56,8 @@ export function createHandler(service: RoundService) {
           return json(200, { round: await service.putScore(userId, roundId, parseBody(event)) });
         case "PUT /v1/rounds/{roundId}/holes/{hole}":
           return json(200, { round: await service.putHoleEvents(userId, roundId, event.pathParameters?.hole, parseBody(event)) });
+        case "PUT /v1/rounds/{roundId}/players/{userId}/handicap":
+          return json(200, { round: await service.putHandicapOverride(userId, roundId, event.pathParameters?.userId, parseBody(event)) });
         case "POST /v1/rounds/{roundId}/recompute":
           return json(200, { state: await service.recompute(userId, roundId) });
         default:

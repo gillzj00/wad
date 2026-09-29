@@ -6,8 +6,17 @@ import type { HoleInfo, Tee, UserId } from "../../shared/types.js";
 import { RoundError } from "./errors.js";
 import { computeState } from "./gameState.js";
 import { generateJoinCode, normalizeJoinCode } from "./joinCode.js";
-import type { PlayerRecord, RoundRecord, RoundStore, TeeSnapshot } from "./roundStore.js";
-import { isHandicapIndex, parseCreateRound, parseGuest, parseHoleEvents, parseHoleParam, parseJoinCode, parseScore } from "./validation.js";
+import { effectiveCourseHandicap, type PlayerRecord, type RoundRecord, type RoundStore, type TeeSnapshot } from "./roundStore.js";
+import {
+  isHandicapIndex,
+  parseCreateRound,
+  parseGuest,
+  parseHandicapOverride,
+  parseHoleEvents,
+  parseHoleParam,
+  parseJoinCode,
+  parseScore,
+} from "./validation.js";
 
 export const MAX_PLAYERS = 4;
 export const HOLE_COUNT = 18;
@@ -95,6 +104,7 @@ export class RoundService {
       displayName: input.displayName,
       handicapIndex: input.handicapIndex,
       courseHandicap: handicapFor(input.handicapIndex, record.meta.tee),
+      courseHandicapOverride: null,
       guest: true,
       joinedAt: this.now().toISOString(),
     };
@@ -136,6 +146,19 @@ export class RoundService {
     return toRound(await this.reload(roundId));
   }
 
+  /**
+   * Sets or clears a player's course handicap for this round. The group
+   * decides, so anyone in the round may, for any player including guests.
+   */
+  async putHandicapOverride(userId: UserId, roundId: string, playerId: string | undefined, body: unknown): Promise<Round> {
+    const override = parseHandicapOverride(body);
+    const record = await this.roundForMember(userId, roundId);
+    const target = playerIn(record, playerId ?? "");
+    const result = await this.store.setCourseHandicapOverride(roundId, target.userId, override, { by: userId, at: this.now().toISOString() });
+    if (result !== "updated") throw unknownPlayer(target.userId);
+    return toRound(await this.reload(roundId));
+  }
+
   /** State is never stored, so this is the same computation as reading the round. */
   async recompute(userId: UserId, roundId: string): Promise<RoundState> {
     return computeState(await this.roundForMember(userId, roundId));
@@ -164,6 +187,7 @@ export class RoundService {
       displayName,
       handicapIndex,
       courseHandicap: handicapFor(handicapIndex, tee),
+      courseHandicapOverride: null,
       guest: false,
       joinedAt: now.toISOString(),
     };
@@ -182,8 +206,12 @@ export async function loadRoundForMember(store: RoundStore, userId: UserId, roun
 
 function playerIn(record: RoundRecord, userId: UserId): PlayerRecord {
   const player = record.players.find((p) => p.userId === userId);
-  if (!player) throw new RoundError("validation", "unknown_player", `${userId} is not a player in this round`);
+  if (!player) throw unknownPlayer(userId);
   return player;
+}
+
+function unknownPlayer(userId: UserId): RoundError {
+  return new RoundError("validation", "unknown_player", `${userId} is not a player in this round`);
 }
 
 /**
@@ -230,8 +258,9 @@ function handicapFor(handicapIndex: number, tee: TeeSnapshot): number | null {
 function ticksFor(record: RoundRecord): Record<UserId, Record<number, number>> | null {
   const players: { userId: UserId; courseHandicap: number }[] = [];
   for (const p of record.players) {
-    if (p.courseHandicap === null) return null;
-    players.push({ userId: p.userId, courseHandicap: p.courseHandicap });
+    const courseHandicap = effectiveCourseHandicap(p);
+    if (courseHandicap === null) return null;
+    players.push({ userId: p.userId, courseHandicap });
   }
   if (players.length === 0) return null;
   const all = allocateTicks(players, record.meta.tee.holes);
@@ -255,7 +284,7 @@ function toRound(record: RoundRecord): Round {
     createdBy: meta.createdBy,
     createdAt: meta.createdAt,
     games: meta.games,
-    players: record.players.map((p) => ({ ...p, ticksByHole: ticks?.[p.userId] ?? null })),
+    players: record.players.map((p) => ({ ...p, courseHandicap: effectiveCourseHandicap(p), ticksByHole: ticks?.[p.userId] ?? null })),
     scores: record.scores,
     holes: record.holes,
     state: computeState(record),

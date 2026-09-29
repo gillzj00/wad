@@ -13,7 +13,7 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Course correction | `COURSE#<courseId>` | `CORRECTION#<submittedAt ISO>#<correctionId>` | A user's suggested fix in `correction` (`CourseCorrection` in `backend/src/shared/courseInput.ts`), with `status: "pending"` and `submittedBy`. Never applied to the course automatically. |
 | Course search | `COURSESEARCH#<normalized query>` | `RESULTS` | Cached provider search results. Has `ttl` (7 days); also checked on read because DynamoDB deletes expired items lazily. |
 | Round | `ROUND#<roundId>` | `META` | Course id, a copy of the tee (rating, slope, par and stroke index per hole), date, status, join code, creator, `games` (enabled games and their amounts in cents) and `playerCount`. |
-| Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Display name, handicap index, course handicap for this round (null on an unrated tee), `guest` flag, join time. Ticks are derived on read. A guest's `userId` starts `guest_`. |
+| Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Display name, handicap index, computed course handicap for this round (null on an unrated tee), the handicap override (see below), `guest` flag, join time. Ticks are derived on read. A guest's `userId` starts `guest_`. |
 | Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross strokes for one hole. |
 | Hole events | `ROUND#<roundId>` | `HOLE#<hole:02d>` | Group-level facts for one hole (see below). Any participant can edit. |
 | Game config | `ROUND#<roundId>` | `GAME#<gameType>` | Reserved. Game settings currently live in `games` on the round item; nothing writes this item. |
@@ -22,6 +22,12 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Transfer paid | `ROUND#<roundId>` | `SETTLEMENT#PAID#<transferId>` | Marks one derived transfer as paid. Holds `transferId`, `from`, `to`, `amountCents`, `paidAt`, `paidBy`. |
 | WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. |
 | Join code | `JOINCODE#<code>` | `ROUND` | Maps a short code to a `roundId`. Has `ttl` (48 hours after the round is created); also checked on read. |
+
+Round player item, handicap attributes:
+- `courseHandicap` — computed from the handicap index and the tee when the player is added; null on a tee with no rating and slope. Never changed by an override.
+- `courseHandicapOverride` — the group's per-round override, a whole number from -10 to 54, or null when there is none. Null when the player is added; a cleared override is written as null, and an item without the attribute reads as null.
+- `courseHandicapOverrideAt` (ISO timestamp) and `courseHandicapOverrideBy` (the caller's user id) — the last write of the override, including a clear. Absent until the first write.
+- The games use the override when it is not null and `courseHandicap` otherwise.
 
 Hole score item: `userId`, `hole` and `gross` — integer strokes for that player on that hole. Clearing a score deletes the item.
 
@@ -58,7 +64,8 @@ so a user's rounds list newest-first without a scan. `startEpoch` is when the ro
 
 - **Scores and hole events are the source of truth.** Game state and the settlement are **derived** from scores + hole events + game config by the pure engines. Game state is not stored: it is computed when a round is read, so it cannot go stale and a "recompute round" operation is always safe. If state is ever cached in `STATE#...` items it must stay reproducible by replaying the engines over the inputs.
 - **Score and hole event writes are unconditional, last writer wins** (ADR-0004). Each player's score on a hole is its own item, written with a put (or a delete to clear it), so players scoring the same hole at the same time never overwrite each other and a repeated write is harmless. Hole events are written with an update that sets only the fields sent, so the wad makers and the greenie winner of a hole are last-writer-wins separately.
-- **Paid markers are tied to the transfer they were made for.** Transfers are not stored. `transferId` is a digest of the round id, payer, payee and amount, and the marker stores those values too; a marker counts only for a current transfer with the same id, payer, payee and amount. After a score correction a changed transfer has a new id, so an old marker matches nothing and is reported as a stale payment instead of marking another transfer paid. The marker is written with `attribute_not_exists(PK)`, so marking twice keeps the first; unmarking is a delete.
+- **A handicap override is an update of the player item, last writer wins.** It sets only the override attributes, so the computed course handicap survives and clearing the override restores it. The update carries the condition `attribute_exists(PK)`, because an update would otherwise create an item for a player who is not in the round.
+- **Paid markers are tied to the transfer they were made for.** Transfers are not stored. `transferId` is a digest of the round id, payer, payee and amount, and the marker stores those values too; a marker counts only for a current transfer with the same id, payer, payee and amount. After a score correction or a handicap override a changed transfer has a new id, so an old marker matches nothing and is reported as a stale payment instead of marking another transfer paid. The marker is written with `attribute_not_exists(PK)`, so marking twice keeps the first; unmarking is a delete.
 - **Money is integer cents** everywhere it is stored.
 - **Round writes are conditional transactions.** Creating a round writes the join code, the round and the creator's player item together, each with `attribute_not_exists(PK)`; a join code collision cancels the write and it is retried with a new code. Adding a player increments `playerCount` on the round with the condition `playerCount < 4` and puts the player item with `attribute_not_exists(PK)`, so concurrent joins cannot exceed four players or add someone twice.
 - **TTL** auto-expires `CONN#` items (short, e.g. a few hours) and `JOINCODE#` items (48 hours after the round is created).

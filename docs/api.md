@@ -39,9 +39,13 @@ Base path: `/v1`.
 - Join codes are 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0/O or 1/I/L). Input is case-insensitive and may contain spaces or hyphens. A code works for 48 hours after the round is created.
 - A round has 2 to 4 players. These routes enforce the maximum when players are added; they do not enforce the minimum, since a round starts with only its creator.
 - The caller's `displayName` and `handicapIndex` come from their profile; creating or joining without both is `409 profile_incomplete`. `handicapIndex` is a number from -10 to 54; a plus handicap is negative (+1.2 is `-1.2`).
-- `courseHandicap` is computed from the handicap index and the tee's rating, slope and par. It is `null` when the tee has no rating and slope, until it is set with the per-round override. `ticksByHole` lists only the holes where the player gets ticks, and is `null` until every player has a course handicap.
+- `courseHandicap` is the handicap the games use. It is computed from the handicap index and the tee's rating, slope and par, unless the player has a per-round override, which replaces it. It is `null` when the tee has no rating and slope and the player has no override. `courseHandicapOverride` is the override, or `null` when there is none. `ticksByHole` lists only the holes where the player gets ticks, and is `null` until every player has a course handicap.
 - A body that is missing or not JSON is `400 invalid_json`; a missing or mistyped field is `400 invalid_body`.
-- `PUT /rounds/{roundId}/players/{userId}/handicap` -> per-round handicap override `{ courseHandicap }` (null clears it)
+- `PUT /rounds/{roundId}/players/{userId}/handicap` -> set the player's course handicap for this round only: `{ courseHandicap }`; `200 { round }`. The group decides handicaps, so any participant may set or clear the override of any player in the round, guests included. Players only (`403 not_a_participant`); `404 round_not_found`.
+  - `courseHandicap` is a whole number from -10 to 54 (`400 invalid_course_handicap`); a plus handicap is negative. `null` clears the override and the player is back on the computed course handicap, which is `null` on a tee with no rating and slope. Leaving the field out is `400 invalid_body`.
+  - `{userId}` must be a player in the round (`400 unknown_player`).
+  - The override is stored next to the computed course handicap, not over it. The last write wins, and writing the same value again changes nothing.
+  - Ticks, skins and the settlement use the override from the next read, also for holes already scored. On a tee with no rating and slope, skins is available once every player has an override. A transfer that changes gets a new id, so a paid marker made before the change is listed in `stalePayments` (see Settlement).
 - `PUT /rounds/{roundId}/scores` -> upsert a gross score for a hole: `{ hole, gross, userId? }`; `200 { round }`. `userId` defaults to the caller; any participant may set a guest player's score.
   - `hole` is a whole number 1-18 (`400 invalid_hole`). `gross` is a whole number 1-20 (`400 invalid_gross`), or `null` to clear the score. `userId` must be a player in the round (`400 unknown_player`).
   - A player sets only their own score; setting or clearing another member's is `403 not_score_owner`.
@@ -86,13 +90,13 @@ The settlement is derived on every read from the game state: `positions` and `tr
 
 - `status` is `final` when every player has a score on every hole and `issues` is empty; otherwise `provisional`. A provisional settlement shows where the round stands and is not what is owed. `incompleteHoles` lists the holes missing a score.
 - `issues` lists what keeps the result from being final, each `{ code, hole, userId, message }`:
-  - `skins_unavailable`: skins is enabled but a player has no course handicap, so skins is not in the positions (`games.skins` is `null`).
+  - `skins_unavailable`: skins is enabled but a player has no course handicap, so skins is not in the positions (`games.skins` is `null`). Set the player's per-round handicap override to resolve it.
   - `greenie_pending` / `greenie_invalid`: a recorded greenie that is not paid (see Game state). Clear or correct the winner, or the score, to resolve it.
   - `wad_make_ignored`: a recorded wad make the engine ignored.
 - `games` holds each enabled game's `deltas`. `positions` has every player, positive is owed to them, and sums to zero.
 - `skinsCarryover` is the skins `carryOutCents`, or `null` when skins is not enabled or unavailable. With `unresolved: true` the last hole was pushed: the amount is shown and is **never part of a position or transfer** (domain model, Open Question 1).
 - `toVenmoHandle` is the payee's `venmoHandle` from their profile, or `null` (no handle, or a guest). The client builds the Venmo deep link; the server builds no links and moves no money.
-- `transferId` is derived from the round, payer, payee and amount. A score correction that changes a transfer gives it a new id, so a paid marker never moves to a different transfer or amount. A marker that matches no current transfer is listed in `stalePayments` (`{ transferId, from, to, amountCents, paidAt, paidBy }`) so the client can show that a payment was recorded before the correction.
+- `transferId` is derived from the round, payer, payee and amount. A score correction or a handicap override that changes a transfer gives it a new id, so a paid marker never moves to a different transfer or amount. A marker that matches no current transfer is listed in `stalePayments` (`{ transferId, from, to, amountCents, paidAt, paidBy }`) so the client can show that a payment was recorded before the correction.
 - Marking paid or unpaid:
   - Only the payer or the payee may (`403 not_transfer_party`). A guest has no account, so any player may mark a transfer that a guest pays or receives.
   - `404 transfer_not_found` when the id is not a transfer of the current settlement. `DELETE` also accepts the id of a stale payment, to remove it.
@@ -115,7 +119,7 @@ The `Round` type in `backend/src/shared/rounds.ts`.
   "createdAt": "2026-10-03T14:00:00.000Z",
   "games": { "skins": { "baseCents": 500 }, "wad": { "startCents": 700, "stepCents": 200 }, "greenies": { "amountCents": 500 } },
   "players": [
-    { "userId": "u_1", "displayName": "Zach", "handicapIndex": 13.1, "courseHandicap": 15, "ticksByHole": { "1": 1, "3": 1 }, "guest": false, "joinedAt": "2026-10-03T14:00:00.000Z" }
+    { "userId": "u_1", "displayName": "Zach", "handicapIndex": 13.1, "courseHandicap": 15, "courseHandicapOverride": null, "ticksByHole": { "1": 1, "3": 1 }, "guest": false, "joinedAt": "2026-10-03T14:00:00.000Z" }
   ],
   "scores": [
     { "userId": "u_1", "hole": 4, "gross": 4 }
