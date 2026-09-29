@@ -151,6 +151,6 @@ function normalizeLocation(raw: GcaLocation | undefined): CourseLocation {
   };
 }
 
-function slug(s: string): string {
+export function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tee";
 }

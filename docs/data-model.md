@@ -9,7 +9,8 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Entity | PK | SK | Notes |
 | --- | --- | --- | --- |
 | User profile | `USER#<userId>` | `PROFILE` | `userId` = Cognito `sub`. Holds display name, handicap index, Venmo handle. |
-| Course | `COURSE#<courseId>` | `PROFILE` | Cached scorecard in `course` (the `Course` type in `backend/src/shared/types.ts`: per-tee par, stroke index, yardage, rating, slope). `courseId` is `gca-<provider id>` for GolfCourseAPI courses or `man-<id>` for manual entries. Kept indefinitely; course data is static. |
+| Course | `COURSE#<courseId>` | `PROFILE` | Cached scorecard in `course` (the `Course` type in `backend/src/shared/types.ts`: per-tee par, stroke index, yardage, rating, slope). `courseId` is `gca-<provider id>` for GolfCourseAPI courses or `man-<id>` for manual entries. Kept indefinitely; course data is static. Manual entries also carry `createdBy` (the creator's `userId`) and `createdAt`. Writes are conditional: a manual course is only created if the key is free, and the provider write-through only replaces a course from the same source. |
+| Course correction | `COURSE#<courseId>` | `CORRECTION#<submittedAt ISO>#<correctionId>` | A user's suggested fix in `correction` (`CourseCorrection` in `backend/src/shared/courseInput.ts`), with `status: "pending"` and `submittedBy`. Never applied to the course automatically. |
 | Course search | `COURSESEARCH#<normalized query>` | `RESULTS` | Cached provider search results. Has `ttl` (7 days); also checked on read because DynamoDB deletes expired items lazily. |
 | Round | `ROUND#<roundId>` | `META` | Course id, tee, date, status, base amounts and enabled games. |
 | Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Course handicap for this round, computed ticks per hole, join time. |
@@ -38,6 +39,7 @@ Hole events item (group facts, consumed by engines; see `docs/domain-model.md`):
 | 5 | Resolve a join code to a round | `PK=JOINCODE#code, SK=ROUND` |
 | 6 | List a user's rounds (history) | `GSI1: GSI1PK=USER#id, GSI1SK begins_with ROUND#` |
 | 7 | Fan out to live connections for a round | `PK=ROUND#id, SK begins_with CONN#` |
+| 8 | List a course's corrections, oldest first (review; not exposed by the API yet) | `PK=COURSE#id, SK begins_with CORRECTION#` |
 
 ### GSI1 (user history)
 Round items and round-player items carry:

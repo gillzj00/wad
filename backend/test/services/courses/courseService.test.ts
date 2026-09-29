@@ -18,6 +18,10 @@ class MemoryCache implements CourseCache {
   async putCourse(c: Course) {
     this.courses.set(c.courseId, c);
   }
+  async createCourse(c: Course) {
+    this.courses.set(c.courseId, c);
+  }
+  async putCorrection() {}
   async getSearch(q: string) {
     return this.searches.get(q)?.results ?? null;
   }
