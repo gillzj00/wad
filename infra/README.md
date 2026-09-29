@@ -24,16 +24,17 @@ The bootstrap creates the remote state backend, the GitHub OIDC provider, and th
    terraform -chdir=infra/bootstrap init
    terraform -chdir=infra/bootstrap apply
    ```
-3. Note the outputs:
-   - `state_bucket` and `lock_table` -> used by each environment's `backend.tf`.
-   - `ci_role_arn` -> set this as the GitHub Actions **repository variable** `AWS_ROLE_ARN`:
-     ```
-     gh variable set AWS_ROLE_ARN --body "<ci_role_arn>"
-     gh variable set AWS_REGION --body "us-east-1"
-     ```
-4. Point the dev backend at the created bucket (edit `environments/dev/backend.tf` if the bucket name differs from the default) and initialize:
+3. Set the GitHub Actions **repository variables** from the outputs:
    ```
-   terraform -chdir=infra/environments/dev init
+   gh variable set AWS_ROLE_ARN --body "<ci_role_arn>"
+   gh variable set AWS_REGION --body "<region>"
+   gh variable set TF_STATE_BUCKET --body "<state_bucket>"
+   ```
+4. To work with an environment locally, pass the bucket and region at init (state locking uses an S3 lock file, `use_lockfile`):
+   ```
+   terraform -chdir=infra/environments/dev init \
+     -backend-config="bucket=<state_bucket>" \
+     -backend-config="region=<region>"
    ```
 
 The bootstrap state is local by design (it creates the very bucket that would store remote state). Commit nothing sensitive; `*.tfvars` and state files are gitignored.

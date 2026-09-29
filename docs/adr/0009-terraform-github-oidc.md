@@ -10,7 +10,7 @@ Infrastructure is managed with Terraform and must be applied from CI. CI must re
 ## Decision
 
 - **GitHub OIDC federation:** GitHub Actions assumes an AWS IAM role via OIDC; no static AWS keys are stored in GitHub.
-- **Bootstrap once, locally:** `infra/bootstrap/` (run by a human with admin AWS credentials) creates the remote state backend (S3 bucket + DynamoDB lock table), the GitHub OIDC provider, and the CI role (scoped to this repo).
+- **Bootstrap once, locally:** `infra/bootstrap/` (run by a human with admin AWS credentials) creates the remote state backend (S3 bucket; state locking uses an S3 lock file via `use_lockfile`), the GitHub OIDC provider, and the CI role (scoped to this repo).
 - **CI thereafter:** `terraform plan` on pull requests (plan posted to the PR), `terraform apply` on merge to `main`. Apply is gated on required checks; never bypassed with admin overrides.
 
 ## Consequences

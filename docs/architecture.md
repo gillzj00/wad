@@ -60,7 +60,7 @@ No money moves through the backend. The settlement service computes net position
 
 ## Infrastructure & delivery
 
-All AWS resources are defined in **Terraform** under `infra/`. A one-time **bootstrap** (run locally by a human with admin credentials) creates the remote state backend (S3 + DynamoDB lock), the **GitHub OIDC** provider, and the CI role. Thereafter **GitHub Actions** runs `terraform plan` on pull requests and `terraform apply` on merge to `main`, assuming the CI role via OIDC — no long-lived AWS keys exist. See [ADR-0009](adr/0009-terraform-github-oidc.md) and [infra/README.md](../infra/README.md).
+All AWS resources are defined in **Terraform** under `infra/`. A one-time **bootstrap** (run locally by a human with admin credentials) creates the remote state backend (an S3 bucket; locking uses an S3 lock file), the **GitHub OIDC** provider, and the CI role. Thereafter **GitHub Actions** runs `terraform plan` on pull requests and `terraform apply` on merge to `main`, assuming the CI role via OIDC — no long-lived AWS keys exist. See [ADR-0009](adr/0009-terraform-github-oidc.md) and [infra/README.md](../infra/README.md).
 
 ## Environments
 
