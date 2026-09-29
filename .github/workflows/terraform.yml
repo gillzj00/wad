@@ -23,7 +23,6 @@ concurrency:
 
 env:
   TF_WORKING_DIR: infra/environments/dev
-  LOCK_TABLE: wad-tflock
 
 jobs:
   terraform:
@@ -50,8 +49,7 @@ jobs:
         run: |
           terraform init \
             -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
-            -backend-config="region=${{ vars.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ env.LOCK_TABLE }}"
+            -backend-config="region=${{ vars.AWS_REGION }}"
 
       - name: Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
