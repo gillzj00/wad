@@ -41,7 +41,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **M4.1 Handicap allocation**: course handicap computation + tick allocation. Table-driven unit tests incl. the 15-vs-7 example and >18 wrap-around.
 - [ ] **M4.2 Skins engine**: net winner per hole, pushes/carryovers through 18, collect-from-each settlement. Expose (do not pay out) any carryover unresolved after the final hole (Open Question 1).
 - [ ] **M4.3 Wad engine**: ordered makes per hole, start value then +step per make, separate front/back instances, holder collects from each at the end of each nine.
-- [ ] **M4.4 Greenies engine**: par-3 winner validation (par or better), collect-from-each settlement.
+- [x] **M4.4 Greenies engine**: par-3 winner validation (par or better), collect-from-each settlement.
 - [ ] **M4.5 Settlement aggregator**: combine all games into net positions + minimal pairwise transfers (integer cents).
 
 ## M5 — Settlement & payout  (depends on M4)
