@@ -34,27 +34,32 @@ struct RoundsView: View {
         NavigationStack(path: $path) {
             Group {
                 if rounds.isEmpty {
-                    ContentUnavailableView {
-                        Label("No rounds yet", systemImage: "flag")
-                    } description: {
-                        Text("Set up a course, the players and the games to start one.")
-                    } actions: {
+                    EmptyStateView(
+                        title: "No rounds yet",
+                        message: "Set up a course, the players and the games to start one."
+                    ) {
                         Button("New round") { setup = SetupPresentation() }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.primary)
                     }
                 } else {
                     List {
+                        // A section per round, so that each round is a card.
                         ForEach(rounds) { round in
-                            NavigationLink(value: RoundsRoute.detail(round)) {
-                                RoundHistoryRow(round: round, summaries: summaries)
-                            }
-                            .accessibilityIdentifier("rounds.row.\(round.courseName)")
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Delete", systemImage: "trash") { roundToDelete = round }
-                                    .tint(.red)
+                            Section {
+                                NavigationLink(value: RoundsRoute.detail(round)) {
+                                    RoundHistoryRow(round: round, summaries: summaries)
+                                }
+                                .accessibilityIdentifier("rounds.row.\(round.courseName)")
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Delete", systemImage: "trash") { roundToDelete = round }
+                                        .tint(Theme.Palette.flagRed)
+                                }
                             }
                         }
+                        .themedRows()
                     }
+                    .listSectionSpacing(Theme.Spacing.m)
+                    .themedList()
                 }
             }
             .navigationTitle("Rounds")
@@ -109,14 +114,25 @@ struct RoundsView: View {
     /// with the sample draft; `-debugSetupStep detail` creates the sample round
     /// and opens it. `-debugSeedRound finalPush` creates a finished round with an
     /// unresolved skins carryover and opens it; `-debugSeedStartedAt <seconds
-    /// since 1970>` gives it that start. For simulator screenshots and the UI tests.
+    /// since 1970>` gives it that start. `-debugSeedRound gallery` creates
+    /// several rounds and stays on the list. For simulator screenshots and the UI tests.
     private func applyDebugLaunchArguments() {
         // The task runs again when the list comes back on screen.
         guard !appliedDebugLaunchArguments else { return }
         appliedDebugLaunchArguments = true
-        if UserDefaults.standard.string(forKey: "debugSeedRound") == "finalPush" {
-            let seconds = UserDefaults.standard.string(forKey: "debugSeedStartedAt")
-            let startedAt = seconds.flatMap(Int.init).map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? .now
+        let seed = UserDefaults.standard.string(forKey: "debugSeedRound")
+        let seconds = UserDefaults.standard.string(forKey: "debugSeedStartedAt")
+        let startedAt = seconds.flatMap(Int.init).map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? .now
+        if seed == "gallery" {
+            guard
+                let bridge = SharedEngine.bridge,
+                let rounds = try? DebugRounds.gallery(using: bridge, startedAt: startedAt)
+            else { return }
+            rounds.forEach(modelContext.insert)
+            try? modelContext.save()
+            return
+        }
+        if seed == "finalPush" {
             guard
                 let bridge = SharedEngine.bridge,
                 let round = try? DebugRounds.finalPush(using: bridge, startedAt: startedAt)
@@ -156,29 +172,36 @@ struct RoundHistoryRow: View {
     var body: some View {
         let key = RoundSummaryKey(round: round)
         let summary = summaries.summary(for: round, key: key) ?? summaries.lastSummary(for: round)
-        VStack(alignment: .leading, spacing: 3) {
-            Text(round.courseName).font(.headline)
-            Text(Self.date(round.startedAt))
-                .font(.subheadline)
-            Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            if let summary {
-                Text(summary.progressText)
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                if let settled = summary.settledText {
-                    Label {
-                        Text(settled)
-                    } icon: {
-                        Image(systemName: summary.settled == .allSettled ? "checkmark.seal.fill" : "circle.dashed")
-                            .accessibilityHidden(true)
+        HStack(alignment: .top, spacing: Theme.Spacing.m) {
+            badge(summary)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                Text(round.courseName)
+                    .font(Theme.Typography.cardTitle)
+                    .foregroundStyle(Theme.Palette.ink)
+                Text(Self.date(round.startedAt))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.Palette.ink)
+                Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.Palette.inkSecondary)
+                if let summary {
+                    Text(summary.progressText)
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(summary.progress == .final ? Theme.Palette.gold : Theme.Palette.fairway)
+                        .padding(.top, 2)
+                    if let settled = summary.settledText {
+                        StatPill(
+                            text: settled,
+                            systemImage: summary.settled == .allSettled ? "checkmark.seal.fill" : "circle.dashed",
+                            tone: tone(summary.settled)
+                        )
+                        .padding(.top, 2)
                     }
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(color(summary.settled))
                 }
             }
         }
+        .padding(.vertical, Theme.Spacing.xs)
         .task(id: key) {
             // After the row is on screen, so that scrolling does not wait for the engines.
             await Task.yield()
@@ -186,11 +209,25 @@ struct RoundHistoryRow: View {
         }
     }
 
-    private func color(_ settled: RoundSummary.Settled?) -> Color {
+    /// A flag while the round is played, a checkered one when it is final.
+    private func badge(_ summary: RoundSummary?) -> some View {
+        let isFinal = summary?.progress == .final
+        return Image(systemName: isFinal ? "flag.checkered" : "flag.fill")
+            .font(.headline)
+            .foregroundStyle(isFinal ? Theme.Palette.onGreen : Theme.Palette.fairway)
+            .padding(10)
+            .background(
+                isFinal ? Theme.Palette.deepGreen : Theme.Palette.fairway.opacity(0.14),
+                in: Circle()
+            )
+            .accessibilityHidden(true)
+    }
+
+    private func tone(_ settled: RoundSummary.Settled?) -> StatPill.Tone {
         switch settled {
-        case .allSettled, .nothingOwed: .green
-        case .needsFixing, .unsettled: .orange
-        case nil: .secondary
+        case .allSettled, .nothingOwed: .brand
+        case .needsFixing, .unsettled: .warning
+        case nil: .neutral
         }
     }
 }
@@ -206,7 +243,7 @@ private struct StoreCountsView: View {
     var body: some View {
         Text("Stored: \(rounds.count) rounds, \(holes.count) holes, \(players.count) players, \(scores.count) scores")
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Theme.Palette.inkSecondary)
             .padding(.bottom, 4)
             .accessibilityIdentifier("debug.storeCounts")
     }
