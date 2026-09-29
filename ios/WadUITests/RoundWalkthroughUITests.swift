@@ -70,7 +70,9 @@ final class RoundWalkthroughUITests: XCTestCase {
         par.buttons["3"].tap()
 
         diagnoseAndTap(app.buttons["setup.strokeIndexes"], expecting: app.buttons["Number 1 to 18 in order"])
-        app.buttons["Number 1 to 18 in order"].tap()
+        let inOrder = app.buttons["Number 1 to 18 in order"]
+        XCTAssertTrue(inOrder.waitForExistence(timeout: 5))
+        inOrder.tap()
         attachScreenshot("02-setup-course")
 
         app.buttons["Next"].tap()

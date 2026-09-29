@@ -128,6 +128,7 @@ struct RoundSetupView: View {
 struct CourseStepView: View {
     @Binding var draft: RoundDraft
     @FocusState private var focusedHole: Int?
+    @State private var showsStrokeIndexOptions = false
 
     var body: some View {
         Section {
@@ -142,7 +143,11 @@ struct CourseStepView: View {
         }
 
         Section {
-            Menu {
+            Button("Stroke indexes", systemImage: "list.number") {
+                showsStrokeIndexOptions = true
+            }
+            .accessibilityIdentifier("setup.strokeIndexes")
+            .confirmationDialog("Stroke indexes", isPresented: $showsStrokeIndexOptions) {
                 Button("Number 1 to 18 in order") {
                     for offset in draft.holes.indices {
                         draft.holes[offset].strokeIndexText = String(offset + 1)
@@ -153,12 +158,7 @@ struct CourseStepView: View {
                         draft.holes[offset].strokeIndexText = ""
                     }
                 }
-            } label: {
-                Label("Stroke indexes", systemImage: "list.number")
-                    .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
-                    .contentShape(Rectangle())
             }
-            .accessibilityIdentifier("setup.strokeIndexes")
 
             HStack {
                 Text("Hole").frame(width: 40, alignment: .leading)
