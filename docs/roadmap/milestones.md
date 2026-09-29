@@ -11,8 +11,8 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **M0.3 Terraform CI** (`.github/workflows/terraform.yml`): fmt check + validate + plan on PR (plan posted to PR), apply on merge to `main`, via OIDC. AC: PR shows a plan; merge applies. (Skeleton provided.)
 - [x] **M0.4 Backend project scaffold** (`backend/`): TypeScript, test runner, lint/typecheck, bundler for Lambda, `shared/` types matching `docs/api.md`. AC: `npm test`/`lint`/`build` run green on an empty suite.
 - [x] **M0.5 Backend CI** (`.github/workflows/backend-ci.yml`): install, typecheck, lint, test on PRs touching `backend/`. (Skeleton provided.)
-- [ ] **M0.6 iOS project scaffold** (`ios/`): SwiftUI app, SwiftData store, unit test target, app skeleton (tab shell). AC: builds and tests pass in CI.
-- [ ] **M0.7 iOS CI** (`.github/workflows/ios-ci.yml`): build + test on PRs touching `ios/`. (Skeleton provided.)
+- [x] **M0.6 iOS project scaffold** (`ios/`): SwiftUI app, SwiftData store, unit test target, app skeleton (tab shell). AC: builds and tests pass in CI.
+- [x] **M0.7 iOS CI** (`.github/workflows/ios-ci.yml`): build + test on PRs touching `ios/`. (Skeleton provided.)
 
 ## M1 — Accounts & auth  (depends on M0)
 
