@@ -10,8 +10,17 @@ Base path: `/v1`.
 - `GET /health` -> `200 { "status": "ok" }` (no auth)
 
 ### Profile
-- `GET /me` -> current user's profile
-- `PUT /me` -> update `{ displayName, handicapIndex, venmoHandle }`
+- `GET /me` -> `200 { profile }`: the caller's profile, `{ userId, displayName, handicapIndex, venmoHandle, complete }` (the `Profile` type in `backend/src/shared/profile.ts`).
+  - A field that is not set is `null`. A user who has never saved a profile gets `200` with every field `null` and `complete: false`, not a 404.
+  - `complete` is true when the profile has a display name and a handicap index, which is what creating or joining a round needs (`409 profile_incomplete` otherwise).
+- `PUT /me` -> update `{ displayName?, handicapIndex?, venmoHandle? }`; `200 { profile }` with the profile after the write.
+  - Send any of the three fields, at least one (`400 invalid_body` for none, or for a body that is not an object). Only the fields sent are written and the last write wins per field, so two devices editing different fields do not undo each other. Other fields in the body are ignored.
+  - `displayName` is trimmed and must be 1 to 40 characters (`400 invalid_display_name`). It cannot be cleared: `null` and an empty string are rejected.
+  - `handicapIndex` is a number from -10 to 54 with at most one decimal place (`400 invalid_handicap_index`); a plus handicap is negative (+1.2 is `-1.2`). `null` clears it. It is entered by the user (ADR-0006).
+  - `venmoHandle` is 5 to 30 letters, digits, hyphens or underscores (`400 invalid_venmo_handle`). One leading `@` is accepted and removed; the handle is stored and returned without it. `null` clears it. The server does not check that the handle exists on Venmo.
+  - A body that is missing or not JSON is `400 invalid_json`.
+- The user is always the caller, from the token `sub`; `401 unauthorized` without it. No route takes a user id, so a user can read and write only their own profile. Nothing else from the token is stored.
+- A profile change does not change rounds the user is already in: a round keeps the display name and handicap index the player had when they were added. The settlement reads the payee's `venmoHandle` from the profile on every read.
 
 ### Courses
 - `GET /courses?q=<search>` -> `{ courses: CourseSummary[] }`, proxied from the provider and cached for 7 days per normalized query. `q` must be at least 3 characters (`400 query_too_short`); clients should debounce, since the provider's free tier allows only a few dozen requests a day.
