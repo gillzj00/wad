@@ -17,7 +17,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M1 — Accounts & auth  (depends on M0)
 
 - [ ] **M1.1 Cognito + Sign in with Apple** (Terraform module `infra/modules/cognito`): user pool, app client, Apple IdP, API Gateway JWT authorizer wiring.
-- [ ] **M1.2 Profile API**: `GET/PUT /me` (display name, handicap index, Venmo handle) with the DynamoDB user item.
+- [~] **M1.2 Profile API**: `GET/PUT /me` (display name, handicap index, Venmo handle) with the DynamoDB user item. Handler code done; deploying waits on auth (M1.1).
 - [ ] **M1.3 iOS auth flow**: Sign in with Apple, token storage in Keychain, authenticated API client.
 - [ ] **M1.4 iOS profile screen**: view/edit profile incl. handicap index and Venmo handle.
 
