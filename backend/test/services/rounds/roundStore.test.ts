@@ -183,4 +183,78 @@ describe("DynamoRoundStore", () => {
     });
     expect(await store.getRound("r_missing")).toBeNull();
   });
+
+  it("reads the Venmo handle from the profile", async () => {
+    const { store } = setup([
+      { ...profileItem("u_1", "Zach", 15.4), venmoHandle: " zach-g " },
+      { ...profileItem("u_2", "Bo", 10), venmoHandle: "  " },
+      { ...profileItem("u_3", "Cy", 10), venmoHandle: 42 },
+      profileItem("u_4", "Di", 10),
+    ]);
+    expect(await store.getVenmoHandle("u_1")).toBe("zach-g");
+    expect(await store.getVenmoHandle("u_2")).toBeNull();
+    expect(await store.getVenmoHandle("u_3")).toBeNull();
+    expect(await store.getVenmoHandle("u_4")).toBeNull();
+    expect(await store.getVenmoHandle("u_5")).toBeNull();
+  });
+
+  it("writes a paid marker once and keeps the first", async () => {
+    const { store, items, sent } = await created();
+    const marker = { transferId: "t_abc", from: "u_2", to: "u_1", amountCents: 1500, paidAt: "2026-10-03T20:00:00.000Z", paidBy: "u_2" };
+    expect(await store.markTransferPaid("r_1", marker)).toBe("marked");
+    expect(sent.at(-1)).toEqual({
+      name: "PutCommand",
+      input: {
+        TableName: TABLE,
+        Item: { PK: "ROUND#r_1", SK: "SETTLEMENT#PAID#t_abc", type: "transferPaid", ...marker },
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    });
+    expect(await store.markTransferPaid("r_1", { ...marker, paidAt: "2026-10-04T08:00:00.000Z", paidBy: "u_1" })).toBe("already_marked");
+    expect(items.get("ROUND#r_1|SETTLEMENT#PAID#t_abc")).toMatchObject({ paidAt: "2026-10-03T20:00:00.000Z", paidBy: "u_2" });
+  });
+
+  it("rethrows a failed marker write that is not a condition failure", async () => {
+    const db = {
+      send: async () => {
+        throw Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" });
+      },
+    } as never;
+    const store = new DynamoRoundStore(db, TABLE, () => NOW);
+    const marker = { transferId: "t_abc", from: "u_2", to: "u_1", amountCents: 1500, paidAt: NOW.toISOString(), paidBy: "u_2" };
+    await expect(store.markTransferPaid("r_1", marker)).rejects.toThrow("throttled");
+  });
+
+  it("lists the paid markers of one round and leaves them out of the round", async () => {
+    const { store, sent } = await created();
+    const a = { transferId: "t_abc", from: "u_2", to: "u_1", amountCents: 1500, paidAt: "2026-10-03T20:00:00.000Z", paidBy: "u_2" };
+    const b = { transferId: "t_def", from: "u_3", to: "u_1", amountCents: 700, paidAt: "2026-10-03T20:05:00.000Z", paidBy: "u_1" };
+    await store.markTransferPaid("r_1", a);
+    await store.markTransferPaid("r_1", b);
+    await store.markTransferPaid("r_2", { ...a, transferId: "t_other" });
+
+    expect(await store.listPaidMarkers("r_1")).toEqual([a, b]);
+    expect(sent.at(-1)).toEqual({
+      name: "QueryCommand",
+      input: {
+        TableName: TABLE,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+        ExpressionAttributeValues: { ":pk": "ROUND#r_1", ":sk": "SETTLEMENT#PAID#" },
+        ConsistentRead: true,
+      },
+    });
+    expect(await store.listPaidMarkers("r_missing")).toEqual([]);
+    expect(await store.getRound("r_1")).toMatchObject({ scores: [], holes: [] });
+  });
+
+  it("removes a paid marker, and removing a missing one is a no-op", async () => {
+    const { store, items, sent } = await created();
+    const marker = { transferId: "t_abc", from: "u_2", to: "u_1", amountCents: 1500, paidAt: NOW.toISOString(), paidBy: "u_2" };
+    await store.markTransferPaid("r_1", marker);
+    await store.unmarkTransferPaid("r_1", "t_abc");
+    expect(items.has("ROUND#r_1|SETTLEMENT#PAID#t_abc")).toBe(false);
+    expect(sent.at(-1)).toEqual({ name: "DeleteCommand", input: { TableName: TABLE, Key: { PK: "ROUND#r_1", SK: "SETTLEMENT#PAID#t_abc" } } });
+    await store.unmarkTransferPaid("r_1", "t_abc");
+    expect(await store.listPaidMarkers("r_1")).toEqual([]);
+  });
 });
