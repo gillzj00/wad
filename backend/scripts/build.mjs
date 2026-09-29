@@ -18,7 +18,6 @@ await Promise.all(
       format: "esm",
       sourcemap: true,
       minify: true,
-      external: ["@aws-sdk/*"],
     }),
   ),
 );

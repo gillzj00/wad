@@ -42,3 +42,51 @@ export interface GamesConfig {
 
 /** Net money change per player; positive = owed to them. Sums to zero. */
 export type Deltas = Record<UserId, Cents>;
+
+export type TeeGender = "male" | "female";
+
+export interface CourseHole {
+  hole: number;
+  par: number;
+  /** Null when the source has no stroke index for the hole. */
+  strokeIndex: number | null;
+  yardage: number | null;
+}
+
+export interface Tee {
+  /** Stable within a course, e.g. "male-blue". */
+  teeId: string;
+  name: string;
+  gender: TeeGender;
+  courseRating: number | null;
+  slope: number | null;
+  par: number;
+  totalYards: number | null;
+  holes: CourseHole[];
+  /** Every hole has a stroke index and they are unique, so handicaps can be allocated. */
+  strokeIndexValid: boolean;
+}
+
+export interface CourseLocation {
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface CourseSummary {
+  courseId: string;
+  clubName: string;
+  courseName: string;
+  location: CourseLocation;
+}
+
+export interface Course extends CourseSummary {
+  source: "golfcourseapi" | "manual";
+  scorecardUrl: string | null;
+  tees: Tee[];
+  /** ISO timestamp of when the data was fetched or entered. */
+  fetchedAt: string;
+}
