@@ -27,7 +27,7 @@ Base path: `/v1`.
 - `PUT /rounds/{roundId}/players/{userId}/handicap` -> per-round handicap override `{ courseHandicap }` (null clears it)
 - `PUT /rounds/{roundId}/scores` -> upsert a gross score for a hole: `{ hole, gross, userId? }`. `userId` defaults to the caller; any participant may set a guest player's score.
 - `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers: [userId, ...], greenieWinner: userId | null }`. `wadMakers` is ordered by when the putts were made. `greenieWinner` is only valid on par 3s and must have scored par or better.
-- `GET /rounds/{roundId}/settlement` -> net positions + minimal pairwise transfers
+- `GET /rounds/{roundId}/settlement` -> net positions + pairwise transfers (at most one fewer than the players with a non-zero balance)
 - `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid
 - `POST /rounds/{roundId}/recompute` -> re-derive game state and settlement from scores and hole events
 

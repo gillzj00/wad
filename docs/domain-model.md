@@ -90,7 +90,7 @@ Played only on par-3 holes, for a fixed amount (default **$5**).
 
 ## Cross-cutting: settlement
 
-At the end of the round the app computes each player's net position across **all** games (Wad + Skins + Greenies), then reduces it to the minimum set of pairwise payments (who pays whom, how much). Those payments drive the Venmo deep links. All intermediate math stays in integer cents; only pairwise transfers are surfaced to the user.
+At the end of the round the app computes each player's net position across **all** games (Wad + Skins + Greenies), then reduces it to pairwise payments (who pays whom, how much) by repeatedly matching the largest creditor with the largest debtor, which needs at most one payment fewer than the number of players owed or owing. Those payments drive the Venmo deep links. All intermediate math stays in integer cents; only pairwise transfers are surfaced to the user.
 
 ---
 
