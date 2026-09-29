@@ -23,6 +23,14 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. |
 | Join code | `JOINCODE#<code>` | `ROUND` | Maps a short code to a `roundId`. Has `ttl` (48 hours after the round is created); also checked on read. |
 
+User profile item:
+- `userId` — the Cognito `sub`, the only value taken from the token. No email or Apple identifier is stored.
+- `displayName` — 1 to 40 characters. Absent until first set; never cleared.
+- `handicapIndex` — a number from -10 to 54 with at most one decimal place, entered by the user (ADR-0006), or null.
+- `venmoHandle` — the Venmo username without the leading `@`, or null.
+- `updatedAt` (ISO timestamp) — the last write.
+- A cleared `handicapIndex` or `venmoHandle` is written as null, and an item without the attribute reads as null. The item is created by the first `PUT /me`; a user without one has an empty profile.
+
 Round player item, handicap attributes:
 - `courseHandicap` — computed from the handicap index and the tee when the player is added; null on a tee with no rating and slope. Never changed by an override.
 - `courseHandicapOverride` — the group's per-round override, a whole number from -10 to 54, or null when there is none. Null when the player is added; a cleared override is written as null, and an item without the attribute reads as null.
@@ -64,6 +72,7 @@ so a user's rounds list newest-first without a scan. `startEpoch` is when the ro
 
 - **Scores and hole events are the source of truth.** Game state and the settlement are **derived** from scores + hole events + game config by the pure engines. Game state is not stored: it is computed when a round is read, so it cannot go stale and a "recompute round" operation is always safe. If state is ever cached in `STATE#...` items it must stay reproducible by replaying the engines over the inputs.
 - **Score and hole event writes are unconditional, last writer wins** (ADR-0004). Each player's score on a hole is its own item, written with a put (or a delete to clear it), so players scoring the same hole at the same time never overwrite each other and a repeated write is harmless. Hole events are written with an update that sets only the fields sent, so the wad makers and the greenie winner of a hole are last-writer-wins separately.
+- **A profile write is an update of the user item, last writer wins per field.** It sets only the fields sent, so a device saving the Venmo handle does not erase a handicap index another device just saved. The key is always built from the caller's `sub`.
 - **A handicap override is an update of the player item, last writer wins.** It sets only the override attributes, so the computed course handicap survives and clearing the override restores it. The update carries the condition `attribute_exists(PK)`, because an update would otherwise create an item for a player who is not in the round.
 - **Paid markers are tied to the transfer they were made for.** Transfers are not stored. `transferId` is a digest of the round id, payer, payee and amount, and the marker stores those values too; a marker counts only for a current transfer with the same id, payer, payee and amount. After a score correction or a handicap override a changed transfer has a new id, so an old marker matches nothing and is reported as a stale payment instead of marking another transfer paid. The marker is written with `attribute_not_exists(PK)`, so marking twice keeps the first; unmarking is a delete.
 - **Money is integer cents** everywhere it is stored.
