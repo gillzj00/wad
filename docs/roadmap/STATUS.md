@@ -6,23 +6,33 @@ Last updated: 2026-09-29
 
 ## Current phase
 
-**Phase 1 — local-only demo** (install on iPhone tonight). No sign-in, no network.
+**Phase 1 demo is complete and ready to install** (merged in #16, #18, #20, #22). Waiting for @gillzj00 to connect the phone; then run `ios/scripts/install-device.sh`. Delete any older install of Wad from the phone first (schema changed, no migration).
 
-Phase 2 (backend, after the demo is ready): M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment.
+**Phase 2 — backend (in progress):** M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
 
 ## Phase 1 task list
 
-| # | Task | Touches | State | PR |
-| --- | --- | --- | --- | --- |
-| P1.1 | ADR-0011 + esbuild bundle of the TS engines + Swift JavaScriptCore bridge with tests | backend/, ios/, docs/ | done | #16 |
-| P1.2 | SwiftData models + round setup: manual course entry (par + stroke index per hole, optional rating and slope), 2-4 players with handicaps, game settings | ios/ | done | #18 |
-| P1.3 | Hole-by-hole scoring with Wad makes (ordered) and Greenie winner, plus an XCUITest walkthrough of setup and scoring | ios/ | done | #20 |
-| P1.4 | Settlement screen: per-game results, net positions, pairwise transfers, unresolved skins carryover shown and not paid; UI walkthrough extended to all 18 holes and settlement | ios/ | in flight | - |
-| P1.5 | Simulator walkthrough of a full 18-hole round, screenshots, notify demo ready | - | todo | - |
+| # | Task | State | PR |
+| --- | --- | --- | --- |
+| P1.1 | ADR-0011, engine bundle, JavaScriptCore bridge | done | #16 |
+| P1.2 | Round models and setup flow | done | #18 |
+| P1.3 | Hole-by-hole scoring, UI walkthrough test | done | #20 |
+| P1.4 | Settlement screen, full 18-hole UI walkthrough | done | #22 |
+| P1.5 | Install on device | waiting for phone | - |
+
+## Phase 2 task list
+
+| # | Task | State | PR |
+| --- | --- | --- | --- |
+| M3.1 | Round lifecycle API | in flight | - |
+| M2.3 | Manual course entry + corrections | in flight | - |
+| M3.2 | Scoring API | todo (after M3.1) | - |
+| M5.1 | Settlement API | todo (after M3.2) | - |
 
 ## Task in flight
 
-- P1.4 (subagent, own worktree, branch `feat/ios-settlement`)
+- M3.1 (subagent, own worktree, branch `feat/round-lifecycle-api`)
+- M2.3 (subagent, own worktree, branch `feat/manual-course-entry`)
 
 ## Open PRs
 
@@ -47,6 +57,8 @@ Phase 2 (backend, after the demo is ready): M3.1 round lifecycle API, M3.2 scori
 
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
 - Not exercised by any test yet: validation messages in the setup flow, rounds list delete.
+- Demo verification: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
+- Wad makes that the engine ignores are not shown on the settlement screen.
 - iOS CI runs Xcode 16.4 with an iOS 18 simulator; local runs use iOS 26. Controls in list section headers were not hittable for XCUITest on iOS 18, so they were moved into full-width rows (#20).
 - The `Round` SwiftData schema changed with no migration; delete any older install of the app before installing.
 
