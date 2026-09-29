@@ -112,3 +112,67 @@ export function parseGuest(body: unknown): GuestInput {
   }
   return { displayName, handicapIndex: raw.handicapIndex };
 }
+
+export const MAX_HOLE = 18;
+/** Highest gross score accepted for one hole. */
+export const MAX_GROSS = 20;
+const MAX_WAD_MAKERS = 4;
+
+export interface ScoreInput {
+  hole: number;
+  /** Null clears the score. */
+  gross: number | null;
+  /** Left out: the caller. */
+  userId?: string;
+}
+
+/** Only the fields that were sent are written. */
+export interface HoleEventsInput {
+  wadMakers?: string[];
+  greenieWinner?: string | null;
+}
+
+function holeNumber(value: unknown): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > MAX_HOLE) {
+    throw invalid("invalid_hole", `hole must be a whole number from 1 to ${MAX_HOLE}`);
+  }
+  return value;
+}
+
+/** The `{hole}` path parameter: "4" or "04". */
+export function parseHoleParam(value: string | undefined): number {
+  return holeNumber(value !== undefined && /^\d{1,2}$/.test(value) ? Number(value) : null);
+}
+
+export function parseScore(body: unknown): ScoreInput {
+  const raw = object(body, "body");
+  const hole = holeNumber(raw.hole);
+  if (raw.gross === undefined) throw invalid("invalid_body", "gross is required; send null to clear the score");
+  if (raw.gross !== null && (typeof raw.gross !== "number" || !Number.isInteger(raw.gross) || raw.gross < 1 || raw.gross > MAX_GROSS)) {
+    throw invalid("invalid_gross", `gross must be a whole number from 1 to ${MAX_GROSS}, or null to clear the score`);
+  }
+  if (raw.userId === undefined) return { hole, gross: raw.gross };
+  return { hole, gross: raw.gross, userId: nonEmptyString(raw.userId, "userId") };
+}
+
+export function parseHoleEvents(body: unknown): HoleEventsInput {
+  const raw = object(body, "body");
+  const input: HoleEventsInput = {};
+  if (raw.wadMakers !== undefined) {
+    if (!Array.isArray(raw.wadMakers) || raw.wadMakers.length > MAX_WAD_MAKERS) {
+      throw invalid("invalid_body", `wadMakers must be a list of at most ${MAX_WAD_MAKERS} user ids`);
+    }
+    const makers = raw.wadMakers.map((m, i) => nonEmptyString(m, `wadMakers[${i}]`));
+    if (new Set(makers).size !== makers.length) {
+      throw invalid("duplicate_wad_maker", "a player can make the wad only once on a hole");
+    }
+    input.wadMakers = makers;
+  }
+  if (raw.greenieWinner !== undefined) {
+    input.greenieWinner = raw.greenieWinner === null ? null : nonEmptyString(raw.greenieWinner, "greenieWinner");
+  }
+  if (input.wadMakers === undefined && input.greenieWinner === undefined) {
+    throw invalid("invalid_body", "send wadMakers, greenieWinner or both");
+  }
+  return input;
+}

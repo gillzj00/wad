@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
+import { scoreGreenies } from "../../engines/greenies.js";
 import { allocateTicks, courseHandicap } from "../../engines/handicap.js";
-import type { Round, RoundPlayer } from "../../shared/rounds.js";
+import type { Round, RoundPlayer, RoundState } from "../../shared/rounds.js";
 import type { HoleInfo, Tee, UserId } from "../../shared/types.js";
 import { RoundError } from "./errors.js";
+import { computeState } from "./gameState.js";
 import { generateJoinCode, normalizeJoinCode } from "./joinCode.js";
 import type { PlayerRecord, RoundRecord, RoundStore, TeeSnapshot } from "./roundStore.js";
-import { isHandicapIndex, parseCreateRound, parseGuest, parseJoinCode } from "./validation.js";
+import { isHandicapIndex, parseCreateRound, parseGuest, parseHoleEvents, parseHoleParam, parseJoinCode, parseScore } from "./validation.js";
 
 export const MAX_PLAYERS = 4;
 export const HOLE_COUNT = 18;
@@ -104,6 +106,41 @@ export class RoundService {
     return { round, player };
   }
 
+  /**
+   * Sets or clears one player's gross score on a hole. A player writes their
+   * own scores; anyone in the round writes a guest's.
+   */
+  async putScore(userId: UserId, roundId: string, body: unknown): Promise<Round> {
+    const input = parseScore(body);
+    const record = await this.roundForMember(userId, roundId);
+    const target = playerIn(record, input.userId ?? userId);
+    if (target.userId !== userId && !target.guest) {
+      throw new RoundError("forbidden", "not_score_owner", "only the player can set their own score");
+    }
+    if (input.gross === null) await this.store.deleteScore(roundId, input.hole, target.userId);
+    else {
+      const score = { userId: target.userId, hole: input.hole, gross: input.gross };
+      await this.store.putScore(roundId, score, { by: userId, at: this.now().toISOString() });
+    }
+    return toRound(await this.reload(roundId));
+  }
+
+  /** Sets the hole's wad makers, its greenie winner or both. Anyone in the round may. */
+  async putHoleEvents(userId: UserId, roundId: string, holeParam: string | undefined, body: unknown): Promise<Round> {
+    const hole = parseHoleParam(holeParam);
+    const input = parseHoleEvents(body);
+    const record = await this.roundForMember(userId, roundId);
+    for (const maker of input.wadMakers ?? []) playerIn(record, maker);
+    if (typeof input.greenieWinner === "string") checkGreenieWinner(record, hole, input.greenieWinner);
+    await this.store.setHoleEvents(roundId, hole, input, { by: userId, at: this.now().toISOString() });
+    return toRound(await this.reload(roundId));
+  }
+
+  /** State is never stored, so this is the same computation as reading the round. */
+  async recompute(userId: UserId, roundId: string): Promise<RoundState> {
+    return computeState(await this.roundForMember(userId, roundId));
+  }
+
   private async roundForMember(userId: UserId, roundId: string): Promise<RoundRecord> {
     const record = roundId ? await this.store.getRound(roundId) : null;
     if (!record) throw new RoundError("not_found", "round_not_found", "no round with that id");
@@ -135,6 +172,33 @@ export class RoundService {
       guest: false,
       joinedAt: now.toISOString(),
     };
+  }
+}
+
+function playerIn(record: RoundRecord, userId: UserId): PlayerRecord {
+  const player = record.players.find((p) => p.userId === userId);
+  if (!player) throw new RoundError("validation", "unknown_player", `${userId} is not a player in this round`);
+  return player;
+}
+
+/**
+ * Checks what can be checked when the winner is recorded. A winner whose score
+ * is not in yet is accepted, since scores and hole events arrive in any order;
+ * the greenies engine decides whether the greenie is paid.
+ */
+function checkGreenieWinner(record: RoundRecord, hole: number, winner: UserId): void {
+  playerIn(record, winner);
+  const par = record.meta.tee.holes.find((h) => h.hole === hole)?.par;
+  if (par !== 3) throw new RoundError("validation", "not_a_par_three", `hole ${hole} is not a par 3, so it has no greenie`);
+  const result = scoreGreenies({
+    players: record.players.map((p) => p.userId),
+    holes: record.meta.tee.holes,
+    scores: record.scores,
+    holeEvents: [{ hole, wadMakers: [], greenieWinner: winner }],
+    amountCents: 0,
+  }).holes.find((h) => h.hole === hole);
+  if (result?.status === "invalid") {
+    throw new RoundError("validation", "greenie_winner_over_par", "the greenie winner must score par or better on the hole");
   }
 }
 
@@ -189,5 +253,6 @@ function toRound(record: RoundRecord): Round {
     players: record.players.map((p) => ({ ...p, ticksByHole: ticks?.[p.userId] ?? null })),
     scores: record.scores,
     holes: record.holes,
+    state: computeState(record),
   };
 }
