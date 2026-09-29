@@ -147,6 +147,18 @@ struct EngineBridgeTests {
         }
     }
 
+    // The same cases as backend/test/engines/handicap.test.ts, plus the neutral 15.
+    @Test(arguments: [
+        (15.0, Engine.TeeRating(slope: 113, courseRating: 72.0, par: 72), 15),
+        (12.0, Engine.TeeRating(slope: 113, courseRating: 72.0, par: 72), 12),
+        // 15.4 * 131/113 = 17.853..., + (72.5 - 72) = 18.353... -> 18
+        (15.4, Engine.TeeRating(slope: 131, courseRating: 72.5, par: 72), 18),
+        (-2.0, Engine.TeeRating(slope: 113, courseRating: 71.0, par: 72), -3),
+    ])
+    func courseHandicapAppliesSlopeAndRating(handicapIndex: Double, tee: Engine.TeeRating, expected: Int) throws {
+        #expect(try bridge.courseHandicap(handicapIndex: handicapIndex, tee: tee) == expected)
+    }
+
     @Test func settleReducesGameDeltasToPairwiseTransfers() throws {
         let skins = ["A": 4500, "B": -1500, "C": -1500, "D": -1500]
         let wad = ["A": -1300, "B": -1300, "C": 3900, "D": -1300]
