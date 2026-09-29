@@ -6,7 +6,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M0 — Foundations
 
-- [ ] **M0.1 Terraform bootstrap** (`infra/bootstrap/`): S3 state bucket (versioned, encrypted), DynamoDB lock table, GitHub OIDC provider, CI IAM role scoped to this repo. Human-run once. AC: `terraform apply` in bootstrap succeeds; outputs the role ARN and state bucket.
+- [ ] **M0.1 Terraform bootstrap** (`infra/bootstrap/`): S3 state bucket (versioned, encrypted; S3 lock file for locking), GitHub OIDC provider, CI IAM role scoped to this repo. Human-run once. AC: `terraform apply` in bootstrap succeeds; outputs the role ARN and state bucket.
 - [ ] **M0.2 Remote state + dev stack skeleton** (`infra/environments/dev/`): backend config pointing at the bootstrap bucket; providers; empty stack that plans clean. AC: `terraform init && plan` succeeds in CI using OIDC.
 - [ ] **M0.3 Terraform CI** (`.github/workflows/terraform.yml`): fmt check + validate + plan on PR (plan posted to PR), apply on merge to `main`, via OIDC. AC: PR shows a plan; merge applies. (Skeleton provided.)
 - [ ] **M0.4 Backend project scaffold** (`backend/`): TypeScript, test runner, lint/typecheck, bundler for Lambda, `shared/` types matching `docs/api.md`. AC: `npm test`/`lint`/`build` run green on an empty suite.
