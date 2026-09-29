@@ -20,6 +20,13 @@ enum RoundFixtures {
         return draft
     }
 
+    /// The unrated draft with a third player: Zach (15) gets 8 ticks against Sam and Alex (7).
+    static func threePlayerDraft() -> RoundDraft {
+        var draft = unratedDraft()
+        draft.players.append(RoundDraft.Player(id: "alex", name: "Alex", courseHandicapText: "7"))
+        return draft
+    }
+
     /// A valid draft on a rated tee (72.5 / 131) with four players, one overridden.
     static func ratedDraft() -> RoundDraft {
         var draft = unratedDraft()
