@@ -42,7 +42,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **M4.2 Skins engine**: net winner per hole, pushes/carryovers through 18, collect-from-each settlement. Expose (do not pay out) any carryover unresolved after the final hole (Open Question 1).
 - [x] **M4.3 Wad engine**: ordered makes per hole, start value then +step per make, separate front/back instances, holder collects from each at the end of each nine.
 - [x] **M4.4 Greenies engine**: par-3 winner validation (par or better), collect-from-each settlement.
-- [ ] **M4.5 Settlement aggregator**: combine all games into net positions + minimal pairwise transfers (integer cents).
+- [x] **M4.5 Settlement aggregator**: combine all games into net positions + pairwise transfers (integer cents).
 
 ## M5 — Settlement & payout  (depends on M4)
 
