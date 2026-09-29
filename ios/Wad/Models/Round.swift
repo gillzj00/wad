@@ -32,6 +32,10 @@ final class Round {
     @Relationship(deleteRule: .cascade, inverse: \HoleScore.round)
     var scores: [HoleScore] = []
 
+    /// Payments the group has marked paid. See `PaymentLedger`.
+    @Relationship(deleteRule: .cascade, inverse: \PaidMarker.round)
+    var paidMarkers: [PaidMarker] = []
+
     init(
         id: UUID = UUID(),
         courseName: String,
@@ -131,6 +135,8 @@ final class RoundPlayer {
     var handicapIndex: Double?
     /// The handicap used for this round: computed from the index and the tee, or entered by the group.
     var courseHandicap: Int
+    /// Venmo username without the "@". Optional.
+    var venmoHandle: String?
     var round: Round?
 
     init(
@@ -138,13 +144,34 @@ final class RoundPlayer {
         displayName: String,
         position: Int,
         handicapIndex: Double? = nil,
-        courseHandicap: Int
+        courseHandicap: Int,
+        venmoHandle: String? = nil
     ) {
         self.playerID = playerID
         self.displayName = displayName
         self.position = position
         self.handicapIndex = handicapIndex
         self.courseHandicap = courseHandicap
+        self.venmoHandle = venmoHandle
+    }
+}
+
+/// The group marked a payment as made: who paid whom, how much and when. It
+/// belongs to the transfer with the same payer, payee and amount, like the
+/// backend's transfer id (docs/api.md, Settlement), and to no other.
+@Model
+final class PaidMarker {
+    var payerID: String
+    var payeeID: String
+    var amountCents: Int
+    var paidAt: Date
+    var round: Round?
+
+    init(payerID: String, payeeID: String, amountCents: Int, paidAt: Date) {
+        self.payerID = payerID
+        self.payeeID = payeeID
+        self.amountCents = amountCents
+        self.paidAt = paidAt
     }
 }
 

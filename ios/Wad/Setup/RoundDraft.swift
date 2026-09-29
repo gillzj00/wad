@@ -15,6 +15,7 @@ enum SetupIssue: Hashable, Sendable {
     case playerNameDuplicate(name: String)
     case handicapIndexInvalid(player: Int)
     case courseHandicapInvalid(player: Int)
+    case venmoHandleInvalid(player: Int)
     case amountInvalid(game: String)
 
     var message: String {
@@ -45,6 +46,8 @@ enum SetupIssue: Hashable, Sendable {
             "Player \(player): the handicap index is a number up to 54.0, such as 15.4 (or +1.2)."
         case .courseHandicapInvalid(let player):
             "Player \(player): the course handicap is a whole number."
+        case .venmoHandleInvalid(let player):
+            "Player \(player): the Venmo handle is 5 to 30 letters, digits, hyphens or underscores, or blank."
         case .amountInvalid(let game):
             "\(game): enter dollars and cents, such as 7 or 7.50."
         }
@@ -84,6 +87,8 @@ struct RoundDraft: Equatable, Sendable {
         var courseHandicapText = ""
         /// With a rated tee: use `courseHandicapText` instead of the computed course handicap.
         var overridesCourseHandicap = false
+        /// Optional. With or without the leading "@".
+        var venmoHandleText = ""
 
         var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
@@ -191,6 +196,10 @@ struct RoundDraft: Equatable, Sendable {
             } else if SetupText.handicapIndex(player.handicapIndexText) == nil {
                 issues.append(.handicapIndexInvalid(player: number))
             }
+
+            if VenmoHandle.parse(player.venmoHandleText) == .invalid {
+                issues.append(.venmoHandleInvalid(player: number))
+            }
         }
         return issues
     }
@@ -265,7 +274,8 @@ struct RoundDraft: Equatable, Sendable {
                 displayName: player.trimmedName,
                 position: offset,
                 handicapIndex: tee == nil ? nil : SetupText.handicapIndex(player.handicapIndexText),
-                courseHandicap: courseHandicap
+                courseHandicap: courseHandicap,
+                venmoHandle: VenmoHandle.normalized(player.venmoHandleText)
             )
         }
         return round

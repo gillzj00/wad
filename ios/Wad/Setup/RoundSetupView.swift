@@ -267,6 +267,15 @@ struct PlayersStepView: View {
                     courseHandicapRow(binding)
                 }
 
+                LabeledContent("Venmo") {
+                    TextField("Optional handle", text: binding.venmoHandleText)
+                        .keyboardType(.asciiCapable)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("setup.player.\(number(of: player)).venmoHandle")
+                }
+
                 // A row of its own: controls in a section header are not hittable for XCUITest on iOS 18.
                 if draft.players.count > RoundDraft.playerCountRange.lowerBound {
                     Button("Remove player", systemImage: "minus.circle", role: .destructive) {
