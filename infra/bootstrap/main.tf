@@ -24,14 +24,14 @@ data "aws_caller_identity" "current" {}
 
 locals {
   state_bucket = "${var.project}-tfstate-${data.aws_caller_identity.current.account_id}"
-  lock_table   = "${var.project}-tflock"
   # The repo uses GitHub's immutable OIDC subject claims, which embed the
   # owner and repo numeric IDs: repo:<owner>@<owner_id>/<repo>@<repo_id>:<ref>
   repo_sub = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:*"
 }
 
 # ---------------------------------------------------------------------------
-# Remote state backend: versioned, encrypted S3 bucket + DynamoDB lock table
+# Remote state backend: versioned, encrypted S3 bucket. State locking uses an
+# S3 lock file (use_lockfile), so no DynamoDB lock table is needed.
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket" "state" {
   bucket = local.state_bucket
@@ -59,16 +59,6 @@ resource "aws_s3_bucket_public_access_block" "state" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-resource "aws_dynamodb_table" "lock" {
-  name         = local.lock_table
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
 }
 
 # ---------------------------------------------------------------------------
@@ -120,10 +110,6 @@ data "aws_iam_policy_document" "ci_state" {
   statement {
     actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.state.arn}/*"]
-  }
-  statement {
-    actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
-    resources = [aws_dynamodb_table.lock.arn]
   }
 }
 
