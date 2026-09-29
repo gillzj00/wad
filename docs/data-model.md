@@ -12,17 +12,19 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Course | `COURSE#<courseId>` | `PROFILE` | Cached scorecard (per-tee par, stroke index, yardage, rating, slope). `courseId` from the provider or a generated id for manual entries. |
 | Round | `ROUND#<roundId>` | `META` | Course id, tee, date, status, base amounts and enabled games. |
 | Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Course handicap for this round, computed ticks per hole, join time. |
-| Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross for one hole, plus per-game flags (see below). |
+| Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross strokes for one hole. |
+| Hole events | `ROUND#<roundId>` | `HOLE#<hole:02d>` | Group-level facts for one hole (see below). Any participant can edit. |
 | Game config | `ROUND#<roundId>` | `GAME#<gameType>` | Per-round settings (base value, whether enabled, reset rules). |
 | Game state | `ROUND#<roundId>` | `STATE#<gameType>#<segment>` | Derived/checkpointed engine state (e.g. Wad holder+value per nine). Rebuildable from scores. |
 | Settlement | `ROUND#<roundId>` | `SETTLEMENT` | Final net positions and pairwise transfers with paid/unpaid status. |
 | WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. |
 | Join code | `JOINCODE#<code>` | `ROUND` | Maps a short code to a `roundId`. Has `ttl`. |
 
-Per-hole score item flags (set by the scorer, consumed by engines):
-- `gross` — integer strokes.
-- `wadFirstPuttFromFlagstick` — boolean: first putt on the green holed from >= flagstick length (drives Wad).
-- `greenInRegulationOffTee` — boolean, par-3s only (drives Greenies alongside `gross` vs par).
+Hole score item: `gross` — integer strokes for that player on that hole.
+
+Hole events item (group facts, consumed by engines; see `docs/domain-model.md`):
+- `wadMakers` — ordered list of user ids whose first putt on the green was holed from at least a flagstick's length, in the order made. Empty when nobody qualified. A user appears at most once.
+- `greenieWinner` — user id or null; par 3s only. Must be a player who scored par or better on the hole.
 
 ## Access patterns
 
@@ -45,7 +47,7 @@ so a user's rounds list newest-first without a scan.
 
 ## Consistency & derivation
 
-- **Scores are the source of truth.** Game state items (`STATE#...`) and the settlement item are **derived** from scores + game config by the pure engines. They are cached for fast reads and live updates, but must be reproducible by replaying the engines over the scores. A "recompute round" operation should always be safe.
+- **Scores and hole events are the source of truth.** Game state items (`STATE#...`) and the settlement item are **derived** from scores + hole events + game config by the pure engines. They are cached for fast reads and live updates, but must be reproducible by replaying the engines over the inputs. A "recompute round" operation should always be safe.
 - **Money is integer cents** everywhere it is stored.
 - **TTL** auto-expires `CONN#` items (short, e.g. a few hours) and `JOINCODE#` items (e.g. until round end + a buffer).
 
