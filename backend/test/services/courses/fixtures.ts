@@ -29,6 +29,26 @@ export const gcaCourse: GcaCourse = {
   },
 };
 
+/** A valid POST /courses body; tests copy it and break one field at a time. */
+export function manualCourseBody() {
+  return {
+    courseName: "Back Forty",
+    clubName: "Cedar Ridge Golf Club",
+    location: { city: "Springfield", state: "IL" },
+    tees: [
+      {
+        name: "Blue",
+        gender: "male",
+        courseRating: 71.2,
+        slope: 128,
+        holes: pars.map((par, i) => ({ hole: i + 1, par, strokeIndex: menSi[i]!, yardage: 350 + i })),
+      },
+      // No rating, slope, gender or yardage: all optional.
+      { name: "Red", holes: pars.map((par, i) => ({ hole: i + 1, par, strokeIndex: womenSi[i]! })) },
+    ],
+  };
+}
+
 export const gcaSearch = {
   courses: [
     {
