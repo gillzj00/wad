@@ -69,7 +69,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         scrollTo(par)
         par.buttons["3"].tap()
 
-        diagnoseAndTap(app.buttons["setup.strokeIndexes"], expecting: app.buttons["Number 1 to 18 in order"])
+        app.buttons["setup.strokeIndexes"].tap()
         let inOrder = app.buttons["Number 1 to 18 in order"]
         XCTAssertTrue(inOrder.waitForExistence(timeout: 5))
         inOrder.tap()
@@ -122,7 +122,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         XCTAssertEqual(label(of: "score.detail.Sam"), "No ticks, Net 4")
 
         // Clearing a score and entering it again.
-        diagnoseAndTap(app.buttons["score.clear.Alex"], expecting: nil)
+        app.buttons["score.clear.Alex"].tap()
         XCTAssertEqual(app.buttons["score.value.Alex"].value as? String, "Not set")
         app.buttons["score.value.Alex"].tap()
         XCTAssertEqual(app.buttons["score.value.Alex"].value as? String, "4")
@@ -146,7 +146,7 @@ final class RoundWalkthroughUITests: XCTestCase {
     /// Par 4, stroke index 2: everyone makes 4, Zach's tick wins the carried skin.
     private func scoreHole2() {
         XCTAssertEqual(label(of: "scoring.hole.title"), "Hole 2")
-        diagnoseAndTap(app.buttons["scoring.parForRest"], expecting: nil)
+        tap("scoring.parForRest")
         XCTAssertEqual(app.buttons["score.value.Zach"].value as? String, "4")
         XCTAssertEqual(label(of: "score.detail.Zach"), "1 tick, Net 3")
         XCTAssertTrue(label(of: "status.wad").hasPrefix("Zach holds the Wad at $9.00"))
@@ -234,22 +234,6 @@ final class RoundWalkthroughUITests: XCTestCase {
         guard element.exists, element.isHittable else { return false }
         let next = app.buttons["scoring.next"]
         return !next.exists || element.frame.maxY <= next.frame.minY - 8
-    }
-
-    private func diagnoseAndTap(_ button: XCUIElement, expecting: XCUIElement?) {
-        print("DIAG \(button) exists=\(button.exists) hittable=\(button.isHittable) frame=\(button.frame)")
-        attachScreenshot("diag-before-\(button.label)")
-        if button.isHittable {
-            button.tap()
-            return
-        }
-        print("DIAG hierarchy\n\(app.debugDescription)")
-        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        print("DIAG after touch: Alex=\(app.buttons["score.value.Alex"].value ?? "nil")")
-        if let expecting {
-            print("DIAG touch at the button opened the menu: \(expecting.waitForExistence(timeout: 3))")
-        }
-        attachScreenshot("diag-after-\(button.label)")
     }
 
     private func attachScreenshot(_ name: String) {
