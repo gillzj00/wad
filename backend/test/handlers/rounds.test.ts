@@ -1,0 +1,126 @@
+import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from "aws-lambda";
+import { describe, expect, it } from "vitest";
+import { createHandler } from "../../src/handlers/rounds.js";
+import { RoundError, type RoundErrorKind } from "../../src/services/rounds/errors.js";
+import type { RoundService } from "../../src/services/rounds/roundService.js";
+
+const ROUTES = ["POST /v1/rounds", "GET /v1/rounds/{roundId}", "POST /v1/rounds/join", "POST /v1/rounds/{roundId}/players"];
+
+function event(routeKey: string, options: { sub?: unknown; body?: unknown; rawBody?: string; roundId?: string; base64?: boolean } = {}) {
+  const sub = "sub" in options ? options.sub : "u_1";
+  const text = options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
+  return {
+    routeKey,
+    requestContext: sub === undefined ? {} : { authorizer: { jwt: { claims: { sub }, scopes: [] } } },
+    pathParameters: options.roundId ? { roundId: options.roundId } : undefined,
+    body: text !== undefined && options.base64 ? Buffer.from(text).toString("base64") : text,
+    isBase64Encoded: options.base64 ?? false,
+  } as unknown as APIGatewayProxyEventV2;
+}
+
+async function call(service: Partial<RoundService>, e: APIGatewayProxyEventV2) {
+  const res = (await createHandler(service as RoundService)(e)) as APIGatewayProxyStructuredResultV2;
+  return { status: res.statusCode, body: JSON.parse(res.body as string) };
+}
+
+const round = { roundId: "r_1", joinCode: "ABCD2F" } as never;
+
+describe("rounds handler", () => {
+  it("creates a round for the caller", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      createRound: async (userId: string, body: unknown) => {
+        calls.push([userId, body]);
+        return round;
+      },
+    };
+    const res = await call(service, event("POST /v1/rounds", { body: { courseId: "c" } }));
+    expect(res).toEqual({ status: 201, body: { round: { roundId: "r_1", joinCode: "ABCD2F" }, joinCode: "ABCD2F" } });
+    expect(calls).toEqual([["u_1", { courseId: "c" }]]);
+  });
+
+  it("decodes a base64 body", async () => {
+    const service = { joinRound: async (_userId: string, body: unknown) => ({ roundId: (body as { joinCode: string }).joinCode }) as never };
+    const res = await call(service, event("POST /v1/rounds/join", { body: { joinCode: "ABCD2F" }, base64: true }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "ABCD2F" } } });
+  });
+
+  it("gets a round", async () => {
+    const service = { getRound: async (userId: string, roundId: string) => ({ roundId, createdBy: userId }) as never };
+    const res = await call(service, event("GET /v1/rounds/{roundId}", { roundId: "r_1", sub: "u_2" }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", createdBy: "u_2" } } });
+  });
+
+  it("joins a round", async () => {
+    const service = { joinRound: async () => round };
+    const res = await call(service, event("POST /v1/rounds/join", { body: { joinCode: "ABCD2F" } }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+  });
+
+  it("adds a guest", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      addGuest: async (...args: unknown[]) => {
+        calls.push(args);
+        return { round, player: { userId: "guest_1" } as never };
+      },
+    };
+    const res = await call(service, event("POST /v1/rounds/{roundId}/players", { roundId: "r_1", body: { displayName: "Pat", handicapIndex: 10 } }));
+    expect(res).toEqual({ status: 201, body: { round: { roundId: "r_1", joinCode: "ABCD2F" }, player: { userId: "guest_1" } } });
+    expect(calls).toEqual([["u_1", "r_1", { displayName: "Pat", handicapIndex: 10 }]]);
+  });
+
+  it.each(ROUTES)("returns 401 without a caller: %s", async (routeKey) => {
+    // No service methods: the handler must not reach the service.
+    for (const sub of [undefined, "", 42, null]) {
+      const res = await call({}, event(routeKey, { sub, roundId: "r_1", body: {} }));
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe("unauthorized");
+    }
+  });
+
+  it("ignores a user id anywhere other than the authorizer claims", async () => {
+    const e = event("GET /v1/rounds/{roundId}", { sub: undefined, roundId: "r_1" });
+    e.headers = { "x-user-id": "u_1", authorization: "Bearer u_1" };
+    e.queryStringParameters = { userId: "u_1", sub: "u_1" };
+    expect((await call({}, e)).status).toBe(401);
+  });
+
+  it.each(["POST /v1/rounds", "POST /v1/rounds/join", "POST /v1/rounds/{roundId}/players"])("returns 400 for a missing or malformed body: %s", async (routeKey) => {
+    for (const rawBody of [undefined, "", "{not json"]) {
+      const res = await call({}, event(routeKey, { roundId: "r_1", ...(rawBody === undefined ? {} : { rawBody }) }));
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("invalid_json");
+    }
+  });
+
+  it.each<[RoundErrorKind, number]>([
+    ["validation", 400],
+    ["forbidden", 403],
+    ["not_found", 404],
+    ["conflict", 409],
+  ])("maps a %s error to %i", async (kind, status) => {
+    const service = {
+      getRound: async () => {
+        throw new RoundError(kind, "some_code", "some message");
+      },
+    };
+    const res = await call(service, event("GET /v1/rounds/{roundId}", { roundId: "r_1" }));
+    expect(res).toEqual({ status, body: { error: { code: "some_code", message: "some message" } } });
+  });
+
+  it("does not swallow unexpected errors", async () => {
+    const service = {
+      getRound: async () => {
+        throw new Error("boom");
+      },
+    };
+    await expect(call(service, event("GET /v1/rounds/{roundId}", { roundId: "r_1" }))).rejects.toThrow("boom");
+  });
+
+  it("returns 404 for an unknown route", async () => {
+    const res = await call({}, event("DELETE /v1/rounds/{roundId}", { roundId: "r_1" }));
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("route_not_found");
+  });
+});
