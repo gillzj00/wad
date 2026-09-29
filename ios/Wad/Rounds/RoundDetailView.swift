@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// A round's setup: course, players with the handicaps and ticks they play
-/// with, and the game amounts.
+/// A round: the way into scoring, its progress and scorecard, and its setup
+/// (course, players with the handicaps and ticks they play with, game amounts).
 struct RoundDetailView: View {
     let round: Round
 
@@ -17,7 +17,30 @@ struct RoundDetailView: View {
 
     var body: some View {
         let totalTicks = totalTicks
+        let scorecard = Scorecard(round: round)
         List {
+            Section {
+                NavigationLink(value: RoundsRoute.scoring(round)) {
+                    Label(
+                        scorecard.completedHoleCount == 0 ? "Score round" : "Continue scoring",
+                        systemImage: "pencil.and.list.clipboard"
+                    )
+                }
+                .accessibilityIdentifier("detail.scoreRound")
+                LabeledContent(
+                    "Holes completed",
+                    value: "\(scorecard.completedHoleCount) of \(scorecard.holeCount)"
+                )
+                .accessibilityIdentifier("detail.holesCompleted")
+            } header: {
+                Text("Round")
+            }
+
+            Section("Scorecard") {
+                ScorecardView(scorecard: scorecard)
+                    .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 8))
+            }
+
             Section("Course") {
                 LabeledContent("Name", value: round.courseName)
                 LabeledContent("Holes", value: "\(round.holes.count)")
@@ -63,13 +86,6 @@ struct RoundDetailView: View {
                 LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
                 LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
                 LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
-            }
-
-            Section {
-                Button("Score round", systemImage: "pencil.and.list.clipboard") {}
-                    .disabled(true)
-            } footer: {
-                Text("Hole-by-hole scoring is not available yet.")
             }
         }
         .navigationTitle(round.courseName)
