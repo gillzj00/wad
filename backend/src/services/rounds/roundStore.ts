@@ -8,7 +8,7 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { RoundStatus } from "../../shared/rounds.js";
-import type { Course, GamesConfig, HoleEvents, HoleInfo, Score, UserId } from "../../shared/types.js";
+import type { Cents, Course, GamesConfig, HoleEvents, HoleInfo, Score, UserId } from "../../shared/types.js";
 
 /** The tee as it was when the round was created, so later course edits do not change a round. */
 export interface TeeSnapshot {
@@ -56,6 +56,20 @@ export interface UserProfile {
   handicapIndex: number | null;
 }
 
+/**
+ * A record that a transfer was paid. It carries the whole transfer, so it can
+ * only ever be matched to a transfer with the same payer, payee and amount.
+ */
+export interface PaidMarker {
+  transferId: string;
+  from: UserId;
+  to: UserId;
+  amountCents: Cents;
+  paidAt: string;
+  paidBy: UserId;
+}
+
+export type MarkPaidResult = "marked" | "already_marked";
 export type CreateRoundResult = "created" | "join_code_taken";
 export type AddPlayerResult = "added" | "already_member" | "round_full";
 
@@ -74,6 +88,13 @@ export interface RoundStore {
   deleteScore(roundId: string, hole: number, userId: UserId): Promise<void>;
   /** Sets only the given fields of the hole's events, leaving the other as it is. Last writer wins per field. */
   setHoleEvents(roundId: string, hole: number, fields: HoleEventFields, change: Change): Promise<void>;
+  /** Null for a user without a profile or without a Venmo handle. */
+  getVenmoHandle(userId: UserId): Promise<string | null>;
+  listPaidMarkers(roundId: string): Promise<PaidMarker[]>;
+  /** Writes the marker only if the transfer has none; the first marker is kept. */
+  markTransferPaid(roundId: string, marker: PaidMarker): Promise<MarkPaidResult>;
+  /** Removes the marker; a no-op when there is none. */
+  unmarkTransferPaid(roundId: string, transferId: string): Promise<void>;
 }
 
 /** Who made a write and when. */
@@ -89,6 +110,7 @@ export type RoundRef = Pick<RoundMeta, "roundId" | "createdAt">;
 type Item = Record<string, unknown>;
 
 const NOT_EXISTS = "attribute_not_exists(PK)";
+const PAID_PREFIX = "SETTLEMENT#PAID#";
 
 /** Which items of a cancelled transaction failed their condition; null for any other error. */
 function failedConditions(err: unknown): boolean[] | null {
@@ -259,6 +281,58 @@ export class DynamoRoundStore implements RoundStore {
         ExpressionAttributeValues: Object.fromEntries(names.map((name, i) => [`:v${i}`, values[name]])),
       }),
     );
+  }
+
+  async getVenmoHandle(userId: UserId): Promise<string | null> {
+    const item = await this.get(`USER#${userId}`, "PROFILE");
+    const handle = typeof item?.venmoHandle === "string" ? item.venmoHandle.trim() : "";
+    return handle === "" ? null : handle;
+  }
+
+  async listPaidMarkers(roundId: string): Promise<PaidMarker[]> {
+    const items: Item[] = [];
+    let startKey: Item | undefined;
+    do {
+      const res = await this.db.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+          ExpressionAttributeValues: { ":pk": `ROUND#${roundId}`, ":sk": PAID_PREFIX },
+          ConsistentRead: true,
+          ...(startKey ? { ExclusiveStartKey: startKey } : {}),
+        }),
+      );
+      items.push(...((res.Items ?? []) as Item[]));
+      startKey = res.LastEvaluatedKey;
+    } while (startKey);
+    return items.map((i) => ({
+      transferId: i.transferId as string,
+      from: i.from as string,
+      to: i.to as string,
+      amountCents: i.amountCents as number,
+      paidAt: i.paidAt as string,
+      paidBy: i.paidBy as string,
+    }));
+  }
+
+  async markTransferPaid(roundId: string, marker: PaidMarker): Promise<MarkPaidResult> {
+    try {
+      await this.db.send(
+        new PutCommand({
+          TableName: this.tableName,
+          Item: { PK: `ROUND#${roundId}`, SK: `${PAID_PREFIX}${marker.transferId}`, type: "transferPaid", ...marker },
+          ConditionExpression: NOT_EXISTS,
+        }),
+      );
+      return "marked";
+    } catch (err) {
+      if (err instanceof Error && err.name === "ConditionalCheckFailedException") return "already_marked";
+      throw err;
+    }
+  }
+
+  async unmarkTransferPaid(roundId: string, transferId: string): Promise<void> {
+    await this.db.send(new DeleteCommand({ TableName: this.tableName, Key: { PK: `ROUND#${roundId}`, SK: `${PAID_PREFIX}${transferId}` } }));
   }
 
   private async get(pk: string, sk: string): Promise<Item | undefined> {
