@@ -32,6 +32,13 @@ struct RoundDetailView: View {
                     value: "\(scorecard.completedHoleCount) of \(scorecard.holeCount)"
                 )
                 .accessibilityIdentifier("detail.holesCompleted")
+                NavigationLink(value: RoundsRoute.settlement(round)) {
+                    Label(
+                        scorecard.completedHoleCount == scorecard.holeCount ? "Settlement" : "Settlement (provisional)",
+                        systemImage: "dollarsign.circle"
+                    )
+                }
+                .accessibilityIdentifier("detail.settlement")
             } header: {
                 Text("Round")
             }

@@ -27,6 +27,27 @@ enum RoundFixtures {
         return draft
     }
 
+    /// The unrated draft with four players: Zach (15) gets 8 ticks and Alex (10)
+    /// gets 3 against Sam and Jo (7).
+    static func fourPlayerDraft() -> RoundDraft {
+        var draft = unratedDraft()
+        draft.players.append(RoundDraft.Player(id: "alex", name: "Alex", courseHandicapText: "10"))
+        draft.players.append(RoundDraft.Player(id: "jo", name: "Jo", courseHandicapText: "7"))
+        return draft
+    }
+
+    /// The course and players of the UI walkthrough: every hole a par 4 except
+    /// the third (par 3), stroke indexes 1 to 18 in order, so Zach (15) gets a
+    /// tick on holes 1 to 8 against Sam and Alex (7).
+    static func walkthroughDraft() -> RoundDraft {
+        var draft = threePlayerDraft()
+        draft.courseName = "Walkthrough Links"
+        draft.holes = (1...18).map {
+            RoundDraft.Hole(number: $0, par: $0 == 3 ? 3 : 4, strokeIndexText: String($0))
+        }
+        return draft
+    }
+
     /// A valid draft on a rated tee (72.5 / 131) with four players, one overridden.
     static func ratedDraft() -> RoundDraft {
         var draft = unratedDraft()

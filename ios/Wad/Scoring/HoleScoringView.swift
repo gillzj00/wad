@@ -9,9 +9,12 @@ struct HoleScoringView: View {
     @State private var holeNumber: Int
     @State private var failure: String?
 
-    init(round: Round) {
+    /// Opens on `startHole`, or on the first hole that is not complete.
+    init(round: Round, startHole: Int? = nil) {
         self.round = round
-        _holeNumber = State(initialValue: round.firstIncompleteHole ?? round.orderedHoles.last?.number ?? 1)
+        _holeNumber = State(
+            initialValue: startHole ?? round.firstIncompleteHole ?? round.orderedHoles.last?.number ?? 1
+        )
     }
 
     private var scorer: RoundScorer { RoundScorer(round: round) }
@@ -27,6 +30,9 @@ struct HoleScoringView: View {
             if let hole = round.hole(holeNumber) {
                 header(hole)
                 scores(hole, status: status)
+                if hole.number == lastHole, round.isHoleComplete(hole.number) {
+                    settlement
+                }
                 wad(hole, status: status)
                 if hole.par == 3 || hole.greenieWinnerID != nil {
                     greenie(hole, status: status)
@@ -106,6 +112,24 @@ struct HoleScoringView: View {
         } footer: {
             if status == nil {
                 Text("Ticks and the games could not be computed.")
+            }
+        }
+    }
+
+    /// Offered on the last hole once it is scored.
+    private var settlement: some View {
+        Section {
+            NavigationLink(value: RoundsRoute.settlement(round)) {
+                Label(
+                    round.firstIncompleteHole == nil ? "Settlement" : "Settlement (provisional)",
+                    systemImage: "dollarsign.circle"
+                )
+                .font(.headline)
+            }
+            .accessibilityIdentifier("scoring.settlement")
+        } footer: {
+            if let hole = round.firstIncompleteHole {
+                Text("Hole \(hole) is not fully scored yet.")
             }
         }
     }
