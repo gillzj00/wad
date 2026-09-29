@@ -34,15 +34,15 @@ Last updated: 2026-09-29
 
 | # | Task | Touches | State | PR |
 | --- | --- | --- | --- | --- |
-| P3.1 | UI tests for setup validation and round delete | ios/ | in flight | - |
+| P3.1 | UI tests for setup validation and round delete; fixed a crash after removing a player and validation messages being off screen | ios/ | done | #39 |
 | P3.2 | M1.2 profile API handler (code and tests only; no auth infra, no deploy) | backend/ | done | #35 |
 | P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | done | #37 |
-| P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); fix install-device.sh matching "unavailable" devices | ios/ | queued (after P3.1) | - |
+| P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); fix install-device.sh matching "unavailable" devices | ios/ | in flight | - |
 | P3.5 | Golf-themed visual design for the app | ios/ | queued (after P3.4) | - |
 
 ## Task in flight
 
-- P3.1 (subagent, branch `test/ios-setup-validation-and-delete`)
+- P3.4 (subagent, branch `feat/ios-venmo-and-history`)
 
 ## Open PRs
 
@@ -75,8 +75,7 @@ Last updated: 2026-09-29
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi); it is paired but unavailable while @gillzj00 is away. `ios/scripts/install-device.sh` currently treats an "unavailable" device as connected; fix is part of P3.4.
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
-- Not exercised by any test yet: validation messages in the setup flow, rounds list delete.
-- Demo verification: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
+- Demo verification (as of #39: 83 unit tests and 6 UI tests, including setup validation and round delete with a relaunch). Earlier: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
