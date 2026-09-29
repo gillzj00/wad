@@ -59,29 +59,38 @@ struct RoundSetupView: View {
 
     private var form: some View {
         Form {
-            switch step {
-            case .course: CourseStepView(draft: $draft)
-            case .players: PlayersStepView(draft: $draft)
-            case .games: GamesStepView(draft: $draft)
+            Group {
+                switch step {
+                case .course: CourseStepView(draft: $draft)
+                case .players: PlayersStepView(draft: $draft)
+                case .games: GamesStepView(draft: $draft)
+                }
             }
+            .themedRows()
 
             if showsIssues, !issues.isEmpty {
-                Section("To fix") {
+                Section {
                     ForEach(Array(issues.enumerated()), id: \.element) { offset, issue in
-                        Label(issue.message, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
+                        Label(issue.message, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Theme.Palette.flagRed)
                             .accessibilityElement(children: .ignore)
                             .accessibilityLabel(issue.message)
                             .accessibilityIdentifier("setup.issue.\(offset + 1)")
                     }
+                    .listRowBackground(WarningRowBackground())
+                } header: {
+                    SectionHeader("To fix", systemImage: "exclamationmark.triangle.fill")
                 }
             }
 
             // After what is to fix, which the form scrolls to.
             if step == .players {
                 VenmoHandlesStepView(draft: $draft)
+                    .themedRows()
             }
         }
+        .themedList()
+        .safeAreaInset(edge: .top, spacing: 0) { SetupProgress(step: step) }
         .navigationTitle(step.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -145,6 +154,31 @@ struct RoundSetupView: View {
     }
 }
 
+/// Where the group is in the setup: course, players, games.
+struct SetupProgress: View {
+    let step: SetupStep
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.s) {
+            ForEach(SetupStep.allCases, id: \.self) { other in
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    Capsule()
+                        .fill(other.rawValue <= step.rawValue ? Theme.Palette.fairway : Theme.Palette.rule)
+                        .frame(height: 4)
+                    Text(other.title)
+                        .font(.caption.weight(other == step ? .bold : .regular))
+                        .foregroundStyle(other == step ? Theme.Palette.ink : Theme.Palette.inkSecondary)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, Theme.Spacing.s)
+        .background(Theme.Palette.sand)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Step \(step.rawValue + 1) of \(SetupStep.allCases.count): \(step.title)")
+    }
+}
+
 // MARK: - Course
 
 struct CourseStepView: View {
@@ -160,8 +194,10 @@ struct CourseStepView: View {
                 .accessibilityIdentifier("setup.courseName")
             NumberRow(title: "Rating", prompt: "Optional", text: $draft.ratingText, keyboard: .decimalPad)
             NumberRow(title: "Slope", prompt: "Optional", text: $draft.slopeText, keyboard: .numberPad)
+        } header: {
+            SectionHeader("Course", systemImage: "map")
         } footer: {
-            Text("With a rating and slope, course handicaps are computed from each player's handicap index.")
+            SectionFooter("With a rating and slope, course handicaps are computed from each player's handicap index.")
         }
 
         Section {
@@ -187,13 +223,15 @@ struct CourseStepView: View {
                 Text("Par").frame(maxWidth: .infinity)
                 Text("Stroke index").frame(width: 100, alignment: .trailing)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.Palette.inkSecondary)
 
             ForEach($draft.holes) { $hole in
                 HStack {
                     Text("\(hole.number)")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
                         .monospacedDigit()
+                        .foregroundStyle(Theme.Palette.fairway)
                         .frame(width: 40, alignment: .leading)
                     Picker("Par", selection: $hole.par) {
                         ForEach(Array(RoundDraft.parRange), id: \.self) { Text("\($0)").tag($0) }
@@ -213,12 +251,12 @@ struct CourseStepView: View {
             }
             .environment(\.defaultMinListRowHeight, 38)
         } header: {
-            Text("Holes")
+            SectionHeader("Holes", systemImage: "flag.fill")
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Par \(draft.totalPar): out \(par(of: 1...9)), in \(par(of: 10...18)). Stroke index 1 is the hardest hole.")
+                SectionFooter("Par \(draft.totalPar): out \(par(of: 1...9)), in \(par(of: 10...18)). Stroke index 1 is the hardest hole.")
                 if !draft.unusedStrokeIndexes.isEmpty, draft.unusedStrokeIndexes.count < RoundDraft.holeCount {
-                    Text("Not used yet: \(draft.unusedStrokeIndexes.map(String.init).joined(separator: ", "))")
+                    SectionFooter("Not used yet: \(draft.unusedStrokeIndexes.map(String.init).joined(separator: ", "))")
                 }
             }
         }
@@ -280,7 +318,7 @@ struct PlayersStepView: View {
                     .accessibilityIdentifier("setup.player.\(number(of: player)).remove")
                 }
             } header: {
-                Text("Player \(number(of: player))")
+                SectionHeader("Player \(number(of: player))", systemImage: "person.fill")
             }
         }
 
@@ -292,9 +330,9 @@ struct PlayersStepView: View {
             .disabled(draft.players.count >= RoundDraft.playerCountRange.upperBound)
         } footer: {
             if let tee = draft.tee {
-                Text("Course handicaps use rating \(SetupText.display(handicapIndex: tee.courseRating)), slope \(tee.slope) and par \(tee.par). Write a plus handicap with a leading +.")
+                SectionFooter("Course handicaps use rating \(SetupText.display(handicapIndex: tee.courseRating)), slope \(tee.slope) and par \(tee.par). Write a plus handicap with a leading +.")
             } else {
-                Text("The course has no rating and slope, so enter each player's course handicap for the round. Write a plus handicap with a leading +.")
+                SectionFooter("The course has no rating and slope, so enter each player's course handicap for the round. Write a plus handicap with a leading +.")
             }
         }
     }
@@ -351,9 +389,9 @@ struct VenmoHandlesStepView: View {
                 }
             }
         } header: {
-            Text("Venmo handles")
+            SectionHeader("Venmo handles", systemImage: "at")
         } footer: {
-            Text("Optional, to pay or request with Venmo when the round is settled. They can be added later too.")
+            SectionFooter("Optional, to pay or request with Venmo when the round is settled. They can be added later too.")
         }
     }
 
@@ -382,25 +420,25 @@ struct GamesStepView: View {
             AmountRow(title: "Start value", identifier: "setup.amount.wadStart", text: $draft.wadStartText)
             AmountRow(title: "Step", identifier: "setup.amount.wadStep", text: $draft.wadStepText)
         } header: {
-            Text("Wad")
+            SectionHeader("Wad", systemImage: "banknote")
         } footer: {
-            Text("The first qualifying putt takes the Wad at the start value. Every make after that adds the step.")
+            SectionFooter("The first qualifying putt takes the Wad at the start value. Every make after that adds the step.")
         }
 
         Section {
             AmountRow(title: "Per skin", identifier: "setup.amount.skins", text: $draft.skinsBaseText)
         } header: {
-            Text("Skins")
+            SectionHeader("Skins", systemImage: "dollarsign.circle")
         } footer: {
-            Text("Net skins. A pushed hole carries its value to the next hole.")
+            SectionFooter("Net skins. A pushed hole carries its value to the next hole.")
         }
 
         Section {
             AmountRow(title: "Per greenie", identifier: "setup.amount.greenies", text: $draft.greeniesAmountText)
         } header: {
-            Text("Greenies")
+            SectionHeader("Greenies", systemImage: "flag.fill")
         } footer: {
-            Text("Par 3s only. Every amount is collected from each other player.")
+            SectionFooter("Par 3s only. Every amount is collected from each other player.")
         }
     }
 }
@@ -435,7 +473,7 @@ struct AmountRow: View {
     var body: some View {
         LabeledContent(title) {
             HStack(spacing: 2) {
-                Text("$").foregroundStyle(.secondary)
+                Text("$").foregroundStyle(Theme.Palette.inkSecondary)
                 TextField("0.00", text: $text)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)

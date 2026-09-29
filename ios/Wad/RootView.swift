@@ -20,8 +20,9 @@ struct PlaceholderView: View {
 
     var body: some View {
         NavigationStack {
-            ContentUnavailableView(title, systemImage: "hammer", description: Text(message))
+            EmptyStateView(title: title, message: message)
                 .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

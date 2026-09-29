@@ -20,11 +20,19 @@ targets:
     platform: iOS
     sources:
       - Wad
+    # Only what the INFOPLIST_KEY_ build settings cannot say: the launch
+    # screen's background color. The rest of the Info.plist is generated.
+    info:
+      path: Wad/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: Sand
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gillzj00.wad
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"

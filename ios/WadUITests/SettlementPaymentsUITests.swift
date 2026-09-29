@@ -265,11 +265,14 @@ final class SettlementPaymentsUITests: XCTestCase {
         XCTAssertTrue(isReachable(element), "\(element) cannot be reached")
     }
 
-    /// On screen, and not under the scoring screen's bottom bar.
+    /// On screen, and not under the scoring screen's bottom bar or its strip of
+    /// holes at the top.
     private func isReachable(_ element: XCUIElement) -> Bool {
         guard element.exists, element.isHittable else { return false }
         let next = app.buttons["scoring.next"]
-        return !next.exists || element.frame.maxY <= next.frame.minY - 8
+        guard next.exists else { return true }
+        let strip = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'scoring.jump.'")).firstMatch
+        return element.frame.maxY <= next.frame.minY - 8 && element.frame.minY >= strip.frame.maxY + 8
     }
 
     private func waitUntil(timeout: TimeInterval = 5, _ condition: @escaping () -> Bool) -> Bool {

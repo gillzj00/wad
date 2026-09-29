@@ -35,5 +35,63 @@ enum DebugRounds {
         round.hole(3)?.greenieWinnerID = "alex"
         return round
     }
+
+    /// A finished round with every kind of score, from an eagle to a double
+    /// bogey, and no carryover left: Jo wins the last hole. The sample course
+    /// and its four players. On hole 7, a par 5, Zach makes a birdie, Sam a
+    /// bogey, Alex a double bogey and Jo an eagle.
+    static func showcase(using bridge: EngineBridge, startedAt: Date = .now) throws -> Round {
+        var draft = RoundDraft.sample
+        draft.players[0].venmoHandleText = "@zach-golf"
+        draft.players[3].venmoHandleText = "jo-birdies"
+        let round = try draft.makeRound(using: bridge, startedAt: startedAt)
+
+        // Strokes over or under par, hole by hole, in the order of the players.
+        let toPar = [
+            [1, 0, 0, 1, 2, 0, -1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 2, 1],
+            [0, -1, 0, 0, 1, 0, 1, 0, -1, 1, 0, 0, 0, -1, 0, 1, 0, 0],
+            [1, 1, 1, 0, 2, 1, 2, 2, 1, 1, 0, 1, 2, 0, 1, 1, 1, 1],
+            [0, 0, -1, 0, 0, 0, -2, 0, 0, -1, 0, -1, 0, 0, 0, 0, -1, -1],
+        ]
+        for (player, strokes) in zip(round.orderedPlayers, toPar) {
+            for hole in round.orderedHoles {
+                round.setGross(hole.par + strokes[hole.number - 1], playerID: player.playerID, hole: hole.number)
+            }
+        }
+        let ids = round.orderedPlayers.map(\.playerID)
+        round.hole(2)?.wadMakerIDs = [ids[1]]
+        round.hole(5)?.wadMakerIDs = [ids[3], ids[0]]
+        round.hole(12)?.wadMakerIDs = [ids[2]]
+        round.hole(3)?.greenieWinnerID = ids[3]
+        round.hole(11)?.greenieWinnerID = ids[1]
+        return round
+    }
+
+    /// A round that is being played: seven holes scored.
+    static func inProgress(using bridge: EngineBridge, startedAt: Date = .now) throws -> Round {
+        var draft = RoundDraft.sample
+        draft.courseName = "Morning Links"
+        draft.players.removeLast()
+        let round = try draft.makeRound(using: bridge, startedAt: startedAt)
+        let toPar = [[1, 0, 1, 0, 2, 0, 0], [0, 0, -1, 1, 0, 0, 1], [1, 2, 0, 1, 1, 1, 0]]
+        for (player, strokes) in zip(round.orderedPlayers, toPar) {
+            for (offset, stroke) in strokes.enumerated() {
+                guard let hole = round.hole(offset + 1) else { continue }
+                round.setGross(hole.par + stroke, playerID: player.playerID, hole: hole.number)
+            }
+        }
+        return round
+    }
+
+    /// The rounds of `-debugSeedRound gallery`: one being played, a finished
+    /// one and, the oldest, the one with the unresolved carryover.
+    static func gallery(using bridge: EngineBridge, startedAt: Date = .now) throws -> [Round] {
+        let day: TimeInterval = 24 * 60 * 60
+        return [
+            try inProgress(using: bridge, startedAt: startedAt),
+            try showcase(using: bridge, startedAt: startedAt - 2 * day),
+            try finalPush(using: bridge, startedAt: startedAt - 9 * day),
+        ]
+    }
 }
 #endif

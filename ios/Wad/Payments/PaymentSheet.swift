@@ -32,38 +32,48 @@ struct PaymentSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(payment.fromName) pays \(payment.toName)")
-                            .font(.title3.weight(.semibold))
+                            .font(Theme.Typography.cardTitle)
+                            .foregroundStyle(Theme.Palette.onGreen)
                         Text(ScoringText.dollars(payment.amountCents))
-                            .font(.largeTitle.bold())
+                            .font(Theme.Typography.moneyLarge)
                             .monospacedDigit()
+                            .foregroundStyle(Theme.Palette.goldOnGreen)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(summary)
                     .accessibilityIdentifier("payment.summary")
+                    .emphasizedRows()
 
                     Label(PaymentText.state(transfer), systemImage: transfer.isPaid ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(transfer.isPaid ? .green : .secondary)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(transfer.isPaid ? Theme.Palette.fairway : Theme.Palette.inkSecondary)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(PaymentText.state(transfer))
                         .accessibilityIdentifier("payment.state")
+                        .themedRows()
                 }
 
-                if canPay {
-                    venmo
-                }
-                marking
-
-                #if DEBUG
-                if opener.stub != nil {
-                    Section("Debug: links opened") {
-                        Text(opener.recorded.last?.absoluteString ?? "None")
-                            .font(.caption.monospaced())
-                            .accessibilityIdentifier("debug.openedLink")
+                Group {
+                    if canPay {
+                        venmo
                     }
+                    marking
+
+                    #if DEBUG
+                    if opener.stub != nil {
+                        Section("Debug: links opened") {
+                            Text(opener.recorded.last?.absoluteString ?? "None")
+                                .font(.caption.monospaced())
+                                .accessibilityIdentifier("debug.openedLink")
+                        }
+                    }
+                    #endif
                 }
-                #endif
+                .themedRows()
             }
+            .themedList()
             .navigationTitle("Payment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -108,9 +118,9 @@ struct PaymentSheet: View {
             venmoAction(.pay, title: "Pay with Venmo", systemImage: "arrow.up.right.circle")
             venmoAction(.request, title: "Request with Venmo", systemImage: "arrow.down.left.circle")
         } header: {
-            Text("Venmo")
+            SectionHeader("Venmo")
         } footer: {
-            Text("Venmo opens with the amount filled in, and the payment is made there. Wad never moves money.")
+            SectionFooter("Venmo opens with the amount filled in, and the payment is made there. Wad never moves money.")
         }
     }
 
@@ -128,7 +138,7 @@ struct PaymentSheet: View {
                         .font(.headline)
                     Text(detail)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.Palette.inkSecondary)
                 }
             } icon: {
                 Image(systemName: systemImage)
@@ -164,7 +174,7 @@ struct PaymentSheet: View {
             }
         } footer: {
             if !transfer.isPaid, settlement.isReadyForPayment {
-                Text("For a payment made in cash or any other way.")
+                SectionFooter("For a payment made in cash or any other way.")
             }
         }
     }

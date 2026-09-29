@@ -15,14 +15,17 @@ struct SettlementView: View {
         List {
             if let settlement {
                 let paymentStatus = PaymentStatus(settlement: settlement, records: round.paidRecords)
-                status(settlement)
-                payments(settlement, status: paymentStatus)
-                stalePayments(paymentStatus)
-                positions(settlement)
-                games(settlement)
-                skins(settlement)
-                wad(settlement)
-                greenies(settlement)
+                Group {
+                    status(settlement)
+                    payments(settlement, status: paymentStatus)
+                    stalePayments(paymentStatus)
+                    positions(settlement)
+                    games(settlement)
+                    skins(settlement)
+                    wad(settlement)
+                    greenies(settlement)
+                }
+                .themedRows()
             } else {
                 Section {
                     StatusLineView(line: StatusLine(
@@ -32,8 +35,10 @@ struct SettlementView: View {
                     ))
                     .accessibilityIdentifier("settlement.failed")
                 }
+                .themedRows()
             }
         }
+        .themedList()
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
@@ -59,32 +64,37 @@ struct SettlementView: View {
         if let carryover = settlement.unresolvedSkinsCarryoverCents {
             let line = SettlementText.unresolvedCarryover(cents: carryover, lastHole: settlement.lastHole)
             Section {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Label {
                         Text(line.title)
                             .font(.headline)
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill")
                     }
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.Palette.flagRed)
                     Text(line.detail ?? "")
                         .font(.subheadline)
+                        .foregroundStyle(Theme.Palette.ink)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
+                .padding(.leading, 6)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel([line.title, line.detail].compactMap { $0 }.joined(separator: ". "))
                 .accessibilityIdentifier("settlement.carryover")
+                .listRowBackground(WarningRowBackground())
             }
         }
 
         if !settlement.unpaidGreenies.isEmpty {
-            Section("Needs fixing") {
+            Section {
                 ForEach(settlement.unpaidGreenies, id: \.hole) { greenie in
                     NavigationLink(value: RoundsRoute.scoringHole(round, greenie.hole)) {
                         StatusLineView(line: SettlementText.unpaidGreenie(greenie, name: settlement.name))
                     }
                     .accessibilityIdentifier("settlement.fix.greenie.\(greenie.hole)")
                 }
+            } header: {
+                SectionHeader("Needs fixing", systemImage: "wrench.adjustable")
             }
         }
     }
@@ -93,15 +103,17 @@ struct SettlementView: View {
         Section {
             if status.isAllSettled {
                 Label("All settled", systemImage: "checkmark.seal.fill")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.green)
+                    .font(Theme.Typography.cardTitle)
+                    .foregroundStyle(Theme.Palette.goldOnGreen)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("All settled")
                     .accessibilityIdentifier("settlement.allSettled")
             }
             if settlement.payments.isEmpty {
                 Text(SettlementText.noPayments(settlement))
-                    .font(.title3.weight(.semibold))
+                    .font(Theme.Typography.cardTitle)
+                    .foregroundStyle(Theme.Palette.onGreen)
+                    .padding(.vertical, Theme.Spacing.xs)
                     .accessibilityIdentifier("settlement.noPayments")
             }
             ForEach(status.transfers) { transfer in
@@ -127,16 +139,17 @@ struct SettlementView: View {
                 }
             }
         } header: {
-            Text(SettlementText.paymentsHeader(settlement))
+            SectionHeader(SettlementText.paymentsHeader(settlement), systemImage: "arrow.left.arrow.right")
         } footer: {
             if !settlement.isFinal {
-                Text("Provisional: nothing is owed until the round is finished.")
+                SectionFooter("Provisional: nothing is owed until the round is finished.")
             } else if !status.isReadyForPayment {
-                Text("Payments can be made once what needs fixing is fixed.")
+                SectionFooter("Payments can be made once what needs fixing is fixed.")
             } else if !settlement.payments.isEmpty {
-                Text("Tap a payment to pay or request it with Venmo, or to mark it paid. Wad never moves money.")
+                SectionFooter("Tap a payment to pay or request it with Venmo, or to mark it paid. Wad never moves money.")
             }
         }
+        .emphasizedRows()
     }
 
     @ViewBuilder
@@ -157,33 +170,40 @@ struct SettlementView: View {
                     .accessibilityIdentifier("settlement.stale.\(offset + 1).remove")
                 }
             } header: {
-                Text("Recorded before a correction")
+                SectionHeader("Recorded before a correction")
             } footer: {
-                Text("The scores changed after these payments were marked paid. Settle the difference, then remove them.")
+                SectionFooter("The scores changed after these payments were marked paid. Settle the difference, then remove them.")
             }
         }
     }
 
     private func positions(_ settlement: RoundSettlement) -> some View {
-        Section(settlement.isFinal ? "Net position" : "Net position (provisional)") {
+        Section {
             ForEach(settlement.players) { player in
                 HStack {
                     Text(player.name)
+                        .font(.body.weight(.medium))
                     Spacer(minLength: 8)
-                    Text(SettlementText.position(player.netCents))
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(color(player.netCents))
+                    MoneyLabel(
+                        text: SettlementText.position(player.netCents),
+                        cents: player.netCents,
+                        font: .system(.body, design: .rounded, weight: .semibold)
+                    )
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(player.name): \(SettlementText.position(player.netCents))")
                 .accessibilityIdentifier("settlement.position.\(player.name)")
             }
+        } header: {
+            SectionHeader(
+                settlement.isFinal ? "Net position" : "Net position (provisional)",
+                systemImage: "plusminus"
+            )
         }
     }
 
     private func games(_ settlement: RoundSettlement) -> some View {
-        Section(settlement.isFinal ? "By game" : "By game (provisional)") {
+        Section {
             HStack(spacing: 0) {
                 Text("").frame(maxWidth: .infinity, alignment: .leading)
                 amountCell("Skins")
@@ -191,7 +211,7 @@ struct SettlementView: View {
                 amountCell("Greenies")
             }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Theme.Palette.inkSecondary)
             .accessibilityHidden(true)
 
             ForEach(settlement.players) { player in
@@ -209,6 +229,8 @@ struct SettlementView: View {
                 .accessibilityLabel(SettlementText.games(player))
                 .accessibilityIdentifier("settlement.games.\(player.name)")
             }
+        } header: {
+            SectionHeader(settlement.isFinal ? "By game" : "By game (provisional)", systemImage: "tablecells")
         }
     }
 
@@ -222,17 +244,17 @@ struct SettlementView: View {
                 .accessibilityIdentifier("settlement.skins.\(hole.hole)")
             }
         } header: {
-            Text("Skins")
+            SectionHeader("Skins", systemImage: "dollarsign.circle")
         } footer: {
             if let carryover = settlement.unresolvedSkinsCarryoverCents {
-                Text("\(ScoringText.dollars(carryover)) is unresolved after hole \(settlement.lastHole) and is not paid out.")
+                SectionFooter("\(ScoringText.dollars(carryover)) is unresolved after hole \(settlement.lastHole) and is not paid out.")
             }
         }
     }
 
     private func wad(_ settlement: RoundSettlement) -> some View {
         ForEach(settlement.wadInstances, id: \.segment) { instance in
-            Section(instance.segment == .front ? "Wad, front nine" : "Wad, back nine") {
+            Section {
                 StatusLineView(line: ScoringText.wad(instance, makesOnHole: [], name: settlement.name))
                     .accessibilityIdentifier("settlement.wad.\(instance.segment.rawValue)")
                 ForEach(Array(instance.makes.enumerated()), id: \.offset) { offset, make in
@@ -241,15 +263,17 @@ struct SettlementView: View {
                         .monospacedDigit()
                         .accessibilityIdentifier("settlement.wad.\(instance.segment.rawValue).make.\(offset + 1)")
                 }
+            } header: {
+                SectionHeader(instance.segment == .front ? "Wad, front nine" : "Wad, back nine", systemImage: "banknote")
             }
         }
     }
 
     private func greenies(_ settlement: RoundSettlement) -> some View {
-        Section("Greenies") {
+        Section {
             if settlement.greenieHoles.isEmpty {
                 Text("The course has no par 3.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.Palette.inkSecondary)
             }
             ForEach(settlement.greenieHoles, id: \.hole) { hole in
                 HoleLineRow(
@@ -258,6 +282,8 @@ struct SettlementView: View {
                 )
                 .accessibilityIdentifier("settlement.greenie.\(hole.hole)")
             }
+        } header: {
+            SectionHeader("Greenies", systemImage: "flag.fill")
         }
     }
 
@@ -271,8 +297,7 @@ struct SettlementView: View {
     }
 
     private func color(_ cents: Int) -> Color {
-        if cents > 0 { return .green }
-        return cents < 0 ? .red : .secondary
+        Theme.Palette.money(cents: cents)
     }
 }
 
@@ -329,13 +354,16 @@ private struct PaymentRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(transfer.payment.fromName) pays \(transfer.payment.toName)")
-                    .font(.title3.weight(.semibold))
-                Spacer(minLength: 8)
-                Text(ScoringText.dollars(transfer.payment.amountCents))
-                    .font(.title3.weight(.bold))
-                    .monospacedDigit()
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    who
+                    Spacer(minLength: 8)
+                    amount
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    who
+                    amount
+                }
             }
             if showsState {
                 HStack {
@@ -343,15 +371,41 @@ private struct PaymentRow: View {
                         PaymentText.state(transfer),
                         systemImage: transfer.isPaid ? "checkmark.circle.fill" : "circle"
                     )
-                    .foregroundStyle(transfer.isPaid ? .green : .secondary)
+                    .foregroundStyle(transfer.isPaid ? Theme.Palette.goldOnGreen : Theme.Palette.onGreen.opacity(0.85))
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Theme.Palette.onGreen.opacity(0.7))
                 }
                 .font(.subheadline)
             }
         }
+        .padding(.vertical, Theme.Spacing.xs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(Theme.Palette.onGreen)
         .contentShape(Rectangle())
+    }
+
+    private var who: some View {
+        Text("\(transfer.payment.fromName) pays \(transfer.payment.toName)")
+            .font(Theme.Typography.cardTitle)
+    }
+
+    private var amount: some View {
+        Text(ScoringText.dollars(transfer.payment.amountCents))
+            .font(Theme.Typography.money)
+            .monospacedDigit()
+            .foregroundStyle(Theme.Palette.goldOnGreen)
+    }
+}
+
+/// Behind a row that warns: the card with a red tint and a red edge.
+struct WarningRowBackground: View {
+    var body: some View {
+        Theme.Palette.card
+            .overlay(Theme.Palette.flagRed.opacity(0.12))
+            .overlay(alignment: .leading) {
+                Theme.Palette.flagRed.frame(width: 6)
+            }
     }
 }
 
@@ -363,10 +417,10 @@ struct HoleLineRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text("\(hole)")
-                .font(.subheadline.weight(.semibold))
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 24, alignment: .trailing)
+                .foregroundStyle(Theme.Palette.fairway)
+                .frame(minWidth: 24, alignment: .trailing)
             StatusLineView(line: line)
         }
         .accessibilityElement(children: .ignore)
