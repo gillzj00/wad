@@ -30,9 +30,21 @@ Last updated: 2026-09-29
 | M5.1 | Settlement API (code and tests; not deployed) | done | #30 |
 | M3.1b | Per-round handicap override route (code and tests; not deployed) | done | #32 |
 
+## Phase 3 task list (approved by @gillzj00 on 2026-09-29)
+
+| # | Task | Touches | State | PR |
+| --- | --- | --- | --- | --- |
+| P3.1 | UI tests for setup validation and round delete | ios/ | in flight | - |
+| P3.2 | M1.2 profile API handler (code and tests only; no auth infra, no deploy) | backend/ | in flight | - |
+| P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | in flight | - |
+| P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); fix install-device.sh matching "unavailable" devices | ios/ | queued (after P3.1) | - |
+| P3.5 | Golf-themed visual design for the app | ios/ | queued (after P3.4) | - |
+
 ## Task in flight
 
-- none (waiting on @gillzj00 to choose what to queue next)
+- P3.1 (subagent, branch `test/ios-setup-validation-and-delete`)
+- P3.2 (subagent, branch `feat/profile-api`)
+- P3.3 (subagent, branch `docs/side-game-research`)
 
 ## Open PRs
 
@@ -50,10 +62,8 @@ Last updated: 2026-09-29
 
 ## Questions waiting on @gillzj00
 
-- Which iOS version is on the phone? (asked 2026-09-29) Local verification is on iOS 26 and CI on iOS 18; iOS 17 is untested.
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
-- What to queue after Phase 2 (asked 2026-09-29). Candidates that need no Apple enrollment and no deploy: M1.2 profile API handler (code only); wiring the demo app's settlement to Venmo deep links (M5.2, local only); a round history screen in the demo app; test coverage for setup validation and round delete.
 - Handicap override choices to confirm (#32): any player in the round may set or clear any player's override; whole numbers from -10 to 54; the round response shows the effective course handicap plus `courseHandicapOverride`.
 - M5.1 choices to confirm (implemented and documented in #30): settlement is provisional until every hole is scored and there are no issues; marking paid is refused until then (409); payer or payee may mark paid/unpaid, any player for a guest's transfer; an unresolved skins carryover is exposed and does not block final; a transfer id is derived from round, payer, payee and amount so a score correction makes old paid markers stale instead of moving them.
 - M3.1 choices to confirm (docs were silent; implemented and documented in #26): 9-hole rounds rejected with 400 (Open Question 3 unresolved); 4-player cap enforced, 2-player minimum not enforced at the API; creating or joining needs a profile with display name and handicap index (409 otherwise; assumes the M1.2 attribute names); on a tee without rating/slope the course handicap and ticks are null (no per-round override in the API yet); course must already be stored; join codes are 6 characters and valid 48 hours; joining is not blocked by round status or existing scores.
@@ -62,6 +72,8 @@ Last updated: 2026-09-29
 
 ## Known gaps
 
+- The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
+- Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi); it is paired but unavailable while @gillzj00 is away. `ios/scripts/install-device.sh` currently treats an "unavailable" device as connected; fix is part of P3.4.
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
 - Not exercised by any test yet: validation messages in the setup flow, rounds list delete.
 - Demo verification: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
