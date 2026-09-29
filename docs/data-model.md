@@ -17,16 +17,20 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross strokes for one hole. |
 | Hole events | `ROUND#<roundId>` | `HOLE#<hole:02d>` | Group-level facts for one hole (see below). Any participant can edit. |
 | Game config | `ROUND#<roundId>` | `GAME#<gameType>` | Reserved. Game settings currently live in `games` on the round item; nothing writes this item. |
-| Game state | `ROUND#<roundId>` | `STATE#<gameType>#<segment>` | Derived/checkpointed engine state (e.g. Wad holder+value per nine). Rebuildable from scores. |
+| Game state | `ROUND#<roundId>` | `STATE#<gameType>#<segment>` | Reserved. Game state is computed by the engines on every read; nothing writes this item. |
 | Settlement | `ROUND#<roundId>` | `SETTLEMENT` | Final net positions and pairwise transfers with paid/unpaid status. |
 | WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. |
 | Join code | `JOINCODE#<code>` | `ROUND` | Maps a short code to a `roundId`. Has `ttl` (48 hours after the round is created); also checked on read. |
 
-Hole score item: `gross` — integer strokes for that player on that hole.
+Hole score item: `userId`, `hole` and `gross` — integer strokes for that player on that hole. Clearing a score deletes the item.
 
 Hole events item (group facts, consumed by engines; see `docs/domain-model.md`):
+- `hole` — the hole number.
 - `wadMakers` — ordered list of user ids whose first putt on the green was holed from at least a flagstick's length, in the order made. Empty when nobody qualified. A user appears at most once.
-- `greenieWinner` — user id or null; par 3s only. Must be a player who scored par or better on the hole.
+- `greenieWinner` — user id or null; par 3s only. Must be a player who scored par or better on the hole. The winner can be recorded before their score, and the score can be corrected afterwards, so the stored winner is not proof of a paid greenie: the engine decides.
+- Either field can be absent when only the other has been set; an absent `wadMakers` reads as empty and an absent `greenieWinner` as null.
+
+Both items also carry `updatedAt` (ISO timestamp) and `updatedBy` (the caller's user id) from the last write.
 
 ## Access patterns
 
@@ -50,7 +54,8 @@ so a user's rounds list newest-first without a scan. `startEpoch` is when the ro
 
 ## Consistency & derivation
 
-- **Scores and hole events are the source of truth.** Game state items (`STATE#...`) and the settlement item are **derived** from scores + hole events + game config by the pure engines. They are cached for fast reads and live updates, but must be reproducible by replaying the engines over the inputs. A "recompute round" operation should always be safe.
+- **Scores and hole events are the source of truth.** Game state and the settlement are **derived** from scores + hole events + game config by the pure engines. Game state is not stored: it is computed when a round is read, so it cannot go stale and a "recompute round" operation is always safe. If state is ever cached in `STATE#...` items it must stay reproducible by replaying the engines over the inputs.
+- **Score and hole event writes are unconditional, last writer wins** (ADR-0004). Each player's score on a hole is its own item, written with a put (or a delete to clear it), so players scoring the same hole at the same time never overwrite each other and a repeated write is harmless. Hole events are written with an update that sets only the fields sent, so the wad makers and the greenie winner of a hole are last-writer-wins separately.
 - **Money is integer cents** everywhere it is stored.
 - **Round writes are conditional transactions.** Creating a round writes the join code, the round and the creator's player item together, each with `attribute_not_exists(PK)`; a join code collision cancels the write and it is retried with a new code. Adding a player increments `playerCount` on the round with the condition `playerCount < 4` and puts the player item with `attribute_not_exists(PK)`, so concurrent joins cannot exceed four players or add someone twice.
 - **TTL** auto-expires `CONN#` items (short, e.g. a few hours) and `JOINCODE#` items (48 hours after the round is created).

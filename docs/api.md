@@ -33,7 +33,7 @@ Base path: `/v1`.
   - Amounts are non-negative integer cents (`400 invalid_amount`). An amount left out of an included game takes its default: skins 500, wad 700 start and 200 step, greenies 500. `games` is required and may be `{}`; an unknown game is `400 unknown_game`.
   - `holes: 9` is rejected with `400 nine_hole_rounds_unsupported` until the 9-hole handicap rule is decided (domain model, Open Question 3).
   - The course must already be cached (`404 course_not_found`) and have the tee (`404 tee_not_found`). The tee needs 18 holes with valid stroke indexes (`400 tee_not_usable`). The round keeps its own copy of the tee, so later course corrections do not change a round.
-- `GET /rounds/{roundId}` -> `{ round }`: meta, players, scores and hole events. Players only (`403 not_a_participant`); `404 round_not_found`. The current game state (`state` below) is added with the scoring API.
+- `GET /rounds/{roundId}` -> `{ round }`: meta, players, scores and hole events. Players only (`403 not_a_participant`); `404 round_not_found`. `state` is the current game state, computed by the engines on every read (see Game state).
 - `POST /rounds/join` -> `{ joinCode }` joins the caller to a round and returns `200 { round }`. Joining again is a no-op that returns the round. `404 join_code_not_found` for an unknown or expired code, `409 round_full` when the round already has 4 players.
 - `POST /rounds/{roundId}/players` -> add a guest/non-app player `{ displayName, handicapIndex }`; `201 { round, player }`. Players only. `displayName` is at most 40 characters. Guests count toward the 4 players (`409 round_full`) and get a server-generated `userId` starting `guest_`.
 - Join codes are 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0/O or 1/I/L). Input is case-insensitive and may contain spaces or hyphens. A code works for 48 hours after the round is created.
@@ -42,15 +42,30 @@ Base path: `/v1`.
 - `courseHandicap` is computed from the handicap index and the tee's rating, slope and par. It is `null` when the tee has no rating and slope, until it is set with the per-round override. `ticksByHole` lists only the holes where the player gets ticks, and is `null` until every player has a course handicap.
 - A body that is missing or not JSON is `400 invalid_json`; a missing or mistyped field is `400 invalid_body`.
 - `PUT /rounds/{roundId}/players/{userId}/handicap` -> per-round handicap override `{ courseHandicap }` (null clears it)
-- `PUT /rounds/{roundId}/scores` -> upsert a gross score for a hole: `{ hole, gross, userId? }`. `userId` defaults to the caller; any participant may set a guest player's score.
-- `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers: [userId, ...], greenieWinner: userId | null }`. `wadMakers` is ordered by when the putts were made. `greenieWinner` is only valid on par 3s and must have scored par or better.
+- `PUT /rounds/{roundId}/scores` -> upsert a gross score for a hole: `{ hole, gross, userId? }`; `200 { round }`. `userId` defaults to the caller; any participant may set a guest player's score.
+  - `hole` is a whole number 1-18 (`400 invalid_hole`). `gross` is a whole number 1-20 (`400 invalid_gross`), or `null` to clear the score. `userId` must be a player in the round (`400 unknown_player`).
+  - A player sets only their own score; setting or clearing another member's is `403 not_score_owner`.
+  - Each player's score on a hole is its own item and the last write wins, so writing the same score again changes nothing and players scoring the same hole at once do not affect each other.
+- `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers?: [userId, ...], greenieWinner?: userId | null }`; `200 { round }`. Any participant may. `wadMakers` is ordered by when the putts were made.
+  - Send either field or both (`400 invalid_body` for neither). Only the fields sent are written, and the last write wins per field, so one device setting the greenie does not undo the wad makers another device set.
+  - `{hole}` is 1-18 (`400 invalid_hole`). `wadMakers` has at most 4 ids, each a player in the round (`400 unknown_player`) and listed once (`400 duplicate_wad_maker`); `[]` clears it.
+  - `greenieWinner` must be a player in the round (`400 unknown_player`) and the hole a par 3 (`400 not_a_par_three`); `null` clears it. A winner whose stored score on the hole is over par is rejected (`400 greenie_winner_over_par`). A winner with no score yet is accepted, because scores and hole events can arrive in any order; the greenie is `pending` in `state` until the score arrives, and `invalid` (not paid) if that score, or a later correction, is over par.
 - `GET /rounds/{roundId}/settlement` -> net positions + pairwise transfers (at most one fewer than the players with a non-zero balance)
 - `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid
-- `POST /rounds/{roundId}/recompute` -> re-derive game state and settlement from scores and hole events
+- `POST /rounds/{roundId}/recompute` -> `200 { state }`: re-derive the game state from the stored scores and hole events. No body. Players only. State is not stored, so this writes nothing and returns the same `state` as `GET /rounds/{roundId}`; settlement is re-derived by the settlement API.
+
+### Game state
+
+`state` is what the engines in `backend/src/engines` return, unchanged (`RoundState` in `backend/src/shared/rounds.ts`). A game that is not enabled is left out.
+
+- `skins`: `{ holes, deltas, complete, carryOutCents }`, or `null` until every player has a course handicap. Each hole has `status` (`won`, `pushed` or `pending`), `carriedInCents`, `atStakeCents`, `winnerUserId` and `net`. A hole is `pending` while it, or an earlier hole, is missing a score. When `complete` is true and `carryOutCents` is not zero, the last hole was pushed: that carryover is unresolved and is **not paid** (domain model, Open Question 1).
+- `wad`: `{ instances, deltas, ignored }` with one instance per nine (`segment` `front` or `back`): `holderUserId`, `valueCents`, `makes` and `complete`. The holder is paid in `deltas` once every player has a score on the nine's last hole.
+- `greenies`: `{ holes, deltas }` with one entry per par 3: `winnerUserId` and `status` (`none`, `awarded`, `pending` or `invalid`). Only `awarded` is paid.
+- `deltas` is each player's running result in that game, in cents; positive is owed to them.
 
 ### Round shape (illustrative)
 
-The `Round` type in `backend/src/shared/rounds.ts`. `state` is not returned yet.
+The `Round` type in `backend/src/shared/rounds.ts`.
 
 ```json
 {
@@ -73,9 +88,21 @@ The `Round` type in `backend/src/shared/rounds.ts`. `state` is not returned yet.
     { "hole": 4, "wadMakers": ["u_2", "u_1"], "greenieWinner": null }
   ],
   "state": {
-    "skins": [ { "hole": 1, "atStakeCents": 500, "winnerUserId": null, "carried": true } ],
-    "wad": { "front": { "holderUserId": "u_1", "valueCents": 900 }, "back": null },
-    "greenies": [ { "hole": 3, "winnerUserId": "u_1" } ]
+    "skins": {
+      "holes": [ { "hole": 1, "status": "pushed", "carriedInCents": 0, "atStakeCents": 500, "winnerUserId": null, "net": { "u_1": 4, "u_2": 4 } } ],
+      "deltas": { "u_1": 0, "u_2": 0 },
+      "complete": false,
+      "carryOutCents": 500
+    },
+    "wad": {
+      "instances": [ { "segment": "front", "holderUserId": "u_1", "valueCents": 900, "makes": [ { "hole": 4, "userId": "u_2", "valueCents": 700 }, { "hole": 4, "userId": "u_1", "valueCents": 900 } ], "complete": false } ],
+      "deltas": { "u_1": 0, "u_2": 0 },
+      "ignored": []
+    },
+    "greenies": {
+      "holes": [ { "hole": 3, "winnerUserId": "u_1", "status": "pending" } ],
+      "deltas": { "u_1": 0, "u_2": 0 }
+    }
   }
 }
 ```
