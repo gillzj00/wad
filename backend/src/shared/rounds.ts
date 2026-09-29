@@ -1,5 +1,8 @@
 // Round types for the round lifecycle routes. They mirror docs/api.md; keep
 // the two in sync.
+import type { scoreGreenies } from "../engines/greenies.js";
+import type { SkinsResult } from "../engines/skins.js";
+import type { scoreWad } from "../engines/wad.js";
 import type { GamesConfig, HoleEvents, Score, UserId } from "./types.js";
 
 export type RoundStatus = "in_progress";
@@ -25,6 +28,20 @@ export interface RoundPlayer {
   joinedAt: string;
 }
 
+/**
+ * What the engines return for the round's scores and hole events, unchanged.
+ * A game that is not enabled is left out.
+ */
+export interface RoundState {
+  /**
+   * Null until every player has a course handicap. When `complete` is true and
+   * `carryOutCents` is not zero, that carryover is unresolved and is not paid.
+   */
+  skins?: SkinsResult | null;
+  wad?: ReturnType<typeof scoreWad>;
+  greenies?: ReturnType<typeof scoreGreenies>;
+}
+
 export interface Round {
   roundId: string;
   course: RoundCourse;
@@ -39,4 +56,5 @@ export interface Round {
   players: RoundPlayer[];
   scores: Score[];
   holes: HoleEvents[];
+  state: RoundState;
 }

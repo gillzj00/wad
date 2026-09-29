@@ -116,6 +116,34 @@ export function fakeDb(seed: Item[] = []) {
           const found = [...items.values()].filter((i) => i.PK === pk);
           return { Items: found.sort((a, b) => (a.SK as string).localeCompare(b.SK as string)) };
         }
+        case "PutCommand": {
+          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported put condition");
+          const item = cmd.input.Item as Item;
+          items.set(keyOf(item), item);
+          return {};
+        }
+        case "DeleteCommand": {
+          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported delete condition");
+          items.delete(keyOf(cmd.input.Key as Item));
+          return {};
+        }
+        case "UpdateCommand": {
+          // Only "SET #name = :value, ..." with no condition: named fields are replaced, the rest are kept.
+          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported update condition");
+          const expression = cmd.input.UpdateExpression as string;
+          if (!expression.startsWith("SET ")) throw new Error(`fake db: unsupported update ${expression}`);
+          const names = cmd.input.ExpressionAttributeNames as Record<string, string>;
+          const values = cmd.input.ExpressionAttributeValues as Item;
+          const key = cmd.input.Key as Item;
+          const item: Item = { ...(items.get(keyOf(key)) ?? key) };
+          for (const assignment of expression.slice(4).split(", ")) {
+            const match = /^(#\w+) = (:\w+)$/.exec(assignment);
+            if (!match || !(match[1]! in names) || !(match[2]! in values)) throw new Error(`fake db: unsupported assignment ${assignment}`);
+            item[names[match[1]!]!] = values[match[2]!];
+          }
+          items.set(keyOf(key), item);
+          return {};
+        }
         case "TransactWriteCommand": {
           const failure = failures.shift();
           if (failure) throw failure;

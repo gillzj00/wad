@@ -1,5 +1,6 @@
 // Routes: POST /v1/rounds, GET /v1/rounds/{roundId}, POST /v1/rounds/join,
-// POST /v1/rounds/{roundId}/players
+// POST /v1/rounds/{roundId}/players, PUT /v1/rounds/{roundId}/scores,
+// PUT /v1/rounds/{roundId}/holes/{hole}, POST /v1/rounds/{roundId}/recompute
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
@@ -9,7 +10,15 @@ import { DynamoRoundStore } from "../services/rounds/roundStore.js";
 import { callerId } from "../shared/auth.js";
 import { error, json } from "../shared/http.js";
 
-const ROUTES = new Set(["POST /v1/rounds", "GET /v1/rounds/{roundId}", "POST /v1/rounds/join", "POST /v1/rounds/{roundId}/players"]);
+const ROUTES = new Set([
+  "POST /v1/rounds",
+  "GET /v1/rounds/{roundId}",
+  "POST /v1/rounds/join",
+  "POST /v1/rounds/{roundId}/players",
+  "PUT /v1/rounds/{roundId}/scores",
+  "PUT /v1/rounds/{roundId}/holes/{hole}",
+  "POST /v1/rounds/{roundId}/recompute",
+]);
 
 const STATUS: Record<RoundErrorKind, number> = { validation: 400, not_found: 404, forbidden: 403, conflict: 409 };
 
@@ -41,6 +50,12 @@ export function createHandler(service: RoundService) {
           return json(200, { round: await service.getRound(userId, roundId) });
         case "POST /v1/rounds/join":
           return json(200, { round: await service.joinRound(userId, parseBody(event)) });
+        case "PUT /v1/rounds/{roundId}/scores":
+          return json(200, { round: await service.putScore(userId, roundId, parseBody(event)) });
+        case "PUT /v1/rounds/{roundId}/holes/{hole}":
+          return json(200, { round: await service.putHoleEvents(userId, roundId, event.pathParameters?.hole, parseBody(event)) });
+        case "POST /v1/rounds/{roundId}/recompute":
+          return json(200, { state: await service.recompute(userId, roundId) });
         default:
           return json(201, await service.addGuest(userId, roundId, parseBody(event)));
       }

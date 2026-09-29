@@ -4,15 +4,26 @@ import { createHandler } from "../../src/handlers/rounds.js";
 import { RoundError, type RoundErrorKind } from "../../src/services/rounds/errors.js";
 import type { RoundService } from "../../src/services/rounds/roundService.js";
 
-const ROUTES = ["POST /v1/rounds", "GET /v1/rounds/{roundId}", "POST /v1/rounds/join", "POST /v1/rounds/{roundId}/players"];
+const ROUTES = [
+  "POST /v1/rounds",
+  "GET /v1/rounds/{roundId}",
+  "POST /v1/rounds/join",
+  "POST /v1/rounds/{roundId}/players",
+  "PUT /v1/rounds/{roundId}/scores",
+  "PUT /v1/rounds/{roundId}/holes/{hole}",
+  "POST /v1/rounds/{roundId}/recompute",
+];
 
-function event(routeKey: string, options: { sub?: unknown; body?: unknown; rawBody?: string; roundId?: string; base64?: boolean } = {}) {
+function event(
+  routeKey: string,
+  options: { sub?: unknown; body?: unknown; rawBody?: string; roundId?: string; hole?: string; base64?: boolean } = {},
+) {
   const sub = "sub" in options ? options.sub : "u_1";
   const text = options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
   return {
     routeKey,
     requestContext: sub === undefined ? {} : { authorizer: { jwt: { claims: { sub }, scopes: [] } } },
-    pathParameters: options.roundId ? { roundId: options.roundId } : undefined,
+    pathParameters: options.roundId ? { roundId: options.roundId, ...(options.hole ? { hole: options.hole } : {}) } : undefined,
     body: text !== undefined && options.base64 ? Buffer.from(text).toString("base64") : text,
     isBase64Encoded: options.base64 ?? false,
   } as unknown as APIGatewayProxyEventV2;
@@ -70,6 +81,46 @@ describe("rounds handler", () => {
     expect(calls).toEqual([["u_1", "r_1", { displayName: "Pat", handicapIndex: 10 }]]);
   });
 
+  it("sets a score", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putScore: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const res = await call(service, event("PUT /v1/rounds/{roundId}/scores", { roundId: "r_1", sub: "u_2", body: { hole: 4, gross: 5 } }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+    expect(calls).toEqual([["u_2", "r_1", { hole: 4, gross: 5 }]]);
+  });
+
+  it("sets a hole's events", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putHoleEvents: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const body = { wadMakers: ["u_2", "u_1"], greenieWinner: null };
+    const res = await call(service, event("PUT /v1/rounds/{roundId}/holes/{hole}", { roundId: "r_1", hole: "4", body }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+    expect(calls).toEqual([["u_1", "r_1", "4", body]]);
+  });
+
+  it("recomputes the state without a body", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      recompute: async (...args: unknown[]) => {
+        calls.push(args);
+        return { skins: null } as never;
+      },
+    };
+    const res = await call(service, event("POST /v1/rounds/{roundId}/recompute", { roundId: "r_1", sub: "u_3" }));
+    expect(res).toEqual({ status: 200, body: { state: { skins: null } } });
+    expect(calls).toEqual([["u_3", "r_1"]]);
+  });
+
   it.each(ROUTES)("returns 401 without a caller: %s", async (routeKey) => {
     // No service methods: the handler must not reach the service.
     for (const sub of [undefined, "", 42, null]) {
@@ -86,9 +137,15 @@ describe("rounds handler", () => {
     expect((await call({}, e)).status).toBe(401);
   });
 
-  it.each(["POST /v1/rounds", "POST /v1/rounds/join", "POST /v1/rounds/{roundId}/players"])("returns 400 for a missing or malformed body: %s", async (routeKey) => {
+  it.each([
+    "POST /v1/rounds",
+    "POST /v1/rounds/join",
+    "POST /v1/rounds/{roundId}/players",
+    "PUT /v1/rounds/{roundId}/scores",
+    "PUT /v1/rounds/{roundId}/holes/{hole}",
+  ])("returns 400 for a missing or malformed body: %s", async (routeKey) => {
     for (const rawBody of [undefined, "", "{not json"]) {
-      const res = await call({}, event(routeKey, { roundId: "r_1", ...(rawBody === undefined ? {} : { rawBody }) }));
+      const res = await call({}, event(routeKey, { roundId: "r_1", hole: "4", ...(rawBody === undefined ? {} : { rawBody }) }));
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe("invalid_json");
     }
