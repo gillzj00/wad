@@ -18,8 +18,14 @@ Base path: `/v1`.
 - `GET /courses/{courseId}` -> `{ course: Course }`: tees (each with its own pars and stroke indexes, grouped by `gender`) and per-hole par/strokeIndex/yardage. A tee with `strokeIndexValid: false` cannot be used for handicap strokes. `404 course_not_found` if unknown.
 - Provider failures: `503 course_provider_rate_limited` when the provider's daily limit is hit, `502 course_provider_unavailable` otherwise.
 - Shapes are the `CourseSummary` / `Course` types in `backend/src/shared/types.ts`.
-- `POST /courses` -> create a manual course (same schema) when the provider lacks it
-- `POST /courses/{courseId}/corrections` -> submit a correction to a cached course
+- `POST /courses` -> `201 { course: Course }`: create a manual course when the provider lacks it. Body: `{ courseName, clubName?, location?: { address?, city?, state?, country?, latitude?, longitude? }, tees: [{ name, gender?: "male" | "female", courseRating?, slope?, holes: [{ hole, par, strokeIndex, yardage? }] }] }`.
+  - `courseName` is required; `clubName` defaults to it. 1 to 12 tees; `gender` defaults to `"male"`.
+  - `courseRating` (positive) and `slope` (integer 55-155) are optional but must be given together.
+  - Each tee lists exactly 18 holes numbered 1-18, `par` 3-5, `strokeIndex` a permutation of 1-18, `yardage` an optional positive integer. 9-hole courses are not supported.
+  - The server generates `courseId` (`man-<uuid>`), sets `source: "manual"` and records the caller as the creator; ids, sources and owners in the body are ignored. Manual courses are read with `GET /courses/{courseId}` and do not appear in search.
+- `POST /courses/{courseId}/corrections` -> `201 { correction: CourseCorrection }`: suggest a correction to a stored course (provider or manual). Body: `{ teeId?, courseRating?, slope?, holes?: [{ hole, par?, strokeIndex?, yardage? }], note? }` with at least a `note` (up to 500 characters) or one corrected value; `teeId` is required, and must be a tee of the course, when values are corrected. The correction is stored as `status: "pending"` for later review and **does not change the course**. `404 course_not_found` if the course is not stored.
+- Both `POST` routes return `401 unauthorized` without a caller `sub`, `400 invalid_body` when the body is not JSON, and `400 validation_failed` with the offending field in `error.field` and in the message (e.g. `tees[0].holes[5].par`).
+- Request and correction shapes are in `backend/src/shared/courseInput.ts`.
 
 ### Rounds
 - `POST /rounds` -> create `{ courseId, teeId, date, holes: 9 | 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents } } }`; a game is enabled by including it. Returns round + `joinCode`
