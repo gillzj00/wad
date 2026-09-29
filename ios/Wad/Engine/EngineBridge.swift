@@ -66,6 +66,11 @@ final class EngineBridge {
         try call("scoreGreenies", arguments: [input])
     }
 
+    /// WHS course handicap for a tee, from a handicap index.
+    func courseHandicap(handicapIndex: Double, tee: Engine.TeeRating) throws -> Int {
+        try call("courseHandicap", arguments: [handicapIndex, tee])
+    }
+
     /// Ticks per player, keyed by user id and then hole number.
     func allocateTicks(players: [Engine.Player], holes: [Engine.HoleInfo]) throws -> [Engine.UserID: Engine.TicksByHole] {
         try call("allocateTicks", arguments: [players, holes])

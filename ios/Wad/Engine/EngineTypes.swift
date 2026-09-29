@@ -25,6 +25,13 @@ enum Engine {
         var courseHandicap: Int
     }
 
+    /// Rating of a tee, for the course handicap. `par` is the tee's total par.
+    struct TeeRating: Codable, Equatable, Sendable {
+        var slope: Int
+        var courseRating: Double
+        var par: Int
+    }
+
     struct Score: Codable, Equatable, Sendable {
         var userId: UserID
         var hole: Int
