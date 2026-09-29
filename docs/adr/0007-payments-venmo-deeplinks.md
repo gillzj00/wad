@@ -9,7 +9,7 @@ We want to reconcile bets at the end of a match, ideally with Venmo. Venmo has *
 
 ## Decision
 
-The backend computes each player's net position across all games and reduces it to a minimal set of pairwise transfers. The iOS app opens **Venmo deep links** pre-filled with recipient, amount, and note. The user confirms in Venmo, then marks the transfer paid in Wad. **No money moves through our backend.**
+The backend computes each player's net position across all games and reduces it to a small set of pairwise transfers (at most one fewer than the players owed or owing). The iOS app opens **Venmo deep links** pre-filled with recipient, amount, and note. The user confirms in Venmo, then marks the transfer paid in Wad. **No money moves through our backend.**
 
 ## Alternatives considered
 

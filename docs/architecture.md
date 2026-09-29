@@ -56,7 +56,7 @@ Stored as a handicap index on the user profile (manual for v1). A `HandicapProvi
 
 ## Payments / settlement
 
-No money moves through the backend. The settlement service computes net positions and minimal pairwise transfers; the client opens **Venmo deep links** pre-filled with amount and note. The user confirms in Venmo, then marks the transfer paid in Wad. See [ADR-0007](adr/0007-payments-venmo-deeplinks.md).
+No money moves through the backend. The settlement service computes net positions and a small set of pairwise transfers (at most one fewer than the players owed or owing); the client opens **Venmo deep links** pre-filled with amount and note. The user confirms in Venmo, then marks the transfer paid in Wad. See [ADR-0007](adr/0007-payments-venmo-deeplinks.md).
 
 ## Infrastructure & delivery
 
