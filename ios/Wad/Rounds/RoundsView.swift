@@ -5,6 +5,9 @@ import SwiftUI
 enum RoundsRoute: Hashable {
     case detail(Round)
     case scoring(Round)
+    /// Scoring, opened on a hole.
+    case scoringHole(Round, Int)
+    case settlement(Round)
 }
 
 /// The Rounds tab: saved rounds, newest first, and the way into a new round.
@@ -58,6 +61,8 @@ struct RoundsView: View {
                 switch route {
                 case .detail(let round): RoundDetailView(round: round)
                 case .scoring(let round): HoleScoringView(round: round)
+                case .scoringHole(let round, let hole): HoleScoringView(round: round, startHole: hole)
+                case .settlement(let round): SettlementView(round: round)
                 }
             }
             .toolbar {
@@ -86,8 +91,16 @@ struct RoundsView: View {
     #if DEBUG
     /// `-debugSetupStep course|players|games` opens the setup flow at that step
     /// with the sample draft; `-debugSetupStep detail` creates the sample round
-    /// and opens it. For simulator screenshots.
+    /// and opens it. `-debugSeedRound finalPush` creates a finished round with an
+    /// unresolved skins carryover and opens it. For simulator screenshots and the UI tests.
     private func applyDebugLaunchArguments() {
+        if UserDefaults.standard.string(forKey: "debugSeedRound") == "finalPush" {
+            guard let bridge = SharedEngine.bridge, let round = try? DebugRounds.finalPush(using: bridge) else { return }
+            modelContext.insert(round)
+            try? modelContext.save()
+            path = [.detail(round)]
+            return
+        }
         guard let value = UserDefaults.standard.string(forKey: "debugSetupStep") else { return }
         switch value {
         case "course": setup = SetupPresentation(draft: .sample, step: .course)
