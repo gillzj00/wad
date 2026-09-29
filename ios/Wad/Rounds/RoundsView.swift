@@ -17,6 +17,9 @@ struct RoundsView: View {
 
     @State private var path: [RoundsRoute] = []
     @State private var setup: SetupPresentation?
+    #if DEBUG
+    @State private var appliedDebugLaunchArguments = false
+    #endif
 
     struct SetupPresentation: Identifiable {
         let id = UUID()
@@ -76,6 +79,11 @@ struct RoundsView: View {
                 }
             }
             #if DEBUG
+            .safeAreaInset(edge: .bottom) {
+                if ProcessInfo.processInfo.arguments.contains(LaunchArgument.debugStoreCounts) {
+                    StoreCountsView()
+                }
+            }
             .task { applyDebugLaunchArguments() }
             #endif
         }
@@ -94,6 +102,9 @@ struct RoundsView: View {
     /// and opens it. `-debugSeedRound finalPush` creates a finished round with an
     /// unresolved skins carryover and opens it. For simulator screenshots and the UI tests.
     private func applyDebugLaunchArguments() {
+        // The task runs again when the list comes back on screen.
+        guard !appliedDebugLaunchArguments else { return }
+        appliedDebugLaunchArguments = true
         if UserDefaults.standard.string(forKey: "debugSeedRound") == "finalPush" {
             guard let bridge = SharedEngine.bridge, let round = try? DebugRounds.finalPush(using: bridge) else { return }
             modelContext.insert(round)
@@ -116,3 +127,21 @@ struct RoundsView: View {
     }
     #endif
 }
+
+#if DEBUG
+/// What the store holds, for the UI tests (`-debugStoreCounts`).
+private struct StoreCountsView: View {
+    @Query private var rounds: [Round]
+    @Query private var holes: [RoundHole]
+    @Query private var players: [RoundPlayer]
+    @Query private var scores: [HoleScore]
+
+    var body: some View {
+        Text("Stored: \(rounds.count) rounds, \(holes.count) holes, \(players.count) players, \(scores.count) scores")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 4)
+            .accessibilityIdentifier("debug.storeCounts")
+    }
+}
+#endif

@@ -29,6 +29,8 @@ struct RoundSetupView: View {
     @State var step = SetupStep.course
     /// Issues are shown once the group has tried to move on from the step.
     @State private var showsIssues = false
+    /// Counts the attempts to move on that the issues stopped.
+    @State private var blockedAdvances = 0
     @State private var failure: String?
 
     let onCreate: (Round) -> Void
@@ -43,48 +45,62 @@ struct RoundSetupView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                switch step {
-                case .course: CourseStepView(draft: $draft)
-                case .players: PlayersStepView(draft: $draft)
-                case .games: GamesStepView(draft: $draft)
-                }
-
-                if showsIssues, !issues.isEmpty {
-                    Section("To fix") {
-                        ForEach(issues, id: \.self) { issue in
-                            Label(issue.message, systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.red)
-                        }
+            ScrollViewReader { proxy in
+                form
+                    .onChange(of: blockedAdvances) {
+                        // The issues are at the end of the form, below the 18 holes of the course step.
+                        guard let last = issues.last else { return }
+                        withAnimation { proxy.scrollTo(last, anchor: .bottom) }
                     }
-                }
-            }
-            .navigationTitle(step.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    if let previous = SetupStep(rawValue: step.rawValue - 1) {
-                        Button("Back") { move(to: previous) }
-                    } else {
-                        Button("Cancel") { dismiss() }
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(step == .games ? "Create" : "Next", action: advance)
-                }
-                #if DEBUG
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Fill sample") { draft = .sample }
-                }
-                #endif
-            }
-            .alert("Could not create the round", isPresented: .constant(failure != nil)) {
-                Button("OK") { failure = nil }
-            } message: {
-                Text(failure ?? "")
             }
         }
         .interactiveDismissDisabled()
+    }
+
+    private var form: some View {
+        Form {
+            switch step {
+            case .course: CourseStepView(draft: $draft)
+            case .players: PlayersStepView(draft: $draft)
+            case .games: GamesStepView(draft: $draft)
+            }
+
+            if showsIssues, !issues.isEmpty {
+                Section("To fix") {
+                    ForEach(Array(issues.enumerated()), id: \.element) { offset, issue in
+                        Label(issue.message, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.red)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(issue.message)
+                            .accessibilityIdentifier("setup.issue.\(offset + 1)")
+                    }
+                }
+            }
+        }
+        .navigationTitle(step.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                if let previous = SetupStep(rawValue: step.rawValue - 1) {
+                    Button("Back") { move(to: previous) }
+                } else {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button(step == .games ? "Create" : "Next", action: advance)
+            }
+            #if DEBUG
+            ToolbarItem(placement: .bottomBar) {
+                Button("Fill sample") { draft = .sample }
+            }
+            #endif
+        }
+        .alert("Could not create the round", isPresented: .constant(failure != nil)) {
+            Button("OK") { failure = nil }
+        } message: {
+            Text(failure ?? "")
+        }
     }
 
     private func move(to step: SetupStep) {
@@ -95,6 +111,7 @@ struct RoundSetupView: View {
     private func advance() {
         guard issues.isEmpty else {
             showsIssues = true
+            blockedAdvances += 1
             return
         }
         if let next = SetupStep(rawValue: step.rawValue + 1) {
@@ -185,6 +202,7 @@ struct CourseStepView: View {
                         .monospacedDigit()
                         .frame(width: 60)
                         .focused($focusedHole, equals: hole.number)
+                        .accessibilityIdentifier("setup.hole.\(hole.number).strokeIndex")
                 }
                 .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
             }
@@ -224,9 +242,10 @@ struct PlayersStepView: View {
     @Binding var draft: RoundDraft
 
     var body: some View {
-        ForEach($draft.players) { $player in
+        ForEach(draft.players) { player in
+            let binding = binding(for: player)
             Section {
-                TextField("Name", text: $player.name)
+                TextField("Name", text: binding.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("setup.player.\(number(of: player)).name")
@@ -235,30 +254,28 @@ struct PlayersStepView: View {
                     NumberRow(
                         title: "Handicap index",
                         prompt: "15.4",
-                        text: $player.handicapIndexText,
+                        text: binding.handicapIndexText,
                         keyboard: .numbersAndPunctuation,
                         identifier: "setup.player.\(number(of: player)).handicapIndex"
                     )
                     LabeledContent("Computed course handicap", value: computedCourseHandicap(for: player))
-                    Toggle("Override for this round", isOn: $player.overridesCourseHandicap)
+                    Toggle("Override for this round", isOn: binding.overridesCourseHandicap)
                     if player.overridesCourseHandicap {
-                        courseHandicapRow($player)
+                        courseHandicapRow(binding)
                     }
                 } else {
-                    courseHandicapRow($player)
+                    courseHandicapRow(binding)
+                }
+
+                // A row of its own: controls in a section header are not hittable for XCUITest on iOS 18.
+                if draft.players.count > RoundDraft.playerCountRange.lowerBound {
+                    Button("Remove player", systemImage: "minus.circle", role: .destructive) {
+                        draft.players.removeAll { $0.id == player.id }
+                    }
+                    .accessibilityIdentifier("setup.player.\(number(of: player)).remove")
                 }
             } header: {
-                HStack {
-                    Text("Player \(number(of: player))")
-                    Spacer()
-                    if draft.players.count > RoundDraft.playerCountRange.lowerBound {
-                        Button("Remove", role: .destructive) {
-                            draft.players.removeAll { $0.id == player.id }
-                        }
-                        .font(.caption)
-                        .textCase(nil)
-                    }
-                }
+                Text("Player \(number(of: player))")
             }
         }
 
@@ -266,6 +283,7 @@ struct PlayersStepView: View {
             Button("Add player", systemImage: "plus") {
                 draft.players.append(RoundDraft.Player())
             }
+            .accessibilityIdentifier("setup.addPlayer")
             .disabled(draft.players.count >= RoundDraft.playerCountRange.upperBound)
         } footer: {
             if let tee = draft.tee {
@@ -273,6 +291,17 @@ struct PlayersStepView: View {
             } else {
                 Text("The course has no rating and slope, so enter each player's course handicap for the round. Write a plus handicap with a leading +.")
             }
+        }
+    }
+
+    /// Looks the player up by id. A binding into the array by position is read
+    /// once more after its player was removed, which is out of range.
+    private func binding(for player: RoundDraft.Player) -> Binding<RoundDraft.Player> {
+        Binding {
+            draft.players.first { $0.id == player.id } ?? player
+        } set: { changed in
+            guard let offset = draft.players.firstIndex(where: { $0.id == player.id }) else { return }
+            draft.players[offset] = changed
         }
     }
 
@@ -306,8 +335,8 @@ struct GamesStepView: View {
 
     var body: some View {
         Section {
-            AmountRow(title: "Start value", text: $draft.wadStartText)
-            AmountRow(title: "Step", text: $draft.wadStepText)
+            AmountRow(title: "Start value", identifier: "setup.amount.wadStart", text: $draft.wadStartText)
+            AmountRow(title: "Step", identifier: "setup.amount.wadStep", text: $draft.wadStepText)
         } header: {
             Text("Wad")
         } footer: {
@@ -315,7 +344,7 @@ struct GamesStepView: View {
         }
 
         Section {
-            AmountRow(title: "Per skin", text: $draft.skinsBaseText)
+            AmountRow(title: "Per skin", identifier: "setup.amount.skins", text: $draft.skinsBaseText)
         } header: {
             Text("Skins")
         } footer: {
@@ -323,7 +352,7 @@ struct GamesStepView: View {
         }
 
         Section {
-            AmountRow(title: "Per greenie", text: $draft.greeniesAmountText)
+            AmountRow(title: "Per greenie", identifier: "setup.amount.greenies", text: $draft.greeniesAmountText)
         } header: {
             Text("Greenies")
         } footer: {
@@ -356,6 +385,7 @@ struct NumberRow: View {
 
 struct AmountRow: View {
     let title: String
+    let identifier: String
     @Binding var text: String
 
     var body: some View {
@@ -367,6 +397,7 @@ struct AmountRow: View {
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .frame(width: 90)
+                    .accessibilityIdentifier(identifier)
             }
         }
     }
