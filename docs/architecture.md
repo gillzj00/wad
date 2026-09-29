@@ -33,7 +33,7 @@ Wad is a native iOS client backed by a serverless AWS API. The design goals, in 
 
 - **HTTP API (API Gateway v2)** for request/response CRUD: auth/profile, courses, rounds, scores, settlement. A **Cognito JWT authorizer** protects routes; the caller's `sub` is the user id.
 - **WebSocket API (API Gateway)** for real-time round sync. On `$connect` the token is validated and the connection id is stored against the round; score/bet mutations fan out to all live connections for that round. Connection records carry a TTL so stale ones self-expire.
-- **Lambda (TypeScript, Node 20 runtime)** implements handlers. Structure:
+- **Lambda (TypeScript, Node 22 runtime)** implements handlers. Structure:
   - `handlers/` — thin adapters (parse, authorize, call service, format response).
   - `services/` — business logic and DynamoDB access.
   - `engines/` — **pure** game logic (Skins/Wad/Greenies, handicap allocation). No I/O, fully unit-tested. This is the highest-value, highest-risk code; treat it accordingly.
