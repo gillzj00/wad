@@ -24,14 +24,14 @@ Last updated: 2026-09-29
 
 | # | Task | State | PR |
 | --- | --- | --- | --- |
-| M3.1 | Round lifecycle API | in flight | - |
+| M3.1 | Round lifecycle API (code and tests; not deployed) | done | #26 |
 | M2.3 | Manual course entry + corrections (code and tests; not deployed) | done | #24 |
-| M3.2 | Scoring API | todo (after M3.1) | - |
+| M3.2 | Scoring API | in flight | - |
 | M5.1 | Settlement API | todo (after M3.2) | - |
 
 ## Task in flight
 
-- M3.1 (subagent, own worktree, branch `feat/round-lifecycle-api`)
+- M3.2 (subagent, own worktree, branch `feat/scoring-api`)
 
 ## Open PRs
 
@@ -50,6 +50,7 @@ Last updated: 2026-09-29
 ## Questions waiting on @gillzj00
 
 - Which iOS version is on the phone? (asked 2026-09-29) Local verification is on iOS 26 and CI on iOS 18; iOS 17 is untested.
+- M3.1 choices to confirm (docs were silent; implemented and documented in #26): 9-hole rounds rejected with 400 (Open Question 3 unresolved); 4-player cap enforced, 2-player minimum not enforced at the API; creating or joining needs a profile with display name and handicap index (409 otherwise; assumes the M1.2 attribute names); on a tee without rating/slope the course handicap and ticks are null (no per-round override in the API yet); course must already be stored; join codes are 6 characters and valid 48 hours; joining is not blocked by round status or existing scores.
 - M2.3 choices to confirm (docs were silent; implemented and documented in #24): corrections are stored as pending suggestions and never change the course; corrections return 404 unless the course is already stored; manual courses are 18 holes, par 3-5, 1-12 tees; tee gender defaults to male; manual courses are reachable by id only (no search) and there is no API yet to review or apply corrections.
 - Setup choices to confirm (defaults in use until told otherwise): plus handicaps typed as "+1.2"; $0 game amounts allowed; course name required.
 
