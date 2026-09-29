@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "ios/Wad/Resources/engines.js"
       - ".github/workflows/backend-ci.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - "ios/Wad/Resources/engines.js"
       - ".github/workflows/backend-ci.yml"
 
 permissions:
@@ -43,3 +45,8 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: iOS engines bundle is up to date
+        run: |
+          npm run build:ios-engines
+          git diff --exit-code -- ../ios/Wad/Resources/engines.js
