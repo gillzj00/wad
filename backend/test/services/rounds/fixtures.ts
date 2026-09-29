@@ -112,13 +112,20 @@ export function fakeDb(seed: Item[] = []) {
         case "GetCommand":
           return { Item: items.get(keyOf(cmd.input.Key as Item)) };
         case "QueryCommand": {
-          const pk = (cmd.input.ExpressionAttributeValues as Item)[":pk"];
-          const found = [...items.values()].filter((i) => i.PK === pk);
+          const values = cmd.input.ExpressionAttributeValues as Item;
+          const condition = cmd.input.KeyConditionExpression;
+          if (condition !== "PK = :pk" && condition !== "PK = :pk AND begins_with(SK, :sk)") throw new Error(`fake db: unsupported query ${condition}`);
+          const prefix = condition === "PK = :pk" ? "" : (values[":sk"] as string);
+          const found = [...items.values()].filter((i) => i.PK === values[":pk"] && (i.SK as string).startsWith(prefix));
           return { Items: found.sort((a, b) => (a.SK as string).localeCompare(b.SK as string)) };
         }
         case "PutCommand": {
-          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported put condition");
           const item = cmd.input.Item as Item;
+          const condition = cmd.input.ConditionExpression;
+          if (condition !== undefined && condition !== "attribute_not_exists(PK)") throw new Error("fake db: unsupported put condition");
+          if (condition !== undefined && items.has(keyOf(item))) {
+            throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
+          }
           items.set(keyOf(item), item);
           return {};
         }

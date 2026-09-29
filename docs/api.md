@@ -50,8 +50,9 @@ Base path: `/v1`.
   - Send either field or both (`400 invalid_body` for neither). Only the fields sent are written, and the last write wins per field, so one device setting the greenie does not undo the wad makers another device set.
   - `{hole}` is 1-18 (`400 invalid_hole`). `wadMakers` has at most 4 ids, each a player in the round (`400 unknown_player`) and listed once (`400 duplicate_wad_maker`); `[]` clears it.
   - `greenieWinner` must be a player in the round (`400 unknown_player`) and the hole a par 3 (`400 not_a_par_three`); `null` clears it. A winner whose stored score on the hole is over par is rejected (`400 greenie_winner_over_par`). A winner with no score yet is accepted, because scores and hole events can arrive in any order; the greenie is `pending` in `state` until the score arrives, and `invalid` (not paid) if that score, or a later correction, is over par.
-- `GET /rounds/{roundId}/settlement` -> net positions + pairwise transfers (at most one fewer than the players with a non-zero balance)
-- `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid
+- `GET /rounds/{roundId}/settlement` -> `200 { settlement }`: net positions + pairwise transfers (at most one fewer than the players with a non-zero balance). Players only (`403 not_a_participant`); `404 round_not_found`. See Settlement.
+- `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid; `200 { settlement }`. No body.
+- `DELETE /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer unpaid; `200 { settlement }`.
 - `POST /rounds/{roundId}/recompute` -> `200 { state }`: re-derive the game state from the stored scores and hole events. No body. Players only. State is not stored, so this writes nothing and returns the same `state` as `GET /rounds/{roundId}`; settlement is re-derived by the settlement API.
 
 ### Game state
@@ -62,6 +63,41 @@ Base path: `/v1`.
 - `wad`: `{ instances, deltas, ignored }` with one instance per nine (`segment` `front` or `back`): `holderUserId`, `valueCents`, `makes` and `complete`. The holder is paid in `deltas` once every player has a score on the nine's last hole.
 - `greenies`: `{ holes, deltas }` with one entry per par 3: `winnerUserId` and `status` (`none`, `awarded`, `pending` or `invalid`). Only `awarded` is paid.
 - `deltas` is each player's running result in that game, in cents; positive is owed to them.
+
+### Settlement
+
+The settlement is derived on every read from the game state: `positions` and `transfers` are what the `settle` engine returns for the `deltas` of the enabled games. Nothing is stored except the paid markers. The `Settlement` type is in `backend/src/shared/settlement.ts`.
+
+```json
+{
+  "roundId": "r_abc",
+  "status": "final",
+  "incompleteHoles": [],
+  "issues": [],
+  "games": { "skins": { "u_1": 1500, "u_2": -1500 }, "wad": { "u_1": 0, "u_2": 0 }, "greenies": { "u_1": -500, "u_2": 500 } },
+  "positions": { "u_1": 1000, "u_2": -1000 },
+  "transfers": [
+    { "transferId": "t_3f9c0a1b2c3d4e5f6a7b8c9d", "from": "u_2", "to": "u_1", "amountCents": 1000, "toVenmoHandle": "zach-g", "paid": true, "paidAt": "2026-10-03T20:00:00.000Z", "paidBy": "u_2" }
+  ],
+  "skinsCarryover": { "amountCents": 500, "unresolved": true },
+  "stalePayments": []
+}
+```
+
+- `status` is `final` when every player has a score on every hole and `issues` is empty; otherwise `provisional`. A provisional settlement shows where the round stands and is not what is owed. `incompleteHoles` lists the holes missing a score.
+- `issues` lists what keeps the result from being final, each `{ code, hole, userId, message }`:
+  - `skins_unavailable`: skins is enabled but a player has no course handicap, so skins is not in the positions (`games.skins` is `null`).
+  - `greenie_pending` / `greenie_invalid`: a recorded greenie that is not paid (see Game state). Clear or correct the winner, or the score, to resolve it.
+  - `wad_make_ignored`: a recorded wad make the engine ignored.
+- `games` holds each enabled game's `deltas`. `positions` has every player, positive is owed to them, and sums to zero.
+- `skinsCarryover` is the skins `carryOutCents`, or `null` when skins is not enabled or unavailable. With `unresolved: true` the last hole was pushed: the amount is shown and is **never part of a position or transfer** (domain model, Open Question 1).
+- `toVenmoHandle` is the payee's `venmoHandle` from their profile, or `null` (no handle, or a guest). The client builds the Venmo deep link; the server builds no links and moves no money.
+- `transferId` is derived from the round, payer, payee and amount. A score correction that changes a transfer gives it a new id, so a paid marker never moves to a different transfer or amount. A marker that matches no current transfer is listed in `stalePayments` (`{ transferId, from, to, amountCents, paidAt, paidBy }`) so the client can show that a payment was recorded before the correction.
+- Marking paid or unpaid:
+  - Only the payer or the payee may (`403 not_transfer_party`). A guest has no account, so any player may mark a transfer that a guest pays or receives.
+  - `404 transfer_not_found` when the id is not a transfer of the current settlement. `DELETE` also accepts the id of a stale payment, to remove it.
+  - Marking paid needs a final settlement: `409 round_incomplete` while holes are missing scores, `409 settlement_has_issues` while there are issues. Marking unpaid is always allowed.
+  - Both are idempotent. Marking a paid transfer again keeps the first `paidAt` and `paidBy`.
 
 ### Round shape (illustrative)
 

@@ -141,13 +141,8 @@ export class RoundService {
     return computeState(await this.roundForMember(userId, roundId));
   }
 
-  private async roundForMember(userId: UserId, roundId: string): Promise<RoundRecord> {
-    const record = roundId ? await this.store.getRound(roundId) : null;
-    if (!record) throw new RoundError("not_found", "round_not_found", "no round with that id");
-    if (!record.players.some((p) => p.userId === userId)) {
-      throw new RoundError("forbidden", "not_a_participant", "you are not a player in this round");
-    }
-    return record;
+  private roundForMember(userId: UserId, roundId: string): Promise<RoundRecord> {
+    return loadRoundForMember(this.store, userId, roundId);
   }
 
   private async reload(roundId: string): Promise<RoundRecord> {
@@ -173,6 +168,16 @@ export class RoundService {
       joinedAt: now.toISOString(),
     };
   }
+}
+
+/** The round, for one of its players only. */
+export async function loadRoundForMember(store: RoundStore, userId: UserId, roundId: string): Promise<RoundRecord> {
+  const record = roundId ? await store.getRound(roundId) : null;
+  if (!record) throw new RoundError("not_found", "round_not_found", "no round with that id");
+  if (!record.players.some((p) => p.userId === userId)) {
+    throw new RoundError("forbidden", "not_a_participant", "you are not a player in this round");
+  }
+  return record;
 }
 
 function playerIn(record: RoundRecord, userId: UserId): PlayerRecord {
