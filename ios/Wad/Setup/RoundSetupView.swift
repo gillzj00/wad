@@ -128,12 +128,14 @@ struct RoundSetupView: View {
 struct CourseStepView: View {
     @Binding var draft: RoundDraft
     @FocusState private var focusedHole: Int?
+    @State private var showsStrokeIndexOptions = false
 
     var body: some View {
         Section {
             TextField("Course name", text: $draft.courseName)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
+                .accessibilityIdentifier("setup.courseName")
             NumberRow(title: "Rating", prompt: "Optional", text: $draft.ratingText, keyboard: .decimalPad)
             NumberRow(title: "Slope", prompt: "Optional", text: $draft.slopeText, keyboard: .numberPad)
         } footer: {
@@ -141,6 +143,23 @@ struct CourseStepView: View {
         }
 
         Section {
+            Button("Stroke indexes", systemImage: "list.number") {
+                showsStrokeIndexOptions = true
+            }
+            .accessibilityIdentifier("setup.strokeIndexes")
+            .confirmationDialog("Stroke indexes", isPresented: $showsStrokeIndexOptions) {
+                Button("Number 1 to 18 in order") {
+                    for offset in draft.holes.indices {
+                        draft.holes[offset].strokeIndexText = String(offset + 1)
+                    }
+                }
+                Button("Clear all", role: .destructive) {
+                    for offset in draft.holes.indices {
+                        draft.holes[offset].strokeIndexText = ""
+                    }
+                }
+            }
+
             HStack {
                 Text("Hole").frame(width: 40, alignment: .leading)
                 Text("Par").frame(maxWidth: .infinity)
@@ -159,6 +178,7 @@ struct CourseStepView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .accessibilityIdentifier("setup.hole.\(hole.number).par")
                     TextField("SI", text: $hole.strokeIndexText)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
@@ -170,24 +190,7 @@ struct CourseStepView: View {
             }
             .environment(\.defaultMinListRowHeight, 38)
         } header: {
-            HStack {
-                Text("Holes")
-                Spacer()
-                Menu("Stroke indexes") {
-                    Button("Number 1 to 18 in order") {
-                        for offset in draft.holes.indices {
-                            draft.holes[offset].strokeIndexText = String(offset + 1)
-                        }
-                    }
-                    Button("Clear all", role: .destructive) {
-                        for offset in draft.holes.indices {
-                            draft.holes[offset].strokeIndexText = ""
-                        }
-                    }
-                }
-                .font(.caption)
-                .textCase(nil)
-            }
+            Text("Holes")
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Par \(draft.totalPar): out \(par(of: 1...9)), in \(par(of: 10...18)). Stroke index 1 is the hardest hole.")
@@ -226,13 +229,15 @@ struct PlayersStepView: View {
                 TextField("Name", text: $player.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
+                    .accessibilityIdentifier("setup.player.\(number(of: player)).name")
 
                 if draft.tee != nil {
                     NumberRow(
                         title: "Handicap index",
                         prompt: "15.4",
                         text: $player.handicapIndexText,
-                        keyboard: .numbersAndPunctuation
+                        keyboard: .numbersAndPunctuation,
+                        identifier: "setup.player.\(number(of: player)).handicapIndex"
                     )
                     LabeledContent("Computed course handicap", value: computedCourseHandicap(for: player))
                     Toggle("Override for this round", isOn: $player.overridesCourseHandicap)
@@ -276,7 +281,8 @@ struct PlayersStepView: View {
             title: "Course handicap",
             prompt: "Whole number",
             text: player.courseHandicapText,
-            keyboard: .numbersAndPunctuation
+            keyboard: .numbersAndPunctuation,
+            identifier: "setup.player.\(number(of: player.wrappedValue)).courseHandicap"
         )
     }
 
@@ -333,6 +339,7 @@ struct NumberRow: View {
     let prompt: String
     @Binding var text: String
     let keyboard: UIKeyboardType
+    var identifier: String?
 
     var body: some View {
         LabeledContent(title) {
@@ -342,6 +349,7 @@ struct NumberRow: View {
                 .textInputAutocapitalization(.never)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
+                .accessibilityIdentifier(identifier ?? title)
         }
     }
 }

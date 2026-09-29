@@ -27,4 +27,15 @@ jobs:
         run: xcodebuild -version
 
       - name: Build and test
-        run: ios/scripts/test.sh
+        # xcodebuild has been seen not to exit after the tests when it writes a
+        # result bundle, so the step has its own limit.
+        timeout-minutes: 20
+        run: ios/scripts/test.sh -resultBundlePath "$RUNNER_TEMP/Wad.xcresult"
+
+      - name: Upload the test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Wad.xcresult
+          path: ${{ runner.temp }}/Wad.xcresult
+          retention-days: 7
