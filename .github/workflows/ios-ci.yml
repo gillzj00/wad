@@ -18,7 +18,7 @@ jobs:
   build-test:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Activates once the Xcode project is scaffolded (M0.6). Until then this
       # job is a no-op so PRs are not blocked.
