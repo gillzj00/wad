@@ -224,9 +224,10 @@ struct PlayersStepView: View {
     @Binding var draft: RoundDraft
 
     var body: some View {
-        ForEach($draft.players) { $player in
+        ForEach(draft.players) { player in
+            let binding = binding(for: player)
             Section {
-                TextField("Name", text: $player.name)
+                TextField("Name", text: binding.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("setup.player.\(number(of: player)).name")
@@ -235,30 +236,28 @@ struct PlayersStepView: View {
                     NumberRow(
                         title: "Handicap index",
                         prompt: "15.4",
-                        text: $player.handicapIndexText,
+                        text: binding.handicapIndexText,
                         keyboard: .numbersAndPunctuation,
                         identifier: "setup.player.\(number(of: player)).handicapIndex"
                     )
                     LabeledContent("Computed course handicap", value: computedCourseHandicap(for: player))
-                    Toggle("Override for this round", isOn: $player.overridesCourseHandicap)
+                    Toggle("Override for this round", isOn: binding.overridesCourseHandicap)
                     if player.overridesCourseHandicap {
-                        courseHandicapRow($player)
+                        courseHandicapRow(binding)
                     }
                 } else {
-                    courseHandicapRow($player)
+                    courseHandicapRow(binding)
+                }
+
+                // A row of its own: controls in a section header are not hittable for XCUITest on iOS 18.
+                if draft.players.count > RoundDraft.playerCountRange.lowerBound {
+                    Button("Remove player", systemImage: "minus.circle", role: .destructive) {
+                        draft.players.removeAll { $0.id == player.id }
+                    }
+                    .accessibilityIdentifier("setup.player.\(number(of: player)).remove")
                 }
             } header: {
-                HStack {
-                    Text("Player \(number(of: player))")
-                    Spacer()
-                    if draft.players.count > RoundDraft.playerCountRange.lowerBound {
-                        Button("Remove", role: .destructive) {
-                            draft.players.removeAll { $0.id == player.id }
-                        }
-                        .font(.caption)
-                        .textCase(nil)
-                    }
-                }
+                Text("Player \(number(of: player))")
             }
         }
 
@@ -266,6 +265,7 @@ struct PlayersStepView: View {
             Button("Add player", systemImage: "plus") {
                 draft.players.append(RoundDraft.Player())
             }
+            .accessibilityIdentifier("setup.addPlayer")
             .disabled(draft.players.count >= RoundDraft.playerCountRange.upperBound)
         } footer: {
             if let tee = draft.tee {
@@ -273,6 +273,17 @@ struct PlayersStepView: View {
             } else {
                 Text("The course has no rating and slope, so enter each player's course handicap for the round. Write a plus handicap with a leading +.")
             }
+        }
+    }
+
+    /// Looks the player up by id. A binding into the array by position is read
+    /// once more after its player was removed, which is out of range.
+    private func binding(for player: RoundDraft.Player) -> Binding<RoundDraft.Player> {
+        Binding {
+            draft.players.first { $0.id == player.id } ?? player
+        } set: { changed in
+            guard let offset = draft.players.firstIndex(where: { $0.id == player.id }) else { return }
+            draft.players[offset] = changed
         }
     }
 
