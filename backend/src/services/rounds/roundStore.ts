@@ -1,4 +1,12 @@
-import { type DynamoDBDocumentClient, GetCommand, QueryCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DeleteCommand,
+  type DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  TransactWriteCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import type { RoundStatus } from "../../shared/rounds.js";
 import type { Course, GamesConfig, HoleEvents, HoleInfo, Score, UserId } from "../../shared/types.js";
 
@@ -60,7 +68,21 @@ export interface RoundStore {
   getRound(roundId: string): Promise<RoundRecord | null>;
   /** Adds the player only while the round has fewer than `maxPlayers`. */
   addPlayer(round: RoundRef, player: PlayerRecord, maxPlayers: number): Promise<AddPlayerResult>;
+  /** Replaces one player's score on one hole. Last writer wins. */
+  putScore(roundId: string, score: Score, change: Change): Promise<void>;
+  /** Removes one player's score on one hole; a no-op when there is none. */
+  deleteScore(roundId: string, hole: number, userId: UserId): Promise<void>;
+  /** Sets only the given fields of the hole's events, leaving the other as it is. Last writer wins per field. */
+  setHoleEvents(roundId: string, hole: number, fields: HoleEventFields, change: Change): Promise<void>;
 }
+
+/** Who made a write and when. */
+export interface Change {
+  by: UserId;
+  at: string;
+}
+
+export type HoleEventFields = Partial<Pick<HoleEvents, "wadMakers" | "greenieWinner">>;
 
 export type RoundRef = Pick<RoundMeta, "roundId" | "createdAt">;
 
@@ -200,6 +222,45 @@ export class DynamoRoundStore implements RoundStore {
     }
   }
 
+  async putScore(roundId: string, score: Score, change: Change): Promise<void> {
+    await this.db.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          PK: `ROUND#${roundId}`,
+          SK: scoreSortKey(score.hole, score.userId),
+          type: "score",
+          userId: score.userId,
+          hole: score.hole,
+          gross: score.gross,
+          updatedAt: change.at,
+          updatedBy: change.by,
+        },
+      }),
+    );
+  }
+
+  async deleteScore(roundId: string, hole: number, userId: UserId): Promise<void> {
+    await this.db.send(new DeleteCommand({ TableName: this.tableName, Key: { PK: `ROUND#${roundId}`, SK: scoreSortKey(hole, userId) } }));
+  }
+
+  async setHoleEvents(roundId: string, hole: number, fields: HoleEventFields, change: Change): Promise<void> {
+    const values: Item = { type: "holeEvents", hole, updatedAt: change.at, updatedBy: change.by };
+    if (fields.wadMakers !== undefined) values.wadMakers = fields.wadMakers;
+    if (fields.greenieWinner !== undefined) values.greenieWinner = fields.greenieWinner;
+    const names = Object.keys(values);
+    // An update, not a put: a device setting the greenie must not erase the wad makers another device just set.
+    await this.db.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { PK: `ROUND#${roundId}`, SK: `HOLE#${twoDigits(hole)}` },
+        UpdateExpression: `SET ${names.map((_, i) => `#f${i} = :v${i}`).join(", ")}`,
+        ExpressionAttributeNames: Object.fromEntries(names.map((name, i) => [`#f${i}`, name])),
+        ExpressionAttributeValues: Object.fromEntries(names.map((name, i) => [`:v${i}`, values[name]])),
+      }),
+    );
+  }
+
   private async get(pk: string, sk: string): Promise<Item | undefined> {
     const res = await this.db.send(new GetCommand({ TableName: this.tableName, Key: { PK: pk, SK: sk }, ConsistentRead: true }));
     return res.Item;
@@ -222,6 +283,10 @@ export class DynamoRoundStore implements RoundStore {
     };
   }
 }
+
+const twoDigits = (hole: number) => String(hole).padStart(2, "0");
+
+const scoreSortKey = (hole: number, userId: UserId) => `SCORE#${twoDigits(hole)}#${userId}`;
 
 function toMeta(item: Item): RoundMeta {
   return {
