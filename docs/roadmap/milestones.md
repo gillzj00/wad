@@ -46,7 +46,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M5 — Settlement & payout  (depends on M4)
 
-- [ ] **M5.1 Settlement API**: `GET /rounds/{id}/settlement`, mark transfer paid.
+- [x] **M5.1 Settlement API**: `GET /rounds/{id}/settlement`, mark transfer paid. Handler code done; deploying waits on auth (M1.1).
 - [ ] **M5.2 iOS settlement screen**: show who owes whom; Venmo deep links pre-filled; mark paid; graceful fallback if Venmo absent.
 
 ## M6 — Polish  (depends on prior)
