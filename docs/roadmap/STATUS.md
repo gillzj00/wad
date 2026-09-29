@@ -36,14 +36,13 @@ Last updated: 2026-09-29
 | --- | --- | --- | --- | --- |
 | P3.1 | UI tests for setup validation and round delete | ios/ | in flight | - |
 | P3.2 | M1.2 profile API handler (code and tests only; no auth infra, no deploy) | backend/ | done | #35 |
-| P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | in flight | - |
+| P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | done | #37 |
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); fix install-device.sh matching "unavailable" devices | ios/ | queued (after P3.1) | - |
 | P3.5 | Golf-themed visual design for the app | ios/ | queued (after P3.4) | - |
 
 ## Task in flight
 
 - P3.1 (subagent, branch `test/ios-setup-validation-and-delete`)
-- P3.3 (subagent, branch `docs/side-game-research`)
 
 ## Open PRs
 
@@ -63,6 +62,7 @@ Last updated: 2026-09-29
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
+- Which new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
 - Handicap override choices to confirm (#32): any player in the round may set or clear any player's override; whole numbers from -10 to 54; the round response shows the effective course handicap plus `courseHandicapOverride`.
 - M5.1 choices to confirm (implemented and documented in #30): settlement is provisional until every hole is scored and there are no issues; marking paid is refused until then (409); payer or payee may mark paid/unpaid, any player for a guest's transfer; an unresolved skins carryover is exposed and does not block final; a transfer id is derived from round, payer, payee and amount so a score correction makes old paid markers stale instead of moving them.
