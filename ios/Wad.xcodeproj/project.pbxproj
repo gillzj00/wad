@@ -11,7 +11,11 @@
 		1CC6507EEEAC51FF5872E296 /* Round.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D13E2BAAC34959F4DE5E64 /* Round.swift */; };
 		57C2188B51FC32580E11CA65 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912E188A28C6D1226061D662 /* RootView.swift */; };
 		5A1E5145B8B99F4CC673E455 /* WadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28954BB815B1B26D50EC2494 /* WadApp.swift */; };
+		74505FE1E8DDECD31BC8C0DF /* EngineBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0945A7071A5F92EE491A1B /* EngineBridge.swift */; };
 		888A9A864196CB2016649D11 /* RoundStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87F046930E8678C6BB01870 /* RoundStoreTests.swift */; };
+		BDDE34B5B1FAE0C5279FC601 /* EngineBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */; };
+		DA169FB9E57726485329E646 /* engines.js in Resources */ = {isa = PBXBuildFile; fileRef = E15243CD43A4CBE9E9669CE0 /* engines.js */; };
+		DB670CCC67027C7A912170F8 /* EngineTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB6E42DB5879EA56976E812 /* EngineTypes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,10 +31,14 @@
 /* Begin PBXFileReference section */
 		28954BB815B1B26D50EC2494 /* WadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WadApp.swift; sourceTree = "<group>"; };
 		2C193555C3C2B0E584EE7F5B /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		3AB6E42DB5879EA56976E812 /* EngineTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTypes.swift; sourceTree = "<group>"; };
+		4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineBridgeTests.swift; sourceTree = "<group>"; };
 		6BBD493D8E3EBA40EABAC02C /* Wad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		912E188A28C6D1226061D662 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		9C0945A7071A5F92EE491A1B /* EngineBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineBridge.swift; sourceTree = "<group>"; };
 		B1D13E2BAAC34959F4DE5E64 /* Round.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Round.swift; sourceTree = "<group>"; };
+		E15243CD43A4CBE9E9669CE0 /* engines.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = engines.js; sourceTree = "<group>"; };
 		F12AB045A3A72F9FBE737654 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F87F046930E8678C6BB01870 /* RoundStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -50,7 +58,9 @@
 				F12AB045A3A72F9FBE737654 /* Assets.xcassets */,
 				912E188A28C6D1226061D662 /* RootView.swift */,
 				28954BB815B1B26D50EC2494 /* WadApp.swift */,
+				6E64267AE606FA089A097543 /* Engine */,
 				3866AB93AA367ABC41B8F343 /* Models */,
+				E3A88C04363A4775D035ED52 /* Resources */,
 			);
 			path = Wad;
 			sourceTree = "<group>";
@@ -58,6 +68,7 @@
 		2D5C33E34682195859AB6CDA /* WadTests */ = {
 			isa = PBXGroup;
 			children = (
+				4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */,
 				F87F046930E8678C6BB01870 /* RoundStoreTests.swift */,
 			);
 			path = WadTests;
@@ -80,6 +91,15 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		6E64267AE606FA089A097543 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				9C0945A7071A5F92EE491A1B /* EngineBridge.swift */,
+				3AB6E42DB5879EA56976E812 /* EngineTypes.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
 		DD0CBEB2DC9A85086EFC0F56 = {
 			isa = PBXGroup;
 			children = (
@@ -88,6 +108,14 @@
 				2D5C33E34682195859AB6CDA /* WadTests */,
 				2F1E8ABF1FC2D89785F94C42 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		E3A88C04363A4775D035ED52 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E15243CD43A4CBE9E9669CE0 /* engines.js */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -172,6 +200,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				14D7403468F76CF2D776AFC2 /* Assets.xcassets in Resources */,
+				DA169FB9E57726485329E646 /* engines.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -182,6 +211,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDDE34B5B1FAE0C5279FC601 /* EngineBridgeTests.swift in Sources */,
 				888A9A864196CB2016649D11 /* RoundStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -190,6 +220,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				74505FE1E8DDECD31BC8C0DF /* EngineBridge.swift in Sources */,
+				DB670CCC67027C7A912170F8 /* EngineTypes.swift in Sources */,
 				57C2188B51FC32580E11CA65 /* RootView.swift in Sources */,
 				1CC6507EEEAC51FF5872E296 /* Round.swift in Sources */,
 				5A1E5145B8B99F4CC673E455 /* WadApp.swift in Sources */,
