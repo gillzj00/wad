@@ -26,14 +26,12 @@ Data lives in a **single DynamoDB table** (see `docs/data-model.md`); do not add
 
 ## Commands
 
-The project is not yet buildable — these are the intended commands and will be filled in / corrected as each component lands. Verify against the component's own README before relying on them.
-
-Backend (`backend/`, once scaffolded):
+Backend (`backend/`, Node 22 via `.nvmrc`; vitest, eslint, esbuild):
 - `npm install` — install dependencies
 - `npm test` — run the unit test suite (game engines have the highest coverage bar)
-- `npm test -- <pattern>` — run a single test file or matching tests
+- `npm test -- <pattern>` — run test files whose path matches, e.g. `npm test -- engines/skins`
 - `npm run lint` / `npm run typecheck` — static checks
-- `npm run build` — bundle Lambda artifacts
+- `npm run build` — bundle each `src/handlers/*.ts` into `dist/<name>/index.mjs`
 
 iOS (`ios/`, once scaffolded):
 - Open the Xcode project and build/run, or `xcodebuild -scheme Wad -destination 'platform=iOS Simulator,name=iPhone 16' build`

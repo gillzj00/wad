@@ -25,35 +25,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          # Enable npm caching in M0.5 once backend/package-lock.json exists:
-          #   cache: npm
-          #   cache-dependency-path: backend/package-lock.json
-
-      # The steps below activate once the backend is scaffolded (M0.4).
-      # Until package.json exists this job is a no-op so PRs are not blocked.
-      - name: Guard - skip if no package.json
-        id: guard
-        run: |
-          if [ -f package.json ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "backend not scaffolded yet; skipping"
-          fi
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install
-        if: steps.guard.outputs.present == 'true'
         run: npm ci
 
       - name: Typecheck
-        if: steps.guard.outputs.present == 'true'
-        run: npm run typecheck --if-present
+        run: npm run typecheck
 
       - name: Lint
-        if: steps.guard.outputs.present == 'true'
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Test
-        if: steps.guard.outputs.present == 'true'
-        run: npm test --if-present
+        run: npm test
+
+      - name: Build
+        run: npm run build

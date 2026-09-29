@@ -6,11 +6,11 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M0 — Foundations
 
-- [ ] **M0.1 Terraform bootstrap** (`infra/bootstrap/`): S3 state bucket (versioned, encrypted; S3 lock file for locking), GitHub OIDC provider, CI IAM role scoped to this repo. Human-run once. AC: `terraform apply` in bootstrap succeeds; outputs the role ARN and state bucket.
-- [ ] **M0.2 Remote state + dev stack skeleton** (`infra/environments/dev/`): backend config pointing at the bootstrap bucket; providers; empty stack that plans clean. AC: `terraform init && plan` succeeds in CI using OIDC.
-- [ ] **M0.3 Terraform CI** (`.github/workflows/terraform.yml`): fmt check + validate + plan on PR (plan posted to PR), apply on merge to `main`, via OIDC. AC: PR shows a plan; merge applies. (Skeleton provided.)
-- [ ] **M0.4 Backend project scaffold** (`backend/`): TypeScript, test runner, lint/typecheck, bundler for Lambda, `shared/` types matching `docs/api.md`. AC: `npm test`/`lint`/`build` run green on an empty suite.
-- [ ] **M0.5 Backend CI** (`.github/workflows/backend-ci.yml`): install, typecheck, lint, test on PRs touching `backend/`. (Skeleton provided.)
+- [x] **M0.1 Terraform bootstrap** (`infra/bootstrap/`): S3 state bucket (versioned, encrypted; S3 lock file for locking), GitHub OIDC provider, CI IAM role scoped to this repo. Human-run once. AC: `terraform apply` in bootstrap succeeds; outputs the role ARN and state bucket.
+- [x] **M0.2 Remote state + dev stack skeleton** (`infra/environments/dev/`): backend config pointing at the bootstrap bucket; providers; empty stack that plans clean. AC: `terraform init && plan` succeeds in CI using OIDC.
+- [x] **M0.3 Terraform CI** (`.github/workflows/terraform.yml`): fmt check + validate + plan on PR (plan posted to PR), apply on merge to `main`, via OIDC. AC: PR shows a plan; merge applies. (Skeleton provided.)
+- [x] **M0.4 Backend project scaffold** (`backend/`): TypeScript, test runner, lint/typecheck, bundler for Lambda, `shared/` types matching `docs/api.md`. AC: `npm test`/`lint`/`build` run green on an empty suite.
+- [x] **M0.5 Backend CI** (`.github/workflows/backend-ci.yml`): install, typecheck, lint, test on PRs touching `backend/`. (Skeleton provided.)
 - [ ] **M0.6 iOS project scaffold** (`ios/`): SwiftUI app, SwiftData store, unit test target, app skeleton (tab shell). AC: builds and tests pass in CI.
 - [ ] **M0.7 iOS CI** (`.github/workflows/ios-ci.yml`): build + test on PRs touching `ios/`. (Skeleton provided.)
 
