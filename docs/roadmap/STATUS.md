@@ -26,12 +26,12 @@ Last updated: 2026-09-29
 | --- | --- | --- | --- |
 | M3.1 | Round lifecycle API (code and tests; not deployed) | done | #26 |
 | M2.3 | Manual course entry + corrections (code and tests; not deployed) | done | #24 |
-| M3.2 | Scoring API | in flight | - |
-| M5.1 | Settlement API | todo (after M3.2) | - |
+| M3.2 | Scoring API (code and tests; not deployed) | done | #28 |
+| M5.1 | Settlement API | in flight | - |
 
 ## Task in flight
 
-- M3.2 (subagent, own worktree, branch `feat/scoring-api`)
+- M5.1 (subagent, own worktree, branch `feat/settlement-api`)
 
 ## Open PRs
 
@@ -50,6 +50,8 @@ Last updated: 2026-09-29
 ## Questions waiting on @gillzj00
 
 - Which iOS version is on the phone? (asked 2026-09-29) Local verification is on iOS 26 and CI on iOS 18; iOS 17 is untested.
+- M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
+- Should the API get a per-round course handicap override (the demo app has one)? Without it, rounds on a tee with no rating/slope have no skins. Recommended: yes, as a follow-up task.
 - M3.1 choices to confirm (docs were silent; implemented and documented in #26): 9-hole rounds rejected with 400 (Open Question 3 unresolved); 4-player cap enforced, 2-player minimum not enforced at the API; creating or joining needs a profile with display name and handicap index (409 otherwise; assumes the M1.2 attribute names); on a tee without rating/slope the course handicap and ticks are null (no per-round override in the API yet); course must already be stored; join codes are 6 characters and valid 48 hours; joining is not blocked by round status or existing scores.
 - M2.3 choices to confirm (docs were silent; implemented and documented in #24): corrections are stored as pending suggestions and never change the course; corrections return 404 unless the course is already stored; manual courses are 18 holes, par 3-5, 1-12 tees; tee gender defaults to male; manual courses are reachable by id only (no search) and there is no API yet to review or apply corrections.
 - Setup choices to confirm (defaults in use until told otherwise): plus handicaps typed as "+1.2"; $0 game amounts allowed; course name required.
@@ -59,6 +61,8 @@ Last updated: 2026-09-29
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
 - Not exercised by any test yet: validation messages in the setup flow, rounds list delete.
 - Demo verification: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
+- Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
+- Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
 - iOS CI runs Xcode 16.4 with an iOS 18 simulator; local runs use iOS 26. Controls in list section headers were not hittable for XCUITest on iOS 18, so they were moved into full-width rows (#20).
 - The `Round` SwiftData schema changed with no migration; delete any older install of the app before installing.
