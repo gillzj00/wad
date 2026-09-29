@@ -37,6 +37,7 @@ An iPhone app you take onto the golf course to keep score for your group and run
 | Payments | Compute net debts, settle via Venmo deep links | [0007](adr/0007-payments-venmo-deeplinks.md) |
 | Course data | Licensed API (GolfCourseAPI) + local cache; no scraping | [0008](adr/0008-course-data-source.md) |
 | IaC/CD | Terraform via GitHub Actions using GitHub OIDC | [0009](adr/0009-terraform-github-oidc.md) |
+| Game rules | "Collect from each" payouts, one settlement per round | [0010](adr/0010-game-rules.md) |
 
 ## 4. Architecture summary
 
@@ -71,11 +72,10 @@ Engines (M4) are pure functions and can be built in parallel with the backend/iO
 
 ## 6. Open questions
 
-These block correct implementation of specific rules. Resolve with the product owner before building the affected feature; they are tracked in [domain-model.md](domain-model.md#open-questions).
+The core game rules are settled ([ADR-0010](adr/0010-game-rules.md)). Two edge cases remain, tracked in [domain-model.md](domain-model.md#open-questions):
 
-- **Wad:** At the end of 9 holes, does the current holder collect the Wad from each other player, or pay it? Is the "flagstick length" a fixed configurable distance (default ~7 ft) or measured live? Does re-making it as the current holder increase the value?
-- **Skins:** Is the skin amount ($5) contributed by each player into a per-hole pot (winner takes the pot), or paid by each loser to the winner? How is the carried-over pot combined with the next hole's value?
-- **Greenies:** Confirm "on the green" means green-in-regulation off the tee (tee shot finishes on the green). Confirm par-or-better (not strictly par) earns it.
+- **Skins:** what happens to a carryover that is still unresolved after the final hole.
+- **Leaving mid-round:** how a departing player's games are settled.
 
 ## 7. How agents should work here
 

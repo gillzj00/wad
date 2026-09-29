@@ -1,11 +1,12 @@
 # Domain Model — Games & Handicaps
 
-This document is the source of truth for how each game is scored and how money is computed. The payout math must be exact, so anything ambiguous is listed under [Open Questions](#open-questions) and must be confirmed with the product owner (@gillzj00) before implementation — **do not guess**.
+This document is the source of truth for how each game is scored and how money is computed. The rules below were confirmed by the product owner (@gillzj00); see [ADR-0010](adr/0010-game-rules.md). Anything still unresolved is listed under [Open Questions](#open-questions) and must be confirmed before implementing the affected behavior — **do not guess**.
 
 Conventions used here:
 - All money is stored and computed as **integer cents**. Display formats to dollars.
 - **Stroke index** (a.k.a. hole handicap) ranks hole difficulty 1–18, where 1 is the hardest. It is per-course (and can differ by tee set).
-- A round has 18 holes; games that "reset every 9" treat holes 1–9 (front) and 10–18 (back) as independent instances.
+- Every game that pays out uses **"collect from each"**: the winner collects the amount from **each** other player in the round. With integer-cent amounts this never produces fractional cents.
+- All game results are netted into a **single settlement per round**. A 9-hole round settles after hole 9; an 18-hole round settles after hole 18. Nothing is paid mid-round.
 
 ---
 
@@ -13,13 +14,13 @@ Conventions used here:
 
 Players of different ability are equalized by giving weaker players extra strokes ("ticks") on the hardest holes.
 
-**Course Handicap** (World Handicap System):
+**Course Handicap** (World Handicap System) is the default, computed from each player's Handicap Index and the selected tee:
 
 ```
 Course Handicap = round( HandicapIndex * (Slope / 113) + (CourseRating - Par) )
 ```
 
-For v1 we let players either use the computed course handicap for the selected tee or override with a manually agreed playing handicap (see [Open Questions](#open-questions) on which is the default).
+The group can override any player's handicap for a round (e.g. an agreed playing handicap). The override replaces the computed course handicap for that round only.
 
 **Allocating ticks (relative method):**
 1. Find the lowest course handicap in the group; call it the group scratch.
@@ -35,39 +36,39 @@ A player's **net score** on a hole = `gross strokes − ticks received on that h
 
 ## Game 1: Wad (putting game)
 
-A carrying-pot putting game that resets every 9 holes.
+A carrying-value putting game, played as independent instances over holes 1–9 and holes 10–18 (a 9-hole round has one instance).
 
-**Earning / holding the Wad:** On a green, a player "makes the Wad" if their **first putt on that green** is holed **from at least a flagstick's length away**. Doing so makes them the current holder.
+**Settings (per round):** start value (default **$7**) and step (default **$2**).
 
-**Value:**
-- The Wad starts at **$7** for each 9-hole instance.
-- Each time the Wad **transfers** to a different holder, its value increases by **$2** (so 1st transfer -> $9, 2nd -> $11, …).
-- If no one qualifies on a green, the Wad stays put and the value does not change.
+**Qualifying make:** a player's **first putt on the green** is holed from **at least a flagstick's length** away. Each player has only one first putt per green, so a player can qualify at most once per hole. The group judges the distance on the course; the app does not measure it.
 
-**Reset:** At the start of the back nine (hole 10), the Wad resets to $7 with no holder.
+**Recording:** for each hole, the group records the **ordered list** of players who made a qualifying putt (usually empty, sometimes one, occasionally more). Order matters: it is the order the putts were made.
 
-**Settlement:** Determined per 9-hole instance based on who holds the Wad when the instance ends. Exact direction of payment is an [Open Question](#open-questions).
+**Holding and value:** process qualifying makes in order across the nine:
+- If nobody holds the Wad yet in this instance, the maker becomes the holder at the **start value**.
+- Otherwise, the value increases by the **step** and the maker becomes the holder. This applies to **every** subsequent make, including the current holder making another one.
 
-State the engine must track, per 9-hole instance: current holder (nullable), current value, and the history of transfers (hole, from, to, resulting value).
+> Example (defaults): Hole 2, A makes one -> A holds at $7. Hole 5, B then C both make one, in that order -> B holds at $9, then C holds at $11. Hole 7, C makes another -> C holds at $13.
 
-### Wad open items
-See [Open Questions](#open-questions): end-of-nine payout direction and recipients; definition of "flagstick length" (proposed default: a configurable constant, ~7 ft / 84 in); whether the current holder re-making it increases the value.
+**End of instance:** after the last hole of the instance (9 or 18), the holder **collects the current value from each other player**. If nobody holds it, nothing is owed. The next instance starts fresh (no holder, start value).
+
+State the engine exposes, per instance: current holder (nullable), current value, and the ordered history of makes (hole, maker, resulting value).
 
 ---
 
 ## Game 2: Skins (net, with carryovers)
 
-Hole-by-hole net competition for a fixed amount per skin (default **$5**).
+Hole-by-hole net competition for a base amount per skin (default **$5**).
 
-**Winning a skin:** On each hole, compute every player's net score (gross − ticks). The player with the **sole lowest net score wins the skin** for that hole.
+**Winning a skin:** on each hole, compute every player's net score (gross − ticks). The player with the **sole lowest net score wins the skin** and **collects the hole's value from each other player**.
 
-**Push / carryover:** If two or more players tie for the lowest net score, no one wins; the hole "pushes" and its value carries to the next hole, which is then worth the carried amount **plus** the base skin value. Carrying continues until a hole is won outright.
+**Push / carryover:** if two or more players tie for the lowest net score, nobody wins and no money changes hands on that hole. The hole's value carries forward: the next hole is worth the carried value **plus** the base value. Carrying continues until a hole is won outright.
 
-> Example (base $5): Hole 1 ties -> hole 2 is worth $10. Hole 2 ties -> hole 3 is worth $15. Someone wins hole 3 outright -> they win $15; hole 4 resets to $5.
+> Example (base $5, 4 players): Hole 1: two net pars, two net bogeys -> push, hole 2 is worth $10. Hole 2 pushes -> hole 3 is worth $15. A wins hole 3 outright -> A collects $15 from each of the other three (+$45). Hole 4 is worth $5 again.
 
-**Settlement model** (per-hole pot vs. loser-pays) is an [Open Question](#open-questions). The engine should expose, per hole: base value, carried-in value, total at stake, winner (nullable if pushed), and the resulting per-player deltas once the settlement model is confirmed.
+Skins is **one game over the whole round**: carryovers continue through the turn (a push on 9 carries to 10). What happens to a carryover still unresolved after the final hole is an [Open Question](#open-questions).
 
-Does Skins reset every 9 or run across all 18? Assume **all 18 with carryovers not crossing the 9 boundary reset** — confirm in [Open Questions](#open-questions).
+The engine exposes, per hole: base value, carried-in value, total at stake, winner (nullable if pushed), and the resulting per-player deltas.
 
 ---
 
@@ -75,13 +76,15 @@ Does Skins reset every 9 or run across all 18? Assume **all 18 with carryovers n
 
 Played only on par-3 holes, for a fixed amount (default **$5**).
 
-**Earning a greenie:** A player earns a greenie on a par-3 if their **tee shot finishes on the green** (green in regulation off the tee) **and** they then score **par or better** on the hole. Hitting the green but making bogey or worse does not earn it. (Confirm the exact "on the green" and "par or better" definitions in [Open Questions](#open-questions).)
+**Eligibility:** a player is eligible on a par 3 if their **tee shot finishes on the green** and they then score **par or better** (par, birdie, or ace).
 
-**Settlement (round-robin wash):** On each par-3, every player who did **not** earn a greenie pays the greenie amount to **each** player who **did**. Players who both earned greenies wash against each other; if everyone earns one (or no one does), the hole is a wash.
+**Winner:** at most **one greenie per hole**. If more than one player is eligible, the greenie goes to the eligible player whose **tee shot finished closest to the pin**. If nobody is eligible, there is no greenie on that hole.
 
-> Example (amount $5, 3 players): A and B earn greenies, C does not. C pays $5 to A and $5 to B (−$10 for C, +$5 each for A and B). A vs. B washes.
+**Recording:** for each par 3 the group records the greenie winner (or none). The app should only offer players who scored par or better on the hole, and reject a winner who did not.
 
-This game's rules are fully determined; the only confirmations needed are the two definitional points above.
+**Settlement:** the winner **collects the greenie amount from each other player**.
+
+> Example (amount $5, 3 players): A and B both hit the green and make par; A's tee shot was closer. A wins the greenie and collects $5 from B and $5 from C (+$10).
 
 ---
 
@@ -93,13 +96,7 @@ At the end of the round the app computes each player's net position across **all
 
 ## Open Questions
 
-Resolve these with @gillzj00 before implementing the affected engine. Update this section and add/adjust an ADR when answered.
+Resolve these with @gillzj00 before implementing the affected behavior. Update this section and add/adjust an ADR when answered.
 
-1. **Wad — end-of-nine payout.** When a 9-hole instance ends, does the holder **collect** the current value from each other player, does the holder **pay** it, or is it a single pot? Who are the counterparties (every other player, or only those who ever held it)?
-2. **Wad — "flagstick length."** Use a fixed configurable distance (proposed default ~7 ft) that the scorer confirms, or capture an actual measured distance? A binary "was it a flagstick or longer?" toggle at scoring time is the proposed MVP.
-3. **Wad — holder re-makes it.** If the current holder makes another qualifying putt, does the value still go up $2, or only on a change of holder? (Proposed: only on transfer.)
-4. **Skins — settlement model.** Each player antes the skin value into a per-hole pot and the winner takes the pot, OR each losing player pays the skin value directly to the winner? These produce different totals for groups larger than two.
-5. **Skins — 9-hole boundary.** Do carryovers reset at the turn (hole 10) or run continuously through 18?
-6. **Greenies — definitions.** Confirm "on the green" = tee shot comes to rest on the green (GIR off the tee), and that **par or better** (not strictly par) earns it.
-7. **Handicap default.** Default to the WHS-computed course handicap for the selected tee, or to a manually agreed playing handicap? Allow per-round override either way.
-8. **Money edge cases.** Rounding rule for any odd cents (proposed: all amounts are whole dollars, so no fractional cents arise); behavior when a player leaves mid-round.
+1. **Skins — unresolved carryover at the end.** If the final hole is pushed, the carried value has no next hole. Is it simply not paid out, or is there a tiebreak (e.g. a playoff hole, or split among the tied players)? Until answered the engine must not pay it out and should expose the unresolved amount so the UI can show it.
+2. **Leaving mid-round.** If a player leaves before the round ends, what happens to their games? (E.g. settle everything up to the last completed hole, or void their participation in unfinished games.)

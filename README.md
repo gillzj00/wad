@@ -4,9 +4,9 @@ Wad is an iPhone app for tracking scores and side-bets during a round of golf. B
 
 ## Supported games
 
-- **Wad** — a putting game. Make your first putt on a green from at least a flagstick's length away and you hold the Wad. It starts at $7 and rises $2 each time it changes hands. The game resets every 9 holes.
-- **Skins** — net match play for money. Handicap strokes ("ticks") are allocated to the hardest holes based on the difference between players' course handicaps. The sole net winner of a hole wins the skin; ties carry the pot to the next hole.
-- **Greenies** — a par-3 game. Hit the green off the tee and make par (or better) to earn a greenie. Players who miss out pay each player who earned one.
+- **Wad** — a putting game. Make your first putt on a green from at least a flagstick's length away and you take the Wad. It starts at $7 and every qualifying make after that adds $2. Whoever holds it at the end of each nine collects its value from each other player.
+- **Skins** — net match play for money. Handicap strokes ("ticks") are allocated to the hardest holes based on the difference between players' course handicaps. The sole net winner of a hole collects the skin from each other player; ties carry the value to the next hole.
+- **Greenies** — a par-3 game. Hit the green off the tee and make par or better; if several players do, the closest tee shot wins. The winner collects from each other player.
 
 At the end of the match the app nets out who owes whom across every game and helps you settle up with pre-filled Venmo payments.
 
