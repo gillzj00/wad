@@ -1,11 +1,20 @@
 import { type DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import type { Course, CourseSummary } from "../../shared/types.js";
+import type { CourseCorrection } from "../../shared/courseInput.js";
+import type { Course, CourseSummary, UserId } from "../../shared/types.js";
 
 export interface CourseCache {
   getCourse(courseId: string): Promise<Course | null>;
+  /** Write-through for provider courses. Never replaces a course that came from a different source. */
   putCourse(course: Course): Promise<void>;
+  /** Stores a new course; fails if the id is already taken. */
+  createCourse(course: Course, createdBy: UserId): Promise<void>;
+  putCorrection(correction: CourseCorrection): Promise<void>;
   getSearch(query: string): Promise<CourseSummary[] | null>;
   putSearch(query: string, results: CourseSummary[], ttlSeconds: number): Promise<void>;
+}
+
+function isConditionFailure(err: unknown): boolean {
+  return err instanceof Error && err.name === "ConditionalCheckFailedException";
 }
 
 /** Single-table storage; see docs/data-model.md for the item layout. */
@@ -22,10 +31,43 @@ export class DynamoCourseCache implements CourseCache {
   }
 
   async putCourse(course: Course): Promise<void> {
+    try {
+      await this.db.send(
+        new PutCommand({
+          TableName: this.tableName,
+          Item: { PK: `COURSE#${course.courseId}`, SK: "PROFILE", type: "course", course },
+          ConditionExpression: "attribute_not_exists(PK) OR course.#source = :source",
+          ExpressionAttributeNames: { "#source": "source" },
+          ExpressionAttributeValues: { ":source": course.source },
+        }),
+      );
+    } catch (err) {
+      // The stored course came from another source; leave it as it is.
+      if (!isConditionFailure(err)) throw err;
+    }
+  }
+
+  async createCourse(course: Course, createdBy: UserId): Promise<void> {
     await this.db.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: { PK: `COURSE#${course.courseId}`, SK: "PROFILE", type: "course", course },
+        Item: { PK: `COURSE#${course.courseId}`, SK: "PROFILE", type: "course", course, createdBy, createdAt: course.fetchedAt },
+        ConditionExpression: "attribute_not_exists(PK)",
+      }),
+    );
+  }
+
+  async putCorrection(correction: CourseCorrection): Promise<void> {
+    await this.db.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          PK: `COURSE#${correction.courseId}`,
+          SK: `CORRECTION#${correction.submittedAt}#${correction.correctionId}`,
+          type: "courseCorrection",
+          correction,
+        },
+        ConditionExpression: "attribute_not_exists(PK)",
       }),
     );
   }

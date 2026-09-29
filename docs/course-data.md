@@ -30,5 +30,5 @@ Key URLs: https://golfcourseapi.com Â· https://api.golfcourseapi.com/docs/api/ Â
 - Tees are grouped into `male` and `female`, and **each tee has its own holes**: pars and stroke indexes (`handicap`) can differ between tees, even within a gender. A round must therefore pin one tee and use that tee's pars and stroke indexes.
 - Search results carry only tee counts, so showing a scorecard always needs a course fetch.
 - Responses carry no rate-limit headers; a `429` maps to `503 course_provider_rate_limited` for our clients.
-- Manual courses get a generated `courseId` and `source: "manual"`; corrections are stored as `COURSE#<id>` correction items for later review/merge (do not silently overwrite provider data).
+- Manual courses get a generated `courseId` (`man-<uuid>`) and `source: "manual"`; corrections are stored as `COURSE#<id>` correction items for later review/merge (do not silently overwrite provider data). `man-` ids are never sent to the provider, and submitting a correction only reads stored courses, so neither spends provider quota.
 - **Compliance:** never expose a bulk export/dump of course data from our API (respect the no-redistribution terms). The client fetches courses one at a time for use in rounds.
