@@ -38,19 +38,21 @@ struct VenmoHandleEditor: View {
                         .textInputAutocapitalization(.never)
                         .accessibilityIdentifier("venmoHandle.field")
                 } header: {
-                    Text(edit.name)
+                    SectionHeader(edit.name)
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {
                         if parsed == .invalid {
                             Text(VenmoHandle.rule)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Theme.Palette.flagRed)
                                 .accessibilityIdentifier("venmoHandle.invalid")
                         }
-                        Text("The name after the @ in Venmo. Leave it blank for a player without Venmo. "
+                        SectionFooter("The name after the @ in Venmo. Leave it blank for a player without Venmo. "
                             + "Wad does not check it against Venmo.")
                     }
                 }
+                .themedRows()
             }
+            .themedList()
             .navigationTitle("Venmo handle")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
