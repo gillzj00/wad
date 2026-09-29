@@ -21,3 +21,15 @@ variable "github_repo" {
   type        = string
   default     = "wad"
 }
+
+variable "github_owner_id" {
+  description = "Numeric GitHub owner ID, used in immutable OIDC subject claims."
+  type        = string
+  default     = "5639243"
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub repository ID, used in immutable OIDC subject claims."
+  type        = string
+  default     = "1387929117"
+}

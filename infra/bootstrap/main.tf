@@ -25,7 +25,9 @@ data "aws_caller_identity" "current" {}
 locals {
   state_bucket = "${var.project}-tfstate-${data.aws_caller_identity.current.account_id}"
   lock_table   = "${var.project}-tflock"
-  repo_sub     = "repo:${var.github_owner}/${var.github_repo}:*"
+  # The repo uses GitHub's immutable OIDC subject claims, which embed the
+  # owner and repo numeric IDs: repo:<owner>@<owner_id>/<repo>@<repo_id>:<ref>
+  repo_sub = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:*"
 }
 
 # ---------------------------------------------------------------------------
