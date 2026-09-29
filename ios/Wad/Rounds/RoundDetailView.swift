@@ -22,97 +22,147 @@ struct RoundDetailView: View {
         let scorecard = Scorecard(round: round)
         List {
             Section {
-                NavigationLink(value: RoundsRoute.scoring(round)) {
-                    Label(
-                        scorecard.completedHoleCount == 0 ? "Score round" : "Continue scoring",
-                        systemImage: "pencil.and.list.clipboard"
-                    )
-                }
-                .accessibilityIdentifier("detail.scoreRound")
-                LabeledContent(
-                    "Holes completed",
-                    value: "\(scorecard.completedHoleCount) of \(scorecard.holeCount)"
-                )
-                .accessibilityIdentifier("detail.holesCompleted")
-                NavigationLink(value: RoundsRoute.settlement(round)) {
-                    Label(
-                        scorecard.completedHoleCount == scorecard.holeCount ? "Settlement" : "Settlement (provisional)",
-                        systemImage: "dollarsign.circle"
-                    )
-                }
-                .accessibilityIdentifier("detail.settlement")
-            } header: {
-                Text("Round")
+                header(scorecard)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
             }
 
-            Section("Scorecard") {
-                ScorecardView(scorecard: scorecard)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 8))
-            }
-
-            Section("Course") {
-                LabeledContent("Name", value: round.courseName)
-                LabeledContent("Holes", value: "\(round.holes.count)")
-                LabeledContent("Par", value: "\(round.totalPar)")
-                if let tee = round.engineTeeRating {
-                    LabeledContent("Rating / slope", value: "\(SetupText.display(handicapIndex: tee.courseRating)) / \(tee.slope)")
-                }
-            }
-
-            Section {
-                ForEach(round.orderedPlayers) { player in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(player.displayName)
-                            if let index = player.handicapIndex {
-                                Text("Index \(SetupText.display(handicapIndex: index))")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
-                            Text(ticksText(totalTicks?[player.playerID]))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .monospacedDigit()
-                    }
-                    Button {
-                        handleEdit = VenmoHandleEdit(playerID: player.playerID, name: player.displayName)
-                    } label: {
+            Group {
+                Section {
+                    NavigationLink(value: RoundsRoute.scoring(round)) {
                         Label(
-                            player.venmoHandle.map { "Venmo \(VenmoHandle.display($0))" }
-                                ?? "Add \(player.displayName)'s Venmo handle",
-                            systemImage: "at"
+                            scorecard.completedHoleCount == 0 ? "Score round" : "Continue scoring",
+                            systemImage: "pencil.and.list.clipboard"
                         )
-                        .font(.subheadline)
+                        .font(.headline)
                     }
-                    .accessibilityIdentifier("detail.venmoHandle.\(player.displayName)")
+                    .accessibilityIdentifier("detail.scoreRound")
+                    LabeledContent(
+                        "Holes completed",
+                        value: "\(scorecard.completedHoleCount) of \(scorecard.holeCount)"
+                    )
+                    .accessibilityIdentifier("detail.holesCompleted")
+                    NavigationLink(value: RoundsRoute.settlement(round)) {
+                        Label(
+                            scorecard.completedHoleCount == scorecard.holeCount ? "Settlement" : "Settlement (provisional)",
+                            systemImage: "dollarsign.circle"
+                        )
+                    }
+                    .accessibilityIdentifier("detail.settlement")
+                } header: {
+                    SectionHeader("Round", systemImage: "flag.fill")
                 }
-            } header: {
-                Text("Players")
-            } footer: {
-                if totalTicks == nil {
-                    Text("Ticks could not be computed.")
-                } else {
-                    Text("Ticks are strokes received relative to the lowest course handicap in the group.")
-                }
-            }
 
-            Section("Games") {
-                LabeledContent("Wad start", value: "$" + Money.dollars(fromCents: round.wadStartCents))
-                LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
-                LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
-                LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+                Section {
+                    ScorecardView(scorecard: scorecard)
+                        .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+                } header: {
+                    SectionHeader("Scorecard", systemImage: "tablecells")
+                } footer: {
+                    SectionFooter("A circle is a birdie and two an eagle or better. A square is a bogey and two a double bogey or worse.")
+                }
+
+                Section {
+                    LabeledContent("Name", value: round.courseName)
+                    LabeledContent("Holes", value: "\(round.holes.count)")
+                    LabeledContent("Par", value: "\(round.totalPar)")
+                    if let tee = round.engineTeeRating {
+                        LabeledContent("Rating / slope", value: "\(SetupText.display(handicapIndex: tee.courseRating)) / \(tee.slope)")
+                    }
+                } header: {
+                    SectionHeader("Course", systemImage: "map")
+                }
+
+                Section {
+                    ForEach(round.orderedPlayers) { player in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(player.displayName)
+                                if let index = player.handicapIndex {
+                                    Text("Index \(SetupText.display(handicapIndex: index))")
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.Palette.inkSecondary)
+                                }
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
+                                Text(ticksText(totalTicks?[player.playerID]))
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.Palette.inkSecondary)
+                            }
+                            .monospacedDigit()
+                        }
+                        Button {
+                            handleEdit = VenmoHandleEdit(playerID: player.playerID, name: player.displayName)
+                        } label: {
+                            Label(
+                                player.venmoHandle.map { "Venmo \(VenmoHandle.display($0))" }
+                                    ?? "Add \(player.displayName)'s Venmo handle",
+                                systemImage: "at"
+                            )
+                            .font(.subheadline)
+                        }
+                        .accessibilityIdentifier("detail.venmoHandle.\(player.displayName)")
+                    }
+                } header: {
+                    SectionHeader("Players", systemImage: "person.2.fill")
+                } footer: {
+                    if totalTicks == nil {
+                        SectionFooter("Ticks could not be computed.")
+                    } else {
+                        SectionFooter("Ticks are strokes received relative to the lowest course handicap in the group.")
+                    }
+                }
+
+                Section {
+                    LabeledContent("Wad start", value: "$" + Money.dollars(fromCents: round.wadStartCents))
+                    LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
+                    LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
+                    LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+                } header: {
+                    SectionHeader("Games", systemImage: "dollarsign.circle")
+                }
             }
+            .themedRows()
         }
+        .labeledContentStyle(ThemedLabeledContentStyle())
+        .themedList()
         .navigationTitle(round.courseName)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $handleEdit) { edit in
             VenmoHandleEditor(round: round, edit: edit)
         }
+    }
+
+    /// The course, the day and how far the round is.
+    private func header(_ scorecard: Scorecard) -> some View {
+        Card(emphasized: true) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                Text(round.courseName)
+                    .font(Theme.Typography.display)
+                Text(RoundHistoryRow.date(round.startedAt))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.Palette.onGreen.opacity(0.85))
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Theme.Spacing.s) { facts(scorecard) }
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s) { facts(scorecard) }
+                }
+                .padding(.top, Theme.Spacing.xs)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func facts(_ scorecard: Scorecard) -> some View {
+        StatPill(text: "Par \(round.totalPar)", tone: .onGreen)
+        StatPill(text: "\(round.players.count) players", systemImage: "person.2.fill", tone: .onGreen)
+        StatPill(
+            text: "\(scorecard.completedHoleCount) of \(scorecard.holeCount) holes",
+            systemImage: "flag.fill",
+            tone: .onGreen
+        )
     }
 
     private func ticksText(_ ticks: Int?) -> String {

@@ -10,6 +10,8 @@ enum LaunchArgument {
     static let debugStoreFile = "debugStoreFile"
     /// `-debugStoreCounts` shows how many rounds, holes, players and scores are stored.
     static let debugStoreCounts = "-debugStoreCounts"
+    /// `-debugColorScheme light|dark` shows the app in that color scheme.
+    static let debugColorScheme = "debugColorScheme"
     #endif
 }
 
@@ -18,6 +20,7 @@ struct WadApp: App {
     private let container: ModelContainer
 
     init() {
+        Appearance.apply()
         let inMemory = ProcessInfo.processInfo.arguments.contains(LaunchArgument.inMemoryStore)
         var configuration = ModelConfiguration(isStoredInMemoryOnly: inMemory)
         #if DEBUG
@@ -35,6 +38,10 @@ struct WadApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .tint(Theme.Palette.fairway)
+                #if DEBUG
+                .preferredColorScheme(Appearance.debugColorScheme)
+                #endif
         }
         .modelContainer(container)
     }
