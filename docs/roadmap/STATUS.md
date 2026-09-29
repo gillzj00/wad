@@ -15,14 +15,14 @@ Phase 2 (backend, after the demo is ready): M3.1 round lifecycle API, M3.2 scori
 | # | Task | Touches | State | PR |
 | --- | --- | --- | --- | --- |
 | P1.1 | ADR-0011 + esbuild bundle of the TS engines + Swift JavaScriptCore bridge with tests | backend/, ios/, docs/ | done | #16 |
-| P1.2 | SwiftData models + round setup: manual course entry (par + stroke index per hole, optional rating and slope), 2-4 players with handicaps, game settings | ios/ | in flight | - |
-| P1.3 | Hole-by-hole scoring with Wad makes (ordered) and Greenie winner | ios/ | todo (after P1.2) | - |
+| P1.2 | SwiftData models + round setup: manual course entry (par + stroke index per hole, optional rating and slope), 2-4 players with handicaps, game settings | ios/ | done | #18 |
+| P1.3 | Hole-by-hole scoring with Wad makes (ordered) and Greenie winner, plus an XCUITest walkthrough of setup and scoring | ios/ | in flight | - |
 | P1.4 | Settlement screen: per-game results, net positions, pairwise transfers, unresolved skins carryover shown and not paid | ios/ | todo (after P1.3) | - |
 | P1.5 | Simulator walkthrough of a full 18-hole round, screenshots, notify demo ready | - | todo | - |
 
 ## Task in flight
 
-- P1.2 (subagent, own worktree, branch `feat/ios-round-setup`)
+- P1.3 (subagent, own worktree, branch `feat/ios-hole-scoring`)
 
 ## Open PRs
 
@@ -40,7 +40,13 @@ Phase 2 (backend, after the demo is ready): M3.1 round lifecycle API, M3.2 scori
 
 ## Questions waiting on @gillzj00
 
-- none
+- Simulator access (asked 2026-09-29): grant "Let Claude use it" for the iPhone 17 simulator in the Claude app so the orchestrator can tap through screens. Fallback in place: the XCUITest walkthrough added in P1.3.
+- Setup choices to confirm (defaults in use until told otherwise): plus handicaps typed as "+1.2"; $0 game amounts allowed; course name required.
+
+## Known gaps
+
+- P1.2 setup flow was verified by unit tests and debug-launch screenshots only; Next/Back/Create, keyboard entry, validation display and list delete have not been exercised by tapping. P1.3's UI test covers this.
+- The `Round` SwiftData schema changed with no migration; delete any older install of the app before installing.
 
 ## Blocked / deferred
 
