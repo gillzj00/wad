@@ -68,7 +68,16 @@ describe("RoundService.createRound", () => {
       createdAt: NOW.toISOString(),
       games: { skins: { baseCents: 500 }, wad: { startCents: 700, stepCents: 200 }, greenies: { amountCents: 500 } },
       players: [
-        { userId: "u_1", displayName: "Zach", handicapIndex: 15.4, courseHandicap: 18, ticksByHole: {}, guest: false, joinedAt: NOW.toISOString() },
+        {
+          userId: "u_1",
+          displayName: "Zach",
+          handicapIndex: 15.4,
+          courseHandicap: 18,
+          courseHandicapOverride: null,
+          ticksByHole: {},
+          guest: false,
+          joinedAt: NOW.toISOString(),
+        },
       ],
       scores: [],
       holes: [],

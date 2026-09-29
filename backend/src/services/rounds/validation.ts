@@ -98,6 +98,24 @@ export function isHandicapIndex(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= MIN_HANDICAP_INDEX && value <= MAX_HANDICAP_INDEX;
 }
 
+/** The per-round override takes the same range as the handicap index, in whole strokes. */
+export const MIN_COURSE_HANDICAP = MIN_HANDICAP_INDEX;
+export const MAX_COURSE_HANDICAP = MAX_HANDICAP_INDEX;
+
+/** The override to store; null clears it. */
+export function parseHandicapOverride(body: unknown): number | null {
+  const value = object(body, "body").courseHandicap;
+  if (value === undefined) throw invalid("invalid_body", "courseHandicap is required; send null to clear the override");
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < MIN_COURSE_HANDICAP || value > MAX_COURSE_HANDICAP) {
+    throw invalid(
+      "invalid_course_handicap",
+      `courseHandicap must be a whole number from ${MIN_COURSE_HANDICAP} to ${MAX_COURSE_HANDICAP}, or null to clear the override; a plus handicap is negative`,
+    );
+  }
+  return value === 0 ? 0 : value; // never -0
+}
+
 export function parseGuest(body: unknown): GuestInput {
   const raw = object(body, "body");
   const displayName = nonEmptyString(raw.displayName, "displayName");

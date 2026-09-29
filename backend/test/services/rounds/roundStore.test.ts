@@ -24,6 +24,7 @@ const player = (userId: string, extra: Partial<PlayerRecord> = {}): PlayerRecord
   displayName: userId,
   handicapIndex: 10,
   courseHandicap: 12,
+  courseHandicapOverride: null,
   guest: false,
   joinedAt: NOW.toISOString(),
   ...extra,
@@ -182,6 +183,64 @@ describe("DynamoRoundStore", () => {
       input: { TableName: TABLE, KeyConditionExpression: "PK = :pk", ExpressionAttributeValues: { ":pk": "ROUND#r_1" }, ConsistentRead: true },
     });
     expect(await store.getRound("r_missing")).toBeNull();
+  });
+
+  it("sets and clears a player's handicap override without touching the rest of the item", async () => {
+    const { store, items, sent } = await created();
+    const before = items.get("ROUND#r_1|PLAYER#u_1")!;
+    const change = { by: "u_2", at: "2026-09-29T12:10:00.000Z" };
+
+    expect(await store.setCourseHandicapOverride("r_1", "u_1", 15, change)).toBe("updated");
+    expect(sent.at(-1)).toEqual({
+      name: "UpdateCommand",
+      input: {
+        TableName: TABLE,
+        Key: { PK: "ROUND#r_1", SK: "PLAYER#u_1" },
+        UpdateExpression: "SET #override = :override, #at = :at, #by = :by",
+        ConditionExpression: "attribute_exists(PK)",
+        ExpressionAttributeNames: { "#override": "courseHandicapOverride", "#at": "courseHandicapOverrideAt", "#by": "courseHandicapOverrideBy" },
+        ExpressionAttributeValues: { ":override": 15, ":at": change.at, ":by": "u_2" },
+      },
+    });
+    expect(items.get("ROUND#r_1|PLAYER#u_1")).toEqual({
+      ...before,
+      courseHandicap: 12,
+      courseHandicapOverride: 15,
+      courseHandicapOverrideAt: change.at,
+      courseHandicapOverrideBy: "u_2",
+    });
+    expect((await store.getRound("r_1"))!.players).toEqual([player("u_1", { courseHandicapOverride: 15 })]);
+
+    expect(await store.setCourseHandicapOverride("r_1", "u_1", null, { by: "u_1", at: "2026-09-29T12:20:00.000Z" })).toBe("updated");
+    expect(items.get("ROUND#r_1|PLAYER#u_1")).toMatchObject({ courseHandicap: 12, courseHandicapOverride: null, courseHandicapOverrideBy: "u_1" });
+    expect((await store.getRound("r_1"))!.players).toEqual([player("u_1")]);
+  });
+
+  it("does not create a player item when setting an override for someone who is not in the round", async () => {
+    const { store, items } = await created();
+    const change = { by: "u_1", at: NOW.toISOString() };
+    expect(await store.setCourseHandicapOverride("r_1", "u_9", 15, change)).toBe("player_not_found");
+    expect(await store.setCourseHandicapOverride("r_missing", "u_1", 15, change)).toBe("player_not_found");
+    expect(items.has("ROUND#r_1|PLAYER#u_9")).toBe(false);
+    expect(items.has("ROUND#r_missing|PLAYER#u_1")).toBe(false);
+  });
+
+  it("rethrows a failed override write that is not a condition failure", async () => {
+    const db = {
+      send: async () => {
+        throw Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" });
+      },
+    } as never;
+    const store = new DynamoRoundStore(db, TABLE, () => NOW);
+    await expect(store.setCourseHandicapOverride("r_1", "u_1", 15, { by: "u_1", at: NOW.toISOString() })).rejects.toThrow("throttled");
+  });
+
+  it("reads a player item written before overrides existed", async () => {
+    const { store, items } = await created();
+    const old = { ...items.get("ROUND#r_1|PLAYER#u_1")! };
+    delete old.courseHandicapOverride;
+    items.set("ROUND#r_1|PLAYER#u_1", old);
+    expect((await store.getRound("r_1"))!.players).toEqual([player("u_1")]);
   });
 
   it("reads the Venmo handle from the profile", async () => {

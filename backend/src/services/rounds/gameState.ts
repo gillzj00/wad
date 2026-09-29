@@ -3,14 +3,15 @@ import { scoreSkins } from "../../engines/skins.js";
 import { scoreWad } from "../../engines/wad.js";
 import type { RoundState } from "../../shared/rounds.js";
 import type { Player } from "../../shared/types.js";
-import type { RoundRecord } from "./roundStore.js";
+import { effectiveCourseHandicap, type RoundRecord } from "./roundStore.js";
 
 /** Skins needs every player's course handicap; null while one is missing. */
 function skinsPlayers(record: RoundRecord): Player[] | null {
   const players: Player[] = [];
   for (const p of record.players) {
-    if (p.courseHandicap === null) return null;
-    players.push({ userId: p.userId, displayName: p.displayName, courseHandicap: p.courseHandicap });
+    const courseHandicap = effectiveCourseHandicap(p);
+    if (courseHandicap === null) return null;
+    players.push({ userId: p.userId, displayName: p.displayName, courseHandicap });
   }
   return players;
 }

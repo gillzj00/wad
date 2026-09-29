@@ -135,13 +135,18 @@ export function fakeDb(seed: Item[] = []) {
           return {};
         }
         case "UpdateCommand": {
-          // Only "SET #name = :value, ..." with no condition: named fields are replaced, the rest are kept.
-          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported update condition");
+          // Only "SET #name = :value, ...": named fields are replaced, the rest are kept.
+          // The one condition supported is that the item exists.
+          const condition = cmd.input.ConditionExpression;
+          if (condition !== undefined && condition !== "attribute_exists(PK)") throw new Error("fake db: unsupported update condition");
           const expression = cmd.input.UpdateExpression as string;
           if (!expression.startsWith("SET ")) throw new Error(`fake db: unsupported update ${expression}`);
           const names = cmd.input.ExpressionAttributeNames as Record<string, string>;
           const values = cmd.input.ExpressionAttributeValues as Item;
           const key = cmd.input.Key as Item;
+          if (condition !== undefined && !items.has(keyOf(key))) {
+            throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
+          }
           const item: Item = { ...(items.get(keyOf(key)) ?? key) };
           for (const assignment of expression.slice(4).split(", ")) {
             const match = /^(#\w+) = (:\w+)$/.exec(assignment);
