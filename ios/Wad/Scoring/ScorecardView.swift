@@ -30,7 +30,9 @@ struct ScorecardView: View {
                 label("Hole")
                 ForEach(Array(holes), id: \.self) { cell("\($0)") }
                 cell(title.uppercased())
+                    .font(.caption2)
                 cell(showsTotal ? "TOT" : "")
+                    .font(.caption2)
             }
             .fontWeight(.semibold)
             .foregroundStyle(Theme.Palette.onGreen)
