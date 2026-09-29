@@ -27,4 +27,4 @@ jobs:
         run: xcodebuild -version
 
       - name: Build and test
-        run: ios/scripts/test.sh -quiet
+        run: ios/scripts/test.sh
