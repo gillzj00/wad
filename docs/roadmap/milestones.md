@@ -39,9 +39,9 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M4 — Game engines  (pure logic; can start once domain model is confirmed, parallel with M3)
 
 - [ ] **M4.1 Handicap allocation**: course handicap computation + tick allocation. Table-driven unit tests incl. the 15-vs-7 example and >18 wrap-around.
-- [ ] **M4.2 Skins engine**: net winner per hole, pushes/carryovers, settlement. Blocked on Open Questions 4 and 5.
-- [ ] **M4.3 Wad engine**: holder/value tracking, transfers (+$2), reset every 9, end-of-nine settlement. Blocked on Open Questions 1-3.
-- [ ] **M4.4 Greenies engine**: per par-3 earn logic + round-robin wash settlement. Confirm Open Question 6 (definitional only).
+- [ ] **M4.2 Skins engine**: net winner per hole, pushes/carryovers through 18, collect-from-each settlement. Expose (do not pay out) any carryover unresolved after the final hole (Open Question 1).
+- [ ] **M4.3 Wad engine**: ordered makes per hole, start value then +step per make, separate front/back instances, holder collects from each at the end of each nine.
+- [ ] **M4.4 Greenies engine**: par-3 winner validation (par or better), collect-from-each settlement.
 - [ ] **M4.5 Settlement aggregator**: combine all games into net positions + minimal pairwise transfers (integer cents).
 
 ## M5 — Settlement & payout  (depends on M4)

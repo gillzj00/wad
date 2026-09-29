@@ -20,15 +20,16 @@ Base path: `/v1`.
 - `POST /courses/{courseId}/corrections` -> submit a correction to a cached course
 
 ### Rounds
-- `POST /rounds` -> create `{ courseId, tee, date, games: { skins?, wad?, greenies? }, baseAmounts }`; returns round + `joinCode`
-- `GET /rounds/{roundId}` -> full round (meta, players, scores, current game state)
+- `POST /rounds` -> create `{ courseId, tee, date, holes: 9 | 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents } } }`; a game is enabled by including it. Returns round + `joinCode`
+- `GET /rounds/{roundId}` -> full round (meta, players, scores, hole events, current game state)
 - `POST /rounds/join` -> `{ joinCode }` joins the caller to a round
 - `POST /rounds/{roundId}/players` -> add a guest/non-app player (name + handicap index)
-- `PUT /rounds/{roundId}/scores` -> upsert the caller's score for a hole:
-  `{ hole, gross, wadFirstPuttFromFlagstick?, greenInRegulationOffTee? }`
+- `PUT /rounds/{roundId}/players/{userId}/handicap` -> per-round handicap override `{ courseHandicap }` (null clears it)
+- `PUT /rounds/{roundId}/scores` -> upsert a gross score for a hole: `{ hole, gross, userId? }`. `userId` defaults to the caller; any participant may set a guest player's score.
+- `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers: [userId, ...], greenieWinner: userId | null }`. `wadMakers` is ordered by when the putts were made. `greenieWinner` is only valid on par 3s and must have scored par or better.
 - `GET /rounds/{roundId}/settlement` -> net positions + minimal pairwise transfers
 - `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid
-- `POST /rounds/{roundId}/recompute` -> re-derive game state and settlement from scores
+- `POST /rounds/{roundId}/recompute` -> re-derive game state and settlement from scores and hole events
 
 ### Round summary shape (illustrative)
 ```json
@@ -41,12 +42,15 @@ Base path: `/v1`.
     { "userId": "u_1", "displayName": "Zach", "courseHandicap": 15, "ticksByHole": { "1": 1, "3": 1 } }
   ],
   "scores": [
-    { "userId": "u_1", "hole": 4, "gross": 4, "wadFirstPuttFromFlagstick": true }
+    { "userId": "u_1", "hole": 4, "gross": 4 }
+  ],
+  "holes": [
+    { "hole": 4, "wadMakers": ["u_2", "u_1"], "greenieWinner": null }
   ],
   "state": {
     "skins": [ { "hole": 1, "atStakeCents": 500, "winnerUserId": null, "carried": true } ],
     "wad": { "front": { "holderUserId": "u_1", "valueCents": 900 }, "back": null },
-    "greenies": [ { "hole": 3, "earnedBy": ["u_1"] } ]
+    "greenies": [ { "hole": 3, "winnerUserId": "u_1" } ]
   }
 }
 ```
@@ -57,10 +61,12 @@ Used only while a round is live. Auth via token on `$connect` (query string or s
 
 Client -> server actions:
 - `{ "action": "subscribe", "roundId": "r_abc" }`
-- `{ "action": "score", "roundId": "r_abc", "hole": 4, "gross": 4, "wadFirstPuttFromFlagstick": true }`
+- `{ "action": "score", "roundId": "r_abc", "hole": 4, "gross": 4 }`
+- `{ "action": "holeEvents", "roundId": "r_abc", "hole": 4, "wadMakers": ["u_2", "u_1"], "greenieWinner": null }`
 
 Server -> client events (broadcast to the round):
 - `{ "event": "scoreUpdated", "roundId": "r_abc", "userId": "u_1", "hole": 4, ... }`
+- `{ "event": "holeUpdated", "roundId": "r_abc", "hole": 4, "wadMakers": [...], "greenieWinner": null }`
 - `{ "event": "stateUpdated", "roundId": "r_abc", "state": { ...as above... } }`
 - `{ "event": "playerJoined", "roundId": "r_abc", "player": { ... } }`
 

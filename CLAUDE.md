@@ -48,10 +48,11 @@ Infrastructure (`infra/`):
 ## Conventions
 
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `ci:`). Small, focused commits — one logical change each. Do not mention Claude/AI or add co-author/generated-by footers.
-- **Pull requests:** Feature work goes through PRs (not direct pushes to `main`, other than the initial repository import). Request `@gillzj00` as reviewer. Keep titles/descriptions short and free of any AI/tool mentions. Do not merge PRs yourself. Ensure tests pass first.
+- **Pull requests:** All changes go through PRs (no direct pushes to `main`). Request `@gillzj00` as reviewer. Keep titles/descriptions short and free of any AI/tool mentions.
+- **Merging (authorized by @gillzj00 for this repo):** Claude may squash-merge its own PRs, including `infra/` changes, once every check on the PR has completed successfully. GitHub does not enforce this (no branch protection on this plan), so verify it: run `gh pr checks <num> --watch` and merge only if all checks passed, with `gh pr merge <num> --squash`. Never merge with failing, pending, or cancelled checks, and never use `--admin`. **Exception:** if an `infra/` change would add more than $20/month in AWS cost (estimate it from the plan), do not merge; leave the PR for @gillzj00 with the estimate in the description.
 - **No emojis** anywhere in code, comments, commit messages, or PR descriptions.
 - **Money:** never use floating-point for currency. Represent amounts as integer cents.
-- **Terraform:** OIDC only — never introduce long-lived AWS access keys. `apply` is gated on required checks via GitHub Actions; never bypass branch protection or use admin overrides.
+- **Terraform:** OIDC only — never introduce long-lived AWS access keys. `apply` runs in GitHub Actions on merge to `main`; review the plan posted on the PR before merging. `infra/bootstrap` is applied locally by @gillzj00, not by CI.
 - **Secrets:** none in the repo. Use `.env.example` / `*.tfvars.example` templates; real values come from CI secrets / AWS.
 
 ## Working style
