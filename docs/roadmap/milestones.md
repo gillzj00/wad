@@ -30,7 +30,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M3 — Rounds & scoring  (depends on M1, M2)
 
-- [ ] **M3.1 Round lifecycle API**: create round (+ join code), join, add guest player, get round.
+- [x] **M3.1 Round lifecycle API**: create round (+ join code), join, add guest player, get round. Handler code done; deploying waits on auth (M1.1).
 - [ ] **M3.2 Scoring API**: `PUT /rounds/{id}/scores` with per-game flags; recompute endpoint.
 - [ ] **M3.3 WebSocket sync**: `$connect`/`$disconnect`/actions, connection registry, fan-out (DynamoDB Streams). AC: two clients see each other's scores live.
 - [ ] **M3.4 iOS round flow**: create/join, hole-by-hole scoring UI incl. Wad/Greenies flags, live group view.
