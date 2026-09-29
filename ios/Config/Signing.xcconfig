@@ -1,0 +1,4 @@
+// Device signing. The team ID is per-developer, so it lives in the
+// git-ignored Local.xcconfig (copy Local.xcconfig.example).
+CODE_SIGN_STYLE = Automatic
+#include? "Local.xcconfig"

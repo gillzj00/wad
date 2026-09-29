@@ -26,6 +26,7 @@
 
 /* Begin PBXFileReference section */
 		28954BB815B1B26D50EC2494 /* WadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WadApp.swift; sourceTree = "<group>"; };
+		2C193555C3C2B0E584EE7F5B /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		6BBD493D8E3EBA40EABAC02C /* Wad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		912E188A28C6D1226061D662 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -35,6 +36,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		169BBB1DF63E230E967E066A /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				2C193555C3C2B0E584EE7F5B /* Signing.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		21D98713F3421DA47F5C01CA /* Wad */ = {
 			isa = PBXGroup;
 			children = (
@@ -74,6 +83,7 @@
 		DD0CBEB2DC9A85086EFC0F56 = {
 			isa = PBXGroup;
 			children = (
+				169BBB1DF63E230E967E066A /* Config */,
 				21D98713F3421DA47F5C01CA /* Wad */,
 				2D5C33E34682195859AB6CDA /* WadTests */,
 				2F1E8ABF1FC2D89785F94C42 /* Products */,
@@ -127,6 +137,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3B0920C6DB13388FF0EA6DDB = {
+						ProvisioningStyle = Automatic;
+					};
+					5E14E9774B9110C976D55905 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 3E6B49D4C50A844E1ACE48A9 /* Build configuration list for PBXProject "Wad" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -228,6 +246,7 @@
 		};
 		4E5D1C94E5621F0A60F817E1 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2C193555C3C2B0E584EE7F5B /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -323,6 +342,7 @@
 		};
 		D90D748B8EDE560FDF9B9463 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2C193555C3C2B0E584EE7F5B /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

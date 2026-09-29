@@ -35,6 +35,7 @@ ios/**/xcuserdata/
 ios/**/.swiftpm/
 *.xcworkspace/xcuserdata/
 .build/
+ios/Config/Local.xcconfig
 
 # IDE
 .idea/
