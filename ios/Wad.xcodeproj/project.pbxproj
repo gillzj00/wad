@@ -49,6 +49,8 @@
 		C6B6B43414FDA2AD41E68E02 /* ScoreNotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE51D46F5765B9E0E4177512 /* ScoreNotation.swift */; };
 		C900DF2D1DE8BB6960B83BB8 /* PaymentLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8AD507E0F991DF23F594D7 /* PaymentLedger.swift */; };
 		CDD0B4BC751D424FF90CC3FE /* SetupTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */; };
+		CE4D8A0EFBC72BAF1A9B7A1C /* ScoreNotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B85E46BF1B78CFE04B2CC /* ScoreNotationTests.swift */; };
+		D634E99CBFC10B88CB3ABED8 /* ThemeScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59D45E0B9A51753E302F6E /* ThemeScreenshotsUITests.swift */; };
 		D67CCD0C395FD21BD199F41B /* GolfIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8062BC9445E32788E49690B1 /* GolfIllustration.swift */; };
 		D83D5A7D04DA502F39C38DBC /* SettlementText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E438FFDB8F99D65C5E690F /* SettlementText.swift */; };
 		DA169FB9E57726485329E646 /* engines.js in Resources */ = {isa = PBXBuildFile; fileRef = E15243CD43A4CBE9E9669CE0 /* engines.js */; };
@@ -109,6 +111,7 @@
 		78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundEngineMappingTests.swift; sourceTree = "<group>"; };
 		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CFDB4A7DE9A3404B98DEC46 /* RoundScorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundScorerTests.swift; sourceTree = "<group>"; };
+		7D59D45E0B9A51753E302F6E /* ThemeScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeScreenshotsUITests.swift; sourceTree = "<group>"; };
 		8062BC9445E32788E49690B1 /* GolfIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GolfIllustration.swift; sourceTree = "<group>"; };
 		842F500205F4A8AA7401C957 /* PaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentSheet.swift; sourceTree = "<group>"; };
 		900F03E39F38789C52B71BE1 /* Round+Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Round+Engine.swift"; sourceTree = "<group>"; };
@@ -117,6 +120,7 @@
 		9C0945A7071A5F92EE491A1B /* EngineBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineBridge.swift; sourceTree = "<group>"; };
 		AA7F37CDD4CF2BC199B4D1C0 /* VenmoHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoHandle.swift; sourceTree = "<group>"; };
 		AE8E812D2B4D00B472A6DC93 /* RoundSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundSummary.swift; sourceTree = "<group>"; };
+		AF1B85E46BF1B78CFE04B2CC /* ScoreNotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreNotationTests.swift; sourceTree = "<group>"; };
 		AF3F794D411FEEBEB887070E /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
 		AF9CB3863F2CDC5C4E6447AE /* SettlementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementView.swift; sourceTree = "<group>"; };
 		B0542DE1346DEE445F2D3968 /* RoundWalkthroughUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundWalkthroughUITests.swift; sourceTree = "<group>"; };
@@ -129,6 +133,7 @@
 		C5FB6ED545DD1295664F678A /* PaymentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentTests.swift; sourceTree = "<group>"; };
 		CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementPaymentsUITests.swift; sourceTree = "<group>"; };
 		CFDF6B0261F3395203ECD8C3 /* RoundStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundStatusTests.swift; sourceTree = "<group>"; };
+		D92649F51DB96AFFA884F061 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DBEE989B137FBC0B4C0ED77F /* VenmoLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoLink.swift; sourceTree = "<group>"; };
 		DC5DC97A91548EBAA368015E /* RoundScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundScorer.swift; sourceTree = "<group>"; };
 		DE8AD507E0F991DF23F594D7 /* PaymentLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentLedger.swift; sourceTree = "<group>"; };
@@ -167,6 +172,7 @@
 				B0542DE1346DEE445F2D3968 /* RoundWalkthroughUITests.swift */,
 				CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */,
 				696EB2E81E002A03D9AF4916 /* SetupValidationAndDeleteUITests.swift */,
+				7D59D45E0B9A51753E302F6E /* ThemeScreenshotsUITests.swift */,
 			);
 			path = WadUITests;
 			sourceTree = "<group>";
@@ -175,6 +181,7 @@
 			isa = PBXGroup;
 			children = (
 				F12AB045A3A72F9FBE737654 /* Assets.xcassets */,
+				D92649F51DB96AFFA884F061 /* Info.plist */,
 				912E188A28C6D1226061D662 /* RootView.swift */,
 				28954BB815B1B26D50EC2494 /* WadApp.swift */,
 				6E64267AE606FA089A097543 /* Engine */,
@@ -213,6 +220,7 @@
 				CFDF6B0261F3395203ECD8C3 /* RoundStatusTests.swift */,
 				F87F046930E8678C6BB01870 /* RoundStoreTests.swift */,
 				2AA5ABE24F2F1A7E3F72CD33 /* RoundSummaryTests.swift */,
+				AF1B85E46BF1B78CFE04B2CC /* ScoreNotationTests.swift */,
 				21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */,
 				4FBB3E4566E4FB8060EBA6FD /* StoreMigrationTests.swift */,
 				20D6263288B8B3A683232856 /* VenmoTests.swift */,
@@ -449,6 +457,7 @@
 				6D216F50D808DDE61AC3277E /* RoundStatusTests.swift in Sources */,
 				888A9A864196CB2016649D11 /* RoundStoreTests.swift in Sources */,
 				0350617CB1E6F80B82A994CF /* RoundSummaryTests.swift in Sources */,
+				CE4D8A0EFBC72BAF1A9B7A1C /* ScoreNotationTests.swift in Sources */,
 				CDD0B4BC751D424FF90CC3FE /* SetupTextTests.swift in Sources */,
 				F871197F76B101191942CC47 /* StoreMigrationTests.swift in Sources */,
 				B819C488273527A314D695B2 /* VenmoTests.swift in Sources */,
@@ -504,6 +513,7 @@
 				0FFA8B5C3895E731606266FF /* RoundWalkthroughUITests.swift in Sources */,
 				46A969E40B729DB0BB795091 /* SettlementPaymentsUITests.swift in Sources */,
 				82FBF45AFFB792646D65DC3C /* SetupValidationAndDeleteUITests.swift in Sources */,
+				D634E99CBFC10B88CB3ABED8 /* ThemeScreenshotsUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,8 +540,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wad/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -643,8 +653,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Wad/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
