@@ -76,6 +76,11 @@ struct RoundSetupView: View {
                     }
                 }
             }
+
+            // After what is to fix, which the form scrolls to.
+            if step == .players {
+                VenmoHandlesStepView(draft: $draft)
+            }
         }
         .navigationTitle(step.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -326,6 +331,45 @@ struct PlayersStepView: View {
         else { return "-" }
         return SetupText.display(courseHandicap: value)
     }
+}
+
+/// The players' optional Venmo handles. A section of its own at the end of
+/// the players step, so that a player's section stays short.
+struct VenmoHandlesStepView: View {
+    @Binding var draft: RoundDraft
+
+    var body: some View {
+        Section {
+            ForEach(Array(draft.players.enumerated()), id: \.element.venmoRowID) { offset, player in
+                LabeledContent(player.trimmedName.isEmpty ? "Player \(offset + 1)" : player.trimmedName) {
+                    TextField("Optional", text: binding(for: player))
+                        .keyboardType(.asciiCapable)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("setup.player.\(offset + 1).venmoHandle")
+                }
+            }
+        } header: {
+            Text("Venmo handles")
+        } footer: {
+            Text("Optional, to pay or request with Venmo when the round is settled. They can be added later too.")
+        }
+    }
+
+    private func binding(for player: RoundDraft.Player) -> Binding<String> {
+        Binding {
+            draft.players.first { $0.id == player.id }?.venmoHandleText ?? ""
+        } set: { changed in
+            guard let offset = draft.players.firstIndex(where: { $0.id == player.id }) else { return }
+            draft.players[offset].venmoHandleText = changed
+        }
+    }
+}
+
+private extension RoundDraft.Player {
+    /// The players' own ids are the ids of their sections in the same form.
+    var venmoRowID: String { "venmo." + id }
 }
 
 // MARK: - Games

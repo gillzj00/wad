@@ -5,6 +5,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# The device selection of install-device.sh, against sample device lists.
+python3 scripts/test_select_device.py
+
 device_id=$(xcrun simctl list devices available --json | python3 -c '
 import json, sys
 devices = json.load(sys.stdin)["devices"]

@@ -6,6 +6,8 @@ import SwiftUI
 struct RoundDetailView: View {
     let round: Round
 
+    @State private var handleEdit: VenmoHandleEdit?
+
     /// Total ticks per player id, from the engine. Nil if the engine failed.
     private var totalTicks: [String: Int]? {
         guard
@@ -77,6 +79,17 @@ struct RoundDetailView: View {
                         }
                         .monospacedDigit()
                     }
+                    Button {
+                        handleEdit = VenmoHandleEdit(playerID: player.playerID, name: player.displayName)
+                    } label: {
+                        Label(
+                            player.venmoHandle.map { "Venmo \(VenmoHandle.display($0))" }
+                                ?? "Add \(player.displayName)'s Venmo handle",
+                            systemImage: "at"
+                        )
+                        .font(.subheadline)
+                    }
+                    .accessibilityIdentifier("detail.venmoHandle.\(player.displayName)")
                 }
             } header: {
                 Text("Players")
@@ -97,6 +110,9 @@ struct RoundDetailView: View {
         }
         .navigationTitle(round.courseName)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $handleEdit) { edit in
+            VenmoHandleEditor(round: round, edit: edit)
+        }
     }
 
     private func ticksText(_ ticks: Int?) -> String {

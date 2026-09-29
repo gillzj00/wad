@@ -10,13 +10,16 @@ enum RoundsRoute: Hashable {
     case settlement(Round)
 }
 
-/// The Rounds tab: saved rounds, newest first, and the way into a new round.
+/// The Rounds tab: the history of the rounds, newest first, and the way into a
+/// new round.
 struct RoundsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Round.startedAt, order: .reverse) private var rounds: [Round]
 
     @State private var path: [RoundsRoute] = []
     @State private var setup: SetupPresentation?
+    @State private var summaries = RoundSummaryCache()
+    @State private var roundToDelete: Round?
     #if DEBUG
     @State private var appliedDebugLaunchArguments = false
     #endif
@@ -43,19 +46,14 @@ struct RoundsView: View {
                     List {
                         ForEach(rounds) { round in
                             NavigationLink(value: RoundsRoute.detail(round)) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(round.courseName).font(.headline)
-                                    Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    Text(round.startedAt, format: .dateTime.month().day().year().hour().minute())
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                                RoundHistoryRow(round: round, summaries: summaries)
                             }
                             .accessibilityIdentifier("rounds.row.\(round.courseName)")
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Delete", systemImage: "trash") { roundToDelete = round }
+                                    .tint(.red)
+                            }
                         }
-                        .onDelete(perform: delete)
                     }
                 }
             }
@@ -73,6 +71,17 @@ struct RoundsView: View {
                     Button("New round", systemImage: "plus") { setup = SetupPresentation() }
                 }
             }
+            .alert(
+                "Delete this round?",
+                isPresented: Binding { roundToDelete != nil } set: { if !$0 { roundToDelete = nil } },
+                presenting: roundToDelete
+            ) { round in
+                Button("Delete round", role: .destructive) { delete(round) }
+                Button("Cancel", role: .cancel) {}
+            } message: { round in
+                Text("\(round.courseName), \(RoundHistoryRow.date(round.startedAt)). "
+                    + "Its scores and the payments marked paid are deleted with it.")
+            }
             .sheet(item: $setup) { setup in
                 RoundSetupView(draft: setup.draft, step: setup.step) { round in
                     path = [.detail(round)]
@@ -89,10 +98,9 @@ struct RoundsView: View {
         }
     }
 
-    private func delete(at offsets: IndexSet) {
-        for offset in offsets {
-            modelContext.delete(rounds[offset])
-        }
+    private func delete(_ round: Round) {
+        summaries.remove(round.id)
+        modelContext.delete(round)
         try? modelContext.save()
     }
 
@@ -100,13 +108,19 @@ struct RoundsView: View {
     /// `-debugSetupStep course|players|games` opens the setup flow at that step
     /// with the sample draft; `-debugSetupStep detail` creates the sample round
     /// and opens it. `-debugSeedRound finalPush` creates a finished round with an
-    /// unresolved skins carryover and opens it. For simulator screenshots and the UI tests.
+    /// unresolved skins carryover and opens it; `-debugSeedStartedAt <seconds
+    /// since 1970>` gives it that start. For simulator screenshots and the UI tests.
     private func applyDebugLaunchArguments() {
         // The task runs again when the list comes back on screen.
         guard !appliedDebugLaunchArguments else { return }
         appliedDebugLaunchArguments = true
         if UserDefaults.standard.string(forKey: "debugSeedRound") == "finalPush" {
-            guard let bridge = SharedEngine.bridge, let round = try? DebugRounds.finalPush(using: bridge) else { return }
+            let seconds = UserDefaults.standard.string(forKey: "debugSeedStartedAt")
+            let startedAt = seconds.flatMap(Int.init).map { Date(timeIntervalSince1970: TimeInterval($0)) } ?? .now
+            guard
+                let bridge = SharedEngine.bridge,
+                let round = try? DebugRounds.finalPush(using: bridge, startedAt: startedAt)
+            else { return }
             modelContext.insert(round)
             try? modelContext.save()
             path = [.detail(round)]
@@ -126,6 +140,59 @@ struct RoundsView: View {
         }
     }
     #endif
+}
+
+/// A round in the history: course, date, players, how far the round is and,
+/// once it is final, the result and whether it is settled. The result comes
+/// from the engines through `RoundSummaryCache`, outside of the rendering.
+struct RoundHistoryRow: View {
+    let round: Round
+    let summaries: RoundSummaryCache
+
+    static func date(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().year())
+    }
+
+    var body: some View {
+        let key = RoundSummaryKey(round: round)
+        let summary = summaries.summary(for: round, key: key) ?? summaries.lastSummary(for: round)
+        VStack(alignment: .leading, spacing: 3) {
+            Text(round.courseName).font(.headline)
+            Text(Self.date(round.startedAt))
+                .font(.subheadline)
+            Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let summary {
+                Text(summary.progressText)
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                if let settled = summary.settledText {
+                    Label {
+                        Text(settled)
+                    } icon: {
+                        Image(systemName: summary.settled == .allSettled ? "checkmark.seal.fill" : "circle.dashed")
+                            .accessibilityHidden(true)
+                    }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(color(summary.settled))
+                }
+            }
+        }
+        .task(id: key) {
+            // After the row is on screen, so that scrolling does not wait for the engines.
+            await Task.yield()
+            summaries.refresh(round, key: key, bridge: SharedEngine.bridge)
+        }
+    }
+
+    private func color(_ settled: RoundSummary.Settled?) -> Color {
+        switch settled {
+        case .allSettled, .nothingOwed: .green
+        case .needsFixing, .unsettled: .orange
+        case nil: .secondary
+        }
+    }
 }
 
 #if DEBUG
