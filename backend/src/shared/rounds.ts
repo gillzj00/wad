@@ -19,8 +19,14 @@ export interface RoundPlayer {
   userId: UserId;
   displayName: string;
   handicapIndex: number;
-  /** Null when the tee has no rating and slope; set it with the per-round override. */
+  /**
+   * The handicap the games use: the override when there is one, else the value
+   * computed from the handicap index and the tee. Null when there is neither,
+   * which is a tee with no rating and slope and no override.
+   */
   courseHandicap: number | null;
+  /** The per-round override; null when the course handicap is the computed one. */
+  courseHandicapOverride: number | null;
   /** Holes where the player receives ticks; null until every player has a course handicap. */
   ticksByHole: Record<number, number> | null;
   /** A guest has no account; any participant scores for them. */

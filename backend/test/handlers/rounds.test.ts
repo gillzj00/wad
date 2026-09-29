@@ -12,18 +12,21 @@ const ROUTES = [
   "PUT /v1/rounds/{roundId}/scores",
   "PUT /v1/rounds/{roundId}/holes/{hole}",
   "POST /v1/rounds/{roundId}/recompute",
+  "PUT /v1/rounds/{roundId}/players/{userId}/handicap",
 ];
 
 function event(
   routeKey: string,
-  options: { sub?: unknown; body?: unknown; rawBody?: string; roundId?: string; hole?: string; base64?: boolean } = {},
+  options: { sub?: unknown; body?: unknown; rawBody?: string; roundId?: string; hole?: string; userId?: string; base64?: boolean } = {},
 ) {
   const sub = "sub" in options ? options.sub : "u_1";
   const text = options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
   return {
     routeKey,
     requestContext: sub === undefined ? {} : { authorizer: { jwt: { claims: { sub }, scopes: [] } } },
-    pathParameters: options.roundId ? { roundId: options.roundId, ...(options.hole ? { hole: options.hole } : {}) } : undefined,
+    pathParameters: options.roundId
+      ? { roundId: options.roundId, ...(options.hole ? { hole: options.hole } : {}), ...(options.userId ? { userId: options.userId } : {}) }
+      : undefined,
     body: text !== undefined && options.base64 ? Buffer.from(text).toString("base64") : text,
     isBase64Encoded: options.base64 ?? false,
   } as unknown as APIGatewayProxyEventV2;
@@ -108,6 +111,38 @@ describe("rounds handler", () => {
     expect(calls).toEqual([["u_1", "r_1", "4", body]]);
   });
 
+  it("sets a player's handicap override", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putHandicapOverride: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const route = "PUT /v1/rounds/{roundId}/players/{userId}/handicap";
+    const set = await call(service, event(route, { roundId: "r_1", userId: "guest_1", sub: "u_2", body: { courseHandicap: 15 } }));
+    expect(set).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+    const cleared = await call(service, event(route, { roundId: "r_1", userId: "u_1", body: { courseHandicap: null } }));
+    expect(cleared.status).toBe(200);
+    expect(calls).toEqual([
+      ["u_2", "r_1", "guest_1", { courseHandicap: 15 }],
+      ["u_1", "r_1", "u_1", { courseHandicap: null }],
+    ]);
+  });
+
+  it("takes the player of a handicap override from the path, not the body", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putHandicapOverride: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const body = { courseHandicap: 15, userId: "u_3" };
+    await call(service, event("PUT /v1/rounds/{roundId}/players/{userId}/handicap", { roundId: "r_1", userId: "u_2", body }));
+    expect(calls).toEqual([["u_1", "r_1", "u_2", body]]);
+  });
+
   it("recomputes the state without a body", async () => {
     const calls: unknown[] = [];
     const service = {
@@ -143,9 +178,10 @@ describe("rounds handler", () => {
     "POST /v1/rounds/{roundId}/players",
     "PUT /v1/rounds/{roundId}/scores",
     "PUT /v1/rounds/{roundId}/holes/{hole}",
+    "PUT /v1/rounds/{roundId}/players/{userId}/handicap",
   ])("returns 400 for a missing or malformed body: %s", async (routeKey) => {
     for (const rawBody of [undefined, "", "{not json"]) {
-      const res = await call({}, event(routeKey, { roundId: "r_1", hole: "4", ...(rawBody === undefined ? {} : { rawBody }) }));
+      const res = await call({}, event(routeKey, { roundId: "r_1", hole: "4", userId: "u_2", ...(rawBody === undefined ? {} : { rawBody }) }));
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe("invalid_json");
     }
