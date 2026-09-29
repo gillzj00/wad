@@ -95,18 +95,14 @@ struct HoleScoringView: View {
                     }
                 )
             }
-        } header: {
-            HStack {
-                Text("Scores")
-                Spacer()
-                Button("Par for the rest") {
+            if !round.isHoleComplete(hole.number) {
+                Button("Par for the rest", systemImage: "equal.circle") {
                     perform { try scorer.setParForUnscored(hole: hole.number) }
                 }
-                .font(.caption)
-                .textCase(nil)
-                .disabled(round.isHoleComplete(hole.number))
                 .accessibilityIdentifier("scoring.parForRest")
             }
+        } header: {
+            Text("Scores")
         } footer: {
             if status == nil {
                 Text("Ticks and the games could not be computed.")
@@ -318,18 +314,19 @@ struct PlayerScoreRow: View {
             }
             Spacer(minLength: 4)
 
-            Button {
-                onClear()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 44)
+            if gross != nil {
+                Button {
+                    onClear()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Clear the score of \(name)")
+                .accessibilityIdentifier("score.clear.\(name)")
             }
-            .opacity(gross == nil ? 0 : 1)
-            .disabled(gross == nil)
-            .accessibilityLabel("Clear the score of \(name)")
-            .accessibilityIdentifier("score.clear.\(name)")
 
             stepButton(systemImage: "minus", delta: -1)
                 .accessibilityLabel("One stroke fewer for \(name)")

@@ -142,6 +142,24 @@ struct CourseStepView: View {
         }
 
         Section {
+            Menu {
+                Button("Number 1 to 18 in order") {
+                    for offset in draft.holes.indices {
+                        draft.holes[offset].strokeIndexText = String(offset + 1)
+                    }
+                }
+                Button("Clear all", role: .destructive) {
+                    for offset in draft.holes.indices {
+                        draft.holes[offset].strokeIndexText = ""
+                    }
+                }
+            } label: {
+                Label("Stroke indexes", systemImage: "list.number")
+                    .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityIdentifier("setup.strokeIndexes")
+
             HStack {
                 Text("Hole").frame(width: 40, alignment: .leading)
                 Text("Par").frame(maxWidth: .infinity)
@@ -172,24 +190,7 @@ struct CourseStepView: View {
             }
             .environment(\.defaultMinListRowHeight, 38)
         } header: {
-            HStack {
-                Text("Holes")
-                Spacer()
-                Menu("Stroke indexes") {
-                    Button("Number 1 to 18 in order") {
-                        for offset in draft.holes.indices {
-                            draft.holes[offset].strokeIndexText = String(offset + 1)
-                        }
-                    }
-                    Button("Clear all", role: .destructive) {
-                        for offset in draft.holes.indices {
-                            draft.holes[offset].strokeIndexText = ""
-                        }
-                    }
-                }
-                .font(.caption)
-                .textCase(nil)
-            }
+            Text("Holes")
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Par \(draft.totalPar): out \(par(of: 1...9)), in \(par(of: 10...18)). Stroke index 1 is the hardest hole.")

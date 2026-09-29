@@ -69,7 +69,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         scrollTo(par)
         par.buttons["3"].tap()
 
-        diagnoseAndTap(app.buttons["Stroke indexes"], expecting: app.buttons["Number 1 to 18 in order"])
+        diagnoseAndTap(app.buttons["setup.strokeIndexes"], expecting: app.buttons["Number 1 to 18 in order"])
         app.buttons["Number 1 to 18 in order"].tap()
         attachScreenshot("02-setup-course")
 
@@ -120,7 +120,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         XCTAssertEqual(label(of: "score.detail.Sam"), "No ticks, Net 4")
 
         // Clearing a score and entering it again.
-        app.buttons["score.clear.Alex"].tap()
+        diagnoseAndTap(app.buttons["score.clear.Alex"], expecting: nil)
         XCTAssertEqual(app.buttons["score.value.Alex"].value as? String, "Not set")
         app.buttons["score.value.Alex"].tap()
         XCTAssertEqual(app.buttons["score.value.Alex"].value as? String, "4")
@@ -243,6 +243,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         }
         print("DIAG hierarchy\n\(app.debugDescription)")
         button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        print("DIAG after touch: Alex=\(app.buttons["score.value.Alex"].value ?? "nil")")
         if let expecting {
             print("DIAG touch at the button opened the menu: \(expecting.waitForExistence(timeout: 3))")
         }
