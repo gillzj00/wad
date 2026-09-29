@@ -40,12 +40,25 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  WadUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - WadUITests
+    dependencies:
+      - target: Wad
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Wad
 schemes:
   Wad:
     build:
       targets:
         Wad: all
         WadTests: [test]
+        WadUITests: [test]
     test:
       targets:
         - WadTests
+        - WadUITests

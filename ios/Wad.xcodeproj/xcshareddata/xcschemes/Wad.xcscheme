@@ -35,6 +35,20 @@
                ReferencedContainer = "container:Wad.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BCB440D288BFFFFA176220EF"
+               BuildableName = "WadUITests.xctest"
+               BlueprintName = "WadUITests"
+               ReferencedContainer = "container:Wad.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -61,6 +75,17 @@
                BlueprintIdentifier = "5E14E9774B9110C976D55905"
                BuildableName = "WadTests.xctest"
                BlueprintName = "WadTests"
+               ReferencedContainer = "container:Wad.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BCB440D288BFFFFA176220EF"
+               BuildableName = "WadUITests.xctest"
+               BlueprintName = "WadUITests"
                ReferencedContainer = "container:Wad.xcodeproj">
             </BuildableReference>
          </TestableReference>

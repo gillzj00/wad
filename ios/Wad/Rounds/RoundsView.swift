@@ -1,12 +1,18 @@
 import SwiftData
 import SwiftUI
 
+/// Screens pushed on the Rounds tab.
+enum RoundsRoute: Hashable {
+    case detail(Round)
+    case scoring(Round)
+}
+
 /// The Rounds tab: saved rounds, newest first, and the way into a new round.
 struct RoundsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Round.startedAt, order: .reverse) private var rounds: [Round]
 
-    @State private var path: [Round] = []
+    @State private var path: [RoundsRoute] = []
     @State private var setup: SetupPresentation?
 
     struct SetupPresentation: Identifiable {
@@ -30,7 +36,7 @@ struct RoundsView: View {
                 } else {
                     List {
                         ForEach(rounds) { round in
-                            NavigationLink(value: round) {
+                            NavigationLink(value: RoundsRoute.detail(round)) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(round.courseName).font(.headline)
                                     Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
@@ -41,13 +47,19 @@ struct RoundsView: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
+                            .accessibilityIdentifier("rounds.row.\(round.courseName)")
                         }
                         .onDelete(perform: delete)
                     }
                 }
             }
             .navigationTitle("Rounds")
-            .navigationDestination(for: Round.self) { RoundDetailView(round: $0) }
+            .navigationDestination(for: RoundsRoute.self) { route in
+                switch route {
+                case .detail(let round): RoundDetailView(round: round)
+                case .scoring(let round): HoleScoringView(round: round)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("New round", systemImage: "plus") { setup = SetupPresentation() }
@@ -55,7 +67,7 @@ struct RoundsView: View {
             }
             .sheet(item: $setup) { setup in
                 RoundSetupView(draft: setup.draft, step: setup.step) { round in
-                    path = [round]
+                    path = [.detail(round)]
                 }
             }
             #if DEBUG
@@ -85,7 +97,7 @@ struct RoundsView: View {
             guard let bridge = SharedEngine.bridge, let round = try? RoundDraft.sample.makeRound(using: bridge) else { return }
             modelContext.insert(round)
             try? modelContext.save()
-            path = [round]
+            path = [.detail(round)]
         default: break
         }
     }
