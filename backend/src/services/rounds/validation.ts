@@ -1,4 +1,4 @@
-import type { Cents, GamesConfig } from "../../shared/types.js";
+import type { Cents, GamesConfig, WolfEvent } from "../../shared/types.js";
 import { invalid } from "./errors.js";
 
 /** Defaults from docs/domain-model.md, in cents. */
@@ -71,6 +71,10 @@ function parseGames(value: unknown): GamesConfig {
       case "greenies":
         games.greenies = { amountCents: cents(object(settings, path), name, "amountCents", GAME_DEFAULTS.greenies.amountCents) };
         break;
+      case "wolf":
+        // Wolf needs exactly four players. A round is created with one, so that is checked when the state is computed.
+        games.wolf = { pointCents: cents(object(settings, path), name, "pointCents", GAME_DEFAULTS.wolf.pointCents) };
+        break;
       default:
         throw invalid("unknown_game", `unknown game "${name}"`);
     }
@@ -136,6 +140,7 @@ export const MAX_HOLE = 18;
 /** Highest gross score accepted for one hole. */
 export const MAX_GROSS = 20;
 const MAX_WAD_MAKERS = 4;
+const MAX_TEE_ORDER = 4;
 
 export interface ScoreInput {
   hole: number;
@@ -149,6 +154,8 @@ export interface ScoreInput {
 export interface HoleEventsInput {
   wadMakers?: string[];
   greenieWinner?: string | null;
+  /** Null clears what was recorded for Wolf on the hole. */
+  wolf?: Required<WolfEvent> | null;
 }
 
 function holeNumber(value: unknown): number {
@@ -190,8 +197,35 @@ export function parseHoleEvents(body: unknown): HoleEventsInput {
   if (raw.greenieWinner !== undefined) {
     input.greenieWinner = raw.greenieWinner === null ? null : nonEmptyString(raw.greenieWinner, "greenieWinner");
   }
-  if (input.wadMakers === undefined && input.greenieWinner === undefined) {
-    throw invalid("invalid_body", "send wadMakers, greenieWinner or both");
+  if (raw.wolf !== undefined) input.wolf = raw.wolf === null ? null : wolfEvent(raw.wolf);
+  if (input.wadMakers === undefined && input.greenieWinner === undefined && input.wolf === undefined) {
+    throw invalid("invalid_body", "send at least one of wadMakers, greenieWinner and wolf");
   }
   return input;
+}
+
+/**
+ * Checks the types only. Whether the record is a valid Wolf hole (the partner
+ * is not the Wolf, and so on) is for the wolf engine to say.
+ */
+function wolfEvent(value: unknown): Required<WolfEvent> {
+  const raw = object(value, "wolf");
+  const id = (field: string) => (raw[field] === undefined || raw[field] === null ? null : nonEmptyString(raw[field], `wolf.${field}`));
+  const choice = raw.choice ?? null;
+  if (choice !== null && choice !== "partner" && choice !== "lone") {
+    throw invalid("invalid_body", 'wolf.choice must be "partner" or "lone"');
+  }
+  const event: Required<WolfEvent> = { choice, partnerUserId: id("partnerUserId"), wolfUserId: id("wolfUserId") };
+  if (event.choice === null && event.partnerUserId === null && event.wolfUserId === null) {
+    throw invalid("invalid_body", "wolf must have a choice or a wolfUserId; send null to clear it");
+  }
+  return event;
+}
+
+export function parseTeeOrder(body: unknown): string[] {
+  const value = object(body, "body").teeOrder;
+  if (!Array.isArray(value) || value.length > MAX_TEE_ORDER) {
+    throw invalid("invalid_body", `teeOrder must be a list of at most ${MAX_TEE_ORDER} user ids`);
+  }
+  return value.map((id, i) => nonEmptyString(id, `teeOrder[${i}]`));
 }

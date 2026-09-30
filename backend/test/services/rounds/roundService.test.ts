@@ -79,6 +79,7 @@ describe("RoundService.createRound", () => {
           joinedAt: NOW.toISOString(),
         },
       ],
+      teeOrder: ["u_1"],
       scores: [],
       holes: [],
       state: round.state,
