@@ -9,12 +9,14 @@ struct HoleScoringView: View {
     @State private var holeNumber: Int
     @State private var failure: String?
 
-    /// Opens on `startHole`, or on the first hole that is not complete.
+    /// Opens on `startHole`, or on the first hole that is not complete. A
+    /// round that started every hole at par has no such hole; it opens on hole 1.
     init(round: Round, startHole: Int? = nil) {
         self.round = round
-        _holeNumber = State(
-            initialValue: startHole ?? round.firstIncompleteHole ?? round.orderedHoles.last?.number ?? 1
-        )
+        let resume = round.startsEveryHoleAtPar
+            ? round.orderedHoles.first?.number
+            : round.firstIncompleteHole ?? round.orderedHoles.last?.number
+        _holeNumber = State(initialValue: startHole ?? resume ?? 1)
     }
 
     private var scorer: RoundScorer { RoundScorer(round: round) }
