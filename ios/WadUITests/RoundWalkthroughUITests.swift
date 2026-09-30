@@ -25,10 +25,8 @@ final class RoundWalkthroughUITests: XCTestCase {
         setUpCourse()
         setUpPlayers()
 
-        // Games: the default amounts.
-        XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
-        attachScreenshot("04-setup-games")
-        app.buttons["Create"].tap()
+        // Games: the default amounts. The holes start unscored, to score them here.
+        setUpGames()
 
         // Round detail.
         let scoreRound = element("detail.scoreRound")
@@ -102,8 +100,7 @@ final class RoundWalkthroughUITests: XCTestCase {
         newRound.tap()
         setUpCourse()
         setUpPlayers()
-        XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
-        app.buttons["Create"].tap()
+        setUpGames()
         attachesScreenshots = true
 
         // The settlement of a round without scores is provisional.
@@ -326,6 +323,20 @@ final class RoundWalkthroughUITests: XCTestCase {
         app.buttons["Next"].tap()
     }
 
+    /// Keeps the default amounts and turns off starting every hole at par, so
+    /// that the tests enter every score.
+    private func setUpGames() {
+        XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
+        let startsAtPar = app.switches["setup.startsAtPar"].firstMatch
+        scrollTo(startsAtPar)
+        XCTAssertEqual(startsAtPar.value as? String, "1")
+        let inner = startsAtPar.switches.firstMatch
+        (inner.exists ? inner : startsAtPar).tap()
+        XCTAssertTrue(waitUntil { startsAtPar.value as? String == "0" }, startsAtPar.debugDescription)
+        attachScreenshot("04-setup-games")
+        app.buttons["Create"].tap()
+    }
+
     // MARK: Scoring
 
     /// Par 4, stroke index 1: Zach's 5 nets 4 and ties the 4s. Sam, then Zach, make a Wad putt.
@@ -515,6 +526,15 @@ final class RoundWalkthroughUITests: XCTestCase {
         guard next.exists else { return true }
         let strip = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'scoring.jump.'")).firstMatch
         return element.frame.maxY <= next.frame.minY - 8 && element.frame.minY >= strip.frame.maxY + 8
+    }
+
+    private func waitUntil(timeout: TimeInterval = 5, _ condition: @escaping () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        return condition()
     }
 
     private func attachScreenshot(_ name: String) {
