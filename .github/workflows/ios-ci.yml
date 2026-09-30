@@ -2,26 +2,38 @@ name: iOS CI
 
 on:
   pull_request:
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios-ci.yml"
   push:
     branches: [main]
     paths:
       - "ios/**"
       - ".github/workflows/ios-ci.yml"
 
-permissions:
-  contents: read
+# Least privilege: nothing at the workflow level, each job asks for what it uses.
+permissions: {}
+
+concurrency:
+  group: ios-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  changes:
+    permissions:
+      pull-requests: read
+    uses: ./.github/workflows/changes.yml
+    with:
+      patterns: '^(ios/|\.github/workflows/(ios-ci|changes)\.yml$)'
+
   build-test:
-    # Needs Xcode 16+ (project format 77, Swift 6). macOS minutes count 10x
-    # against the private-repo Actions quota, so this only runs for ios/ changes.
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
+    # Needs Xcode 16+ (project format 77, Swift 6). The macOS runner is the
+    # slow, expensive one, so this only runs when ios/ changes.
     runs-on: macos-15
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Xcode version
         run: xcodebuild -version
@@ -34,7 +46,7 @@ jobs:
 
       - name: Upload the test results
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Wad.xcresult
           path: ${{ runner.temp }}/Wad.xcresult
