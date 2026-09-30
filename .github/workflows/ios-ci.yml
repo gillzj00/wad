@@ -36,8 +36,7 @@ jobs:
         run: xcodebuild -version
 
       - name: Build and run the unit tests
-        # xcodebuild has been seen not to exit after the tests when it writes a
-        # result bundle, so the step has its own limit.
+        # The step has its own limit so that the results are still uploaded.
         timeout-minutes: 15
         run: ios/scripts/test.sh --unit -resultBundlePath "$RUNNER_TEMP/Wad-unit-tests.xcresult"
 
@@ -51,17 +50,11 @@ jobs:
 
   ui-tests:
     runs-on: macos-15
-    # The UI tests take a few minutes each on the runner; the script spreads
-    # them over simulator clones (see WAD_UI_TEST_WORKERS in test.sh).
-    timeout-minutes: 60
+    # The three UI tests take a few minutes each on the runner, after a build
+    # of about five minutes.
+    timeout-minutes: 30
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        workers: [2, 3]
-    env:
-      WAD_UI_TEST_WORKERS: ${{ matrix.workers }}
     steps:
       - uses: actions/checkout@v7
 
@@ -69,7 +62,7 @@ jobs:
         run: xcodebuild -version
 
       - name: Build and run the UI tests
-        timeout-minutes: 55
+        timeout-minutes: 25
         run: ios/scripts/test.sh --ui -resultBundlePath "$RUNNER_TEMP/Wad-ui-tests.xcresult"
 
       - name: Upload the test results
