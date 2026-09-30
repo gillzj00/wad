@@ -28,6 +28,7 @@ var WadEngines = (() => {
     scoreGreenies: () => scoreGreenies,
     scoreSkins: () => scoreSkins,
     scoreWad: () => scoreWad,
+    scoreWolf: () => scoreWolf,
     settle: () => settle
   });
 
@@ -213,6 +214,148 @@ var WadEngines = (() => {
       if (debtor[1] === 0) debtors.shift();
     }
     return { positions, transfers };
+  }
+
+  // src/engines/wolf.ts
+  var WOLF_PLAYERS = 4;
+  var WOLF_HOLES = 18;
+  var WOLF_ROTATION_HOLES = 16;
+  var WOLF_POINTS = {
+    /** To the Wolf and to the partner when their side wins. */
+    partnerWin: 2,
+    /** To each of the two opponents when the Wolf and partner lose. */
+    partnerLoss: 3,
+    /** To the Wolf when the Lone Wolf wins. */
+    loneWin: 4,
+    /** To each of the three opponents when the Lone Wolf loses. */
+    loneLoss: 1
+  };
+  function isPermutation(order, ids) {
+    return order.length === ids.length && new Set(order).size === order.length && order.every((id) => ids.includes(id));
+  }
+  function zeroPoints(ids) {
+    return Object.fromEntries(ids.map((id) => [id, 0]));
+  }
+  function scoreWolf(input) {
+    const { players, teeOrder, holes, scores, holeEvents, pointCents } = input;
+    if (!Number.isInteger(pointCents) || pointCents < 0) throw new Error(`pointCents must be non-negative integer cents, got ${pointCents}`);
+    const ids = players.map((p) => p.userId);
+    if (ids.length !== WOLF_PLAYERS || new Set(ids).size !== WOLF_PLAYERS) return null;
+    if (!isPermutation(teeOrder, ids)) return null;
+    const ordered = [...holes].sort((a, b) => a.hole - b.hole);
+    if (ordered.length !== WOLF_HOLES || ordered.some((h, i) => h.hole !== i + 1)) return null;
+    const ticks = allocateTicks(players, holes);
+    const gross = new Map(scores.map((s) => [`${s.hole}:${s.userId}`, s.gross]));
+    const eventByHole = new Map(holeEvents.map((e) => [e.hole, e.wolf]));
+    const total = zeroPoints(teeOrder);
+    const results = [];
+    let standingsKnown = true;
+    for (const h of ordered) {
+      const event = eventByHole.get(h.hole) ?? null;
+      const choice = event?.choice ?? null;
+      const partner = event?.partnerUserId ?? null;
+      const recordedWolf = event?.wolfUserId ?? null;
+      const grossByPlayer = teeOrder.map((id) => gross.get(`${h.hole}:${id}`));
+      const net = grossByPlayer.every((g) => g !== void 0) ? Object.fromEntries(teeOrder.map((id, i) => [id, netScore(grossByPlayer[i], ticks[id][h.hole])])) : null;
+      const result = {
+        hole: h.hole,
+        wolfUserId: null,
+        status: "pending",
+        invalidReason: null,
+        choice,
+        partnerUserId: partner,
+        lastPlace: null,
+        wolfSide: null,
+        opponents: null,
+        wolfSideNet: null,
+        opponentsNet: null,
+        net,
+        points: zeroPoints(teeOrder)
+      };
+      results.push(result);
+      const standingsBefore = standingsKnown;
+      standingsKnown = false;
+      const invalid = (reason) => {
+        result.status = "invalid";
+        result.invalidReason = reason;
+      };
+      if (choice === "lone" && partner !== null) {
+        invalid("partner_and_lone");
+        continue;
+      }
+      if (choice === "partner" && partner === null) {
+        invalid("partner_missing");
+        continue;
+      }
+      if (partner !== null && !ids.includes(partner)) {
+        invalid("partner_not_a_player");
+        continue;
+      }
+      if (recordedWolf !== null && !ids.includes(recordedWolf)) {
+        invalid("wolf_not_a_player");
+        continue;
+      }
+      if (h.hole <= WOLF_ROTATION_HOLES) {
+        const rotation = teeOrder[(h.hole - 1) % WOLF_PLAYERS];
+        if (recordedWolf !== null && recordedWolf !== rotation) {
+          invalid("wolf_contradicts_rotation");
+          continue;
+        }
+        result.wolfUserId = rotation;
+      } else {
+        if (!standingsBefore) continue;
+        const fewest = Math.min(...teeOrder.map((id) => total[id]));
+        const last = teeOrder.filter((id) => total[id] === fewest);
+        result.lastPlace = last;
+        if (recordedWolf !== null && !last.includes(recordedWolf)) {
+          invalid("wolf_not_in_last_place");
+          continue;
+        }
+        if (last.length > 1 && recordedWolf === null) {
+          result.status = "needs_wolf";
+          continue;
+        }
+        result.wolfUserId = recordedWolf ?? last[0];
+      }
+      const wolf = result.wolfUserId;
+      if (partner === wolf) {
+        invalid("partner_is_wolf");
+        continue;
+      }
+      if (choice === null || net === null) continue;
+      const wolfSide = partner === null ? [wolf] : [wolf, partner];
+      const opponents = teeOrder.filter((id) => !wolfSide.includes(id));
+      const best = (side) => Math.min(...side.map((id) => net[id]));
+      const wolfSideNet = best(wolfSide);
+      const opponentsNet = best(opponents);
+      result.wolfSide = wolfSide;
+      result.opponents = opponents;
+      result.wolfSideNet = wolfSideNet;
+      result.opponentsNet = opponentsNet;
+      standingsKnown = standingsBefore;
+      if (wolfSideNet === opponentsNet) {
+        result.status = "tied";
+        continue;
+      }
+      const wolfSideWon = wolfSideNet < opponentsNet;
+      result.status = wolfSideWon ? "won_by_wolf_side" : "won_by_opponents";
+      const winners = wolfSideWon ? wolfSide : opponents;
+      let each;
+      if (choice === "lone") each = wolfSideWon ? WOLF_POINTS.loneWin : WOLF_POINTS.loneLoss;
+      else each = wolfSideWon ? WOLF_POINTS.partnerWin : WOLF_POINTS.partnerLoss;
+      for (const id of winners) {
+        result.points[id] = each;
+        total[id] = total[id] + each;
+      }
+    }
+    const allPoints = teeOrder.reduce((sum, id) => sum + total[id], 0);
+    const deltas = Object.fromEntries(
+      teeOrder.map((id) => {
+        const cents = pointCents * (WOLF_PLAYERS * total[id] - allPoints);
+        return [id, cents === 0 ? 0 : cents];
+      })
+    );
+    return { teeOrder: [...teeOrder], holes: results, points: total, deltas, complete: standingsKnown };
   }
   return __toCommonJS(index_exports);
 })();

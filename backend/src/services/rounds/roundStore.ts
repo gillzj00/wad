@@ -8,7 +8,7 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { RoundStatus } from "../../shared/rounds.js";
-import type { Cents, Course, GamesConfig, HoleEvents, HoleInfo, Score, UserId } from "../../shared/types.js";
+import type { Cents, Course, GamesConfig, HoleEvents, HoleInfo, Score, UserId, WolfEvent } from "../../shared/types.js";
 
 /** The tee as it was when the round was created, so later course edits do not change a round. */
 export interface TeeSnapshot {
@@ -33,6 +33,8 @@ export interface RoundMeta {
   createdAt: string;
   games: GamesConfig;
   playerCount: number;
+  /** The tee order as it was last set; absent until then. See `effectiveTeeOrder`. */
+  teeOrder?: UserId[];
 }
 
 export interface PlayerRecord {
@@ -82,6 +84,17 @@ export function effectiveCourseHandicap(player: Pick<PlayerRecord, "courseHandic
   return player.courseHandicapOverride ?? player.courseHandicap;
 }
 
+/**
+ * The order the players tee off in: the order that was set, then anyone who
+ * joined after it was set, in the order they joined. With no order set that
+ * is the order the players were added.
+ */
+export function effectiveTeeOrder(record: Pick<RoundRecord, "players"> & { meta: Pick<RoundMeta, "teeOrder"> }): UserId[] {
+  const ids = record.players.map((p) => p.userId);
+  const set = (record.meta.teeOrder ?? []).filter((id, i, all) => ids.includes(id) && all.indexOf(id) === i);
+  return [...set, ...ids.filter((id) => !set.includes(id))];
+}
+
 export interface RoundStore {
   getCourse(courseId: string): Promise<Course | null>;
   getProfile(userId: UserId): Promise<UserProfile | null>;
@@ -99,6 +112,8 @@ export interface RoundStore {
   setHoleEvents(roundId: string, hole: number, fields: HoleEventFields, change: Change): Promise<void>;
   /** Sets or clears (null) the player's override, leaving the computed course handicap as it is. Last writer wins. */
   setCourseHandicapOverride(roundId: string, userId: UserId, override: number | null, change: Change): Promise<SetOverrideResult>;
+  /** Replaces the round's tee order. Last writer wins. */
+  setTeeOrder(roundId: string, teeOrder: UserId[], change: Change): Promise<void>;
   /** Null for a user without a profile or without a Venmo handle. */
   getVenmoHandle(userId: UserId): Promise<string | null>;
   listPaidMarkers(roundId: string): Promise<PaidMarker[]>;
@@ -114,7 +129,8 @@ export interface Change {
   at: string;
 }
 
-export type HoleEventFields = Partial<Pick<HoleEvents, "wadMakers" | "greenieWinner">>;
+/** A null `wolf` clears what was recorded for Wolf on the hole. */
+export type HoleEventFields = Partial<Pick<HoleEvents, "wadMakers" | "greenieWinner">> & { wolf?: WolfEvent | null };
 
 export type RoundRef = Pick<RoundMeta, "roundId" | "createdAt">;
 
@@ -221,11 +237,7 @@ export class DynamoRoundStore implements RoundStore {
         .map(toPlayer)
         .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)),
       scores: kind("SCORE#").map((i) => ({ userId: i.userId as string, hole: i.hole as number, gross: i.gross as number })),
-      holes: kind("HOLE#").map((i) => ({
-        hole: i.hole as number,
-        wadMakers: (i.wadMakers as string[] | undefined) ?? [],
-        greenieWinner: (i.greenieWinner as string | null | undefined) ?? null,
-      })),
+      holes: kind("HOLE#").map(toHoleEvents),
     };
   }
 
@@ -282,6 +294,7 @@ export class DynamoRoundStore implements RoundStore {
     const values: Item = { type: "holeEvents", hole, updatedAt: change.at, updatedBy: change.by };
     if (fields.wadMakers !== undefined) values.wadMakers = fields.wadMakers;
     if (fields.greenieWinner !== undefined) values.greenieWinner = fields.greenieWinner;
+    if (fields.wolf !== undefined) values.wolf = fields.wolf;
     const names = Object.keys(values);
     // An update, not a put: a device setting the greenie must not erase the wad makers another device just set.
     await this.db.send(
@@ -313,6 +326,20 @@ export class DynamoRoundStore implements RoundStore {
       if (err instanceof Error && err.name === "ConditionalCheckFailedException") return "player_not_found";
       throw err;
     }
+  }
+
+  async setTeeOrder(roundId: string, teeOrder: UserId[], change: Change): Promise<void> {
+    await this.db.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { PK: `ROUND#${roundId}`, SK: "META" },
+        UpdateExpression: "SET #order = :order, #at = :at, #by = :by",
+        // An update creates a missing item, so without this a write for an unknown round would add a broken one.
+        ConditionExpression: EXISTS,
+        ExpressionAttributeNames: { "#order": "teeOrder", "#at": "teeOrderAt", "#by": "teeOrderBy" },
+        ExpressionAttributeValues: { ":order": teeOrder, ":at": change.at, ":by": change.by },
+      }),
+    );
   }
 
   async getVenmoHandle(userId: UserId): Promise<string | null> {
@@ -394,6 +421,16 @@ const twoDigits = (hole: number) => String(hole).padStart(2, "0");
 
 const scoreSortKey = (hole: number, userId: UserId) => `SCORE#${twoDigits(hole)}#${userId}`;
 
+function toHoleEvents(item: Item): HoleEvents {
+  const wolf = item.wolf as WolfEvent | null | undefined;
+  return {
+    hole: item.hole as number,
+    wadMakers: (item.wadMakers as string[] | undefined) ?? [],
+    greenieWinner: (item.greenieWinner as string | null | undefined) ?? null,
+    ...(wolf ? { wolf } : {}),
+  };
+}
+
 function toMeta(item: Item): RoundMeta {
   return {
     roundId: item.roundId as string,
@@ -408,6 +445,7 @@ function toMeta(item: Item): RoundMeta {
     createdAt: item.createdAt as string,
     games: item.games as GamesConfig,
     playerCount: item.playerCount as number,
+    ...(Array.isArray(item.teeOrder) ? { teeOrder: item.teeOrder as UserId[] } : {}),
   };
 }
 

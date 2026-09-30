@@ -13,6 +13,7 @@ const ROUTES = [
   "PUT /v1/rounds/{roundId}/holes/{hole}",
   "POST /v1/rounds/{roundId}/recompute",
   "PUT /v1/rounds/{roundId}/players/{userId}/handicap",
+  "PUT /v1/rounds/{roundId}/tee-order",
 ];
 
 function event(
@@ -143,6 +144,44 @@ describe("rounds handler", () => {
     expect(calls).toEqual([["u_1", "r_1", "u_2", body]]);
   });
 
+  it("sets a hole's wolf record", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putHoleEvents: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const body = { wolf: { choice: "partner", partnerUserId: "u_3" } };
+    const res = await call(service, event("PUT /v1/rounds/{roundId}/holes/{hole}", { roundId: "r_1", hole: "17", sub: "u_2", body }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+    expect(calls).toEqual([["u_2", "r_1", "17", body]]);
+  });
+
+  it("sets the tee order", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      putTeeOrder: async (...args: unknown[]) => {
+        calls.push(args);
+        return round;
+      },
+    };
+    const body = { teeOrder: ["u_2", "u_1", "u_4", "u_3"] };
+    const res = await call(service, event("PUT /v1/rounds/{roundId}/tee-order", { roundId: "r_1", sub: "u_2", body }));
+    expect(res).toEqual({ status: 200, body: { round: { roundId: "r_1", joinCode: "ABCD2F" } } });
+    expect(calls).toEqual([["u_2", "r_1", body]]);
+  });
+
+  it("returns 409 when the tee order can no longer be changed", async () => {
+    const service = {
+      putTeeOrder: async () => {
+        throw new RoundError("conflict", "tee_order_locked", "locked");
+      },
+    };
+    const res = await call(service, event("PUT /v1/rounds/{roundId}/tee-order", { roundId: "r_1", body: { teeOrder: [] } }));
+    expect(res).toEqual({ status: 409, body: { error: { code: "tee_order_locked", message: "locked" } } });
+  });
+
   it("recomputes the state without a body", async () => {
     const calls: unknown[] = [];
     const service = {
@@ -179,6 +218,7 @@ describe("rounds handler", () => {
     "PUT /v1/rounds/{roundId}/scores",
     "PUT /v1/rounds/{roundId}/holes/{hole}",
     "PUT /v1/rounds/{roundId}/players/{userId}/handicap",
+    "PUT /v1/rounds/{roundId}/tee-order",
   ])("returns 400 for a missing or malformed body: %s", async (routeKey) => {
     for (const rawBody of [undefined, "", "{not json"]) {
       const res = await call({}, event(routeKey, { roundId: "r_1", hole: "4", userId: "u_2", ...(rawBody === undefined ? {} : { rawBody }) }));

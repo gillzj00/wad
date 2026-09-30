@@ -1,12 +1,13 @@
 import { scoreGreenies } from "../../engines/greenies.js";
 import { scoreSkins } from "../../engines/skins.js";
 import { scoreWad } from "../../engines/wad.js";
+import { scoreWolf, type WolfResult } from "../../engines/wolf.js";
 import type { RoundState } from "../../shared/rounds.js";
-import type { Player } from "../../shared/types.js";
-import { effectiveCourseHandicap, type RoundRecord } from "./roundStore.js";
+import type { HoleEvents, Player } from "../../shared/types.js";
+import { effectiveCourseHandicap, effectiveTeeOrder, type RoundRecord } from "./roundStore.js";
 
-/** Skins needs every player's course handicap; null while one is missing. */
-function skinsPlayers(record: RoundRecord): Player[] | null {
+/** Skins and Wolf need every player's course handicap; null while one is missing. */
+export function playersWithHandicaps(record: RoundRecord): Player[] | null {
   const players: Player[] = [];
   for (const p of record.players) {
     const courseHandicap = effectiveCourseHandicap(p);
@@ -14,6 +15,24 @@ function skinsPlayers(record: RoundRecord): Player[] | null {
     players.push({ userId: p.userId, displayName: p.displayName, courseHandicap });
   }
   return players;
+}
+
+/**
+ * Wolf for the round with the given hole events. Null while a player has no
+ * course handicap, and from the engine unless there are exactly four players.
+ */
+export function wolfState(record: RoundRecord, holeEvents: HoleEvents[]): WolfResult | null {
+  const { games, tee } = record.meta;
+  const players = playersWithHandicaps(record);
+  if (!games.wolf || !players) return null;
+  return scoreWolf({
+    players,
+    teeOrder: effectiveTeeOrder(record),
+    holes: tee.holes,
+    scores: record.scores,
+    holeEvents,
+    pointCents: games.wolf.pointCents,
+  });
 }
 
 /**
@@ -27,7 +46,7 @@ export function computeState(record: RoundRecord): RoundState {
   const state: RoundState = {};
 
   if (games.skins) {
-    const withHandicaps = skinsPlayers(record);
+    const withHandicaps = playersWithHandicaps(record);
     state.skins = withHandicaps ? scoreSkins({ players: withHandicaps, holes: tee.holes, scores, baseCents: games.skins.baseCents }) : null;
   }
   if (games.wad) {
@@ -36,5 +55,6 @@ export function computeState(record: RoundRecord): RoundState {
   if (games.greenies) {
     state.greenies = scoreGreenies({ players, holes: tee.holes, scores, holeEvents, amountCents: games.greenies.amountCents });
   }
+  if (games.wolf) state.wolf = wolfState(record, holeEvents);
   return state;
 }
