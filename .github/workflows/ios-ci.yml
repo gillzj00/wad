@@ -14,28 +14,61 @@ on:
 permissions:
   contents: read
 
+# A new push to the same branch cancels the run in progress; runs on main are
+# left to finish.
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build-test:
-    # Needs Xcode 16+ (project format 77, Swift 6). macOS minutes count 10x
-    # against the private-repo Actions quota, so this only runs for ios/ changes.
+  # Needs Xcode 16+ (project format 77, Swift 6). The unit tests and the UI
+  # tests are separate jobs so that a change is checked in the time the slower
+  # one takes, not the sum. Both pick the simulator with ios/scripts/test.sh.
+  unit-tests:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
       - name: Xcode version
         run: xcodebuild -version
 
-      - name: Build and test
-        # xcodebuild has been seen not to exit after the tests when it writes a
-        # result bundle, so the step has its own limit.
-        timeout-minutes: 20
-        run: ios/scripts/test.sh -resultBundlePath "$RUNNER_TEMP/Wad.xcresult"
+      - name: Build and run the unit tests
+        # The step has its own limit so that the results are still uploaded.
+        timeout-minutes: 15
+        run: ios/scripts/test.sh --unit -resultBundlePath "$RUNNER_TEMP/Wad-unit-tests.xcresult"
 
       - name: Upload the test results
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: Wad.xcresult
-          path: ${{ runner.temp }}/Wad.xcresult
+          name: Wad-unit-tests.xcresult
+          path: ${{ runner.temp }}/Wad-unit-tests.xcresult
+          retention-days: 7
+
+  ui-tests:
+    runs-on: macos-15
+    # The three UI tests take a few minutes each on the runner, after a build
+    # of about five minutes.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build and run the UI tests
+        timeout-minutes: 25
+        run: ios/scripts/test.sh --ui -resultBundlePath "$RUNNER_TEMP/Wad-ui-tests.xcresult"
+
+      - name: Upload the test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Wad-ui-tests.xcresult
+          path: ${{ runner.temp }}/Wad-ui-tests.xcresult
           retention-days: 7
