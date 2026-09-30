@@ -52,8 +52,9 @@ resource "aws_iam_role_policy" "logs" {
   policy = data.aws_iam_policy_document.logs.json
 }
 
+# No count on this: the policy usually references attributes that are only
+# known after apply, which count cannot depend on.
 resource "aws_iam_role_policy" "app" {
-  count  = var.policy_json == null ? 0 : 1
   name   = "app"
   role   = aws_iam_role.this.id
   policy = var.policy_json

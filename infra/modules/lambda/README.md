@@ -1,6 +1,6 @@
 # lambda
 
-One Lambda function from a prebuilt handler bundle: zips `backend/dist/<handler>/index.mjs`, creates the execution role (logging plus an optional inline policy), a log group with short retention, and the function (Node 22, arm64, `index.handler`).
+One Lambda function from a prebuilt handler bundle: zips `backend/dist/<handler>/index.mjs`, creates the execution role (logging plus the function's own inline policy), a log group with short retention, and the function (Node 22, arm64, `index.handler`).
 
 Inputs: `name`, `source_file`, `environment`, `policy_json`, `memory_size`, `timeout`, `log_retention_days`.
 Outputs: `function_name`, `arn`, `invoke_arn`, `role_name`.

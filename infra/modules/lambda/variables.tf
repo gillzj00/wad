@@ -15,9 +15,8 @@ variable "environment" {
 }
 
 variable "policy_json" {
-  description = "Optional inline IAM policy (JSON) granting the function what it needs beyond logging."
+  description = "Inline IAM policy (JSON) granting the function what it needs beyond logging."
   type        = string
-  default     = null
 }
 
 variable "memory_size" {
