@@ -56,6 +56,12 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        workers: [2, 3]
+    env:
+      WAD_UI_TEST_WORKERS: ${{ matrix.workers }}
     steps:
       - uses: actions/checkout@v7
 
