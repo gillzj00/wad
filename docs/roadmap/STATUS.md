@@ -41,17 +41,20 @@ Last updated: 2026-09-29
 | P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
 | S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default (requested 2026-09-29) | ios/ | in flight | - |
-| I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | in flight; the infra PR needs @gillzj00's approval in chat before merge | - |
+| I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | PR open; waiting for the CI plan comment and @gillzj00's approval ("approve #54") | #54 |
+| H1 | HIGH PRIORITY (2026-09-29): repo hardening before going public: secrets audit of the full history, .gitignore, remove the committed bootstrap tfplan, least-privilege workflows pinned by SHA, apply gated on a `dev` environment with @gillzj00 as required reviewer, branch protection on main, Actions restricted; owner merges every PR from now on | .github/, infra/, root docs, GitHub settings | in flight | - |
+| G1 | Research: geolocation for course suggestion and hole detection (requested 2026-09-29) | docs/ | in flight | - |
 | C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | queued (after S1; can start before I1 is merged, against the API contract) | - |
 | T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
-| T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
+| T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
 
 ## Task in flight
 
 - W1 (subagent, branch `feat/wolf-engine`)
 - S1 (subagent, branch `feat/ios-score-starts-at-par`)
-- I1 (subagent, branch `feat/deploy-courses-api`)
+- H1 (subagent, branch `chore/repo-hardening`)
+- G1 (subagent, branch `docs/geolocation-research`)
 
 ## Open PRs
 
@@ -59,6 +62,7 @@ Last updated: 2026-09-29
 
 ## Decisions made
 
+- Repo goes public to get free Actions minutes (owner, 2026-09-29), after the H1 audit findings are confirmed. From then on Claude opens PRs and never merges; @gillzj00 merges every PR (his approval), and every Terraform apply waits for his approval in the `dev` environment. Required approving reviews cannot be used because all PRs are authored by the owner's own account.
 - Course lookup (2026-09-29): option B, deploy the courses API before auth with the owner's provider key staying in AWS. This overrides the earlier no-public-endpoint rule for this one endpoint. Interim quota guard: API Gateway throttling plus a shared `x-wad-client` token in SSM; replaced by Cognito in M1.1. Recorded in ADR-0013 (I1).
 - Wolf rules accepted by @gillzj00 on 2026-09-29: four players only; points 2 (Wolf and partner win, each), 3 (each opponent when they lose), 4 (Lone Wolf wins), 1 (each opponent when Lone Wolf loses); no Blind Wolf; Wolf on 17 and 18 is the player in last place on points; tied hole scores nothing and nothing carries; net best ball with the Skins ticks; $1 a point by default, every pair settles the point difference; tee order is the order players were added, reorderable before play; the Wolf's choice is recorded per hole and can be corrected.
 - Engines run on device through JavaScriptCore from an esbuild bundle of `backend/src/engines`; payout math is not ported to Swift. To be recorded in ADR-0011 (P1.1).
