@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from "aws-lambda";
 import { describe, expect, it } from "vitest";
-import { createHandler } from "../../src/handlers/courses.js";
+import { CLIENT_TOKEN_HEADER, createHandler } from "../../src/handlers/courses.js";
 import type { CourseCache } from "../../src/services/courses/cache.js";
 import { CourseService } from "../../src/services/courses/courseService.js";
 import type { CourseCorrection } from "../../src/shared/courseInput.js";
@@ -10,6 +10,7 @@ import { manualCourseBody } from "../services/courses/fixtures.js";
 const NOW = new Date("2026-09-29T12:00:00Z");
 const CREATE = "POST /v1/courses";
 const CORRECT = "POST /v1/courses/{courseId}/corrections";
+const TOKEN = "test-client-token";
 
 function setup() {
   const courses = new Map<string, { course: Course; createdBy?: string }>();
@@ -31,7 +32,7 @@ function setup() {
     },
   };
   let n = 0;
-  const handler = createHandler(new CourseService(provider, cache, () => `id-${++n}`, () => NOW));
+  const handler = createHandler(new CourseService(provider, cache, () => `id-${++n}`, () => NOW), async () => TOKEN);
   return { handler, courses, corrections, providerCalls };
 }
 
@@ -48,6 +49,7 @@ function event(routeKey: string, req: Request): APIGatewayProxyEventV2 {
   const text = req.rawBody ?? (req.body === undefined ? undefined : JSON.stringify(req.body));
   return {
     routeKey,
+    headers: { [CLIENT_TOKEN_HEADER]: TOKEN },
     body: text !== undefined && req.base64 ? Buffer.from(text).toString("base64") : text,
     isBase64Encoded: req.base64 ?? false,
     pathParameters: req.courseId ? { courseId: req.courseId } : undefined,

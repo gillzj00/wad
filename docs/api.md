@@ -36,6 +36,14 @@ Base path: `/v1`.
 - Both `POST` routes return `401 unauthorized` without a caller `sub`, `400 invalid_body` when the body is not JSON, and `400 validation_failed` with the offending field in `error.field` and in the message (e.g. `tees[0].holes[5].par`).
 - Request and correction shapes are in `backend/src/shared/courseInput.ts`.
 
+#### Deployment (dev)
+
+Interim, until the Cognito authorizer exists ([ADR-0013](adr/0013-courses-api-before-auth.md)). Only the two `GET` routes are deployed; the `POST` routes are not routed.
+
+- Base URL: the `api_base_url` Terraform output of `infra/environments/dev` (an `execute-api` URL; routes are under `/v1`).
+- Every request must carry `x-wad-client: <token>`; otherwise `401 invalid_client_token`, returned before the cache or the provider is touched. The token is a shared secret in SSM, not a user identity; `infra/README.md` explains how to fetch it for a local app build. It is not a substitute for the `Authorization` header this contract will require once auth lands.
+- Throttling: burst 5, sustained 2 requests per second across all clients (`429` from API Gateway when exceeded), to protect the provider's daily quota of about 35 requests.
+
 ### Rounds
 - `POST /rounds` -> create `{ courseId, teeId, date, holes: 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents }, wolf?: { pointCents } } }`; a game is enabled by including it. `201 { round, joinCode }`; the caller is the first player.
   - `date` is the day of play, `YYYY-MM-DD`.
