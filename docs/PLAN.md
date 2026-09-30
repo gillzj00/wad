@@ -4,7 +4,7 @@ This is the master plan. It is intended to be iterated on by multiple agents wor
 
 ## 1. Vision
 
-An iPhone app you take onto the golf course to keep score for your group and run friendly money games — **Wad**, **Skins**, and **Greenies** — then settle up at the end with pre-filled Venmo payments. It knows the course, shows the scorecard, and applies each game's rules (including handicap strokes) automatically so nobody has to do the math on the 18th green.
+An iPhone app you take onto the golf course to keep score for your group and run friendly money games — **Wad**, **Skins**, **Greenies**, and **Wolf** — then settle up at the end with pre-filled Venmo payments. It knows the course, shows the scorecard, and applies each game's rules (including handicap strokes) automatically so nobody has to do the math on the 18th green.
 
 ## 2. Product scope
 
@@ -12,10 +12,11 @@ An iPhone app you take onto the golf course to keep score for your group and run
 - Accounts with Sign in with Apple; a stored handicap index per player.
 - Course lookup with real scorecard data (par, stroke index, yardage, rating, slope per tee).
 - Create a round, invite others via a join code, everyone scores from their own phone with live sync.
-- The three games, scored automatically:
+- The games, scored automatically:
   - **Wad** (putting game, resets every 9)
   - **Skins** (net, with handicap ticks and carryovers)
   - **Greenies** (par-3 game)
+  - **Wolf** (four players, net best ball for points, with a rotating Wolf)
 - End-of-round settlement: net who owes whom across all games, open Venmo pre-filled, track paid/unpaid.
 - Works with poor/no signal on the course (offline-first, syncs later).
 
@@ -39,6 +40,7 @@ An iPhone app you take onto the golf course to keep score for your group and run
 | IaC/CD | Terraform via GitHub Actions using GitHub OIDC | [0009](adr/0009-terraform-github-oidc.md) |
 | Game rules | "Collect from each" payouts, one settlement per round | [0010](adr/0010-game-rules.md) |
 | Engines on device | Bundle the TypeScript engines and run them in JavaScriptCore; no Swift port | [0011](adr/0011-engines-on-device-javascriptcore.md) |
+| Wolf rules | Four players, 2/3/4/1 points, net best ball, last place is the Wolf on 17 and 18, "pay the difference" payout | [0012](adr/0012-wolf-rules.md) |
 
 ## 4. Architecture summary
 
@@ -65,7 +67,7 @@ Detailed, grabbable tasks with acceptance criteria are in [roadmap/milestones.md
 - **M1 Accounts & auth** — Cognito + Sign in with Apple; user profile + handicap index API and screens.
 - **M2 Courses & scorecards** — course search/detail via GolfCourseAPI with DynamoDB caching; Open Course schema; manual entry + correction fallback.
 - **M3 Rounds & scoring** — create/join round, hole-by-hole scoring, WebSocket live sync, offline buffering.
-- **M4 Game engines** — pure, tested Skins / Wad / Greenies engines wired into the round.
+- **M4 Game engines** — pure, tested Skins / Wad / Greenies / Wolf engines wired into the round.
 - **M5 Settlement** — net debts across games, Venmo deep links, paid/unpaid tracking.
 - **M6 Polish** — round history, notifications, edge-case handling, App Store readiness.
 
@@ -73,10 +75,12 @@ Engines (M4) are pure functions and can be built in parallel with the backend/iO
 
 ## 6. Open questions
 
-The core game rules are settled ([ADR-0010](adr/0010-game-rules.md)). Two edge cases remain, tracked in [domain-model.md](domain-model.md#open-questions):
+The core game rules are settled ([ADR-0010](adr/0010-game-rules.md), [ADR-0012](adr/0012-wolf-rules.md)). These edge cases remain, tracked in [domain-model.md](domain-model.md#open-questions):
 
 - **Skins:** what happens to a carryover that is still unresolved after the final hole.
 - **Leaving mid-round:** how a departing player's games are settled.
+- **Handicaps for 9-hole rounds:** which handicap a 9-hole round uses.
+- **Wolf:** who is the Wolf on 17 or 18 when players are tied for last place.
 
 ## 7. How agents should work here
 

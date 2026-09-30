@@ -5,12 +5,12 @@ This document is the source of truth for how each game is scored and how money i
 Conventions used here:
 - All money is stored and computed as **integer cents**. Display formats to dollars.
 - **Stroke index** (a.k.a. hole handicap) ranks hole difficulty 1–18, where 1 is the hardest. It is per-course (and can differ by tee set).
-- Every game that pays out uses **"collect from each"**: the winner collects the amount from **each** other player in the round. With integer-cent amounts this never produces fractional cents.
+- Wad, Skins and Greenies pay out by **"collect from each"**: the winner collects the amount from **each** other player in the round. Wolf is a points game and pays out by **"pay the difference"**: every pair of players settles the difference in their points. With integer-cent amounts neither produces fractional cents.
 - All game results are netted into a **single settlement per round**. A 9-hole round settles after hole 9; an 18-hole round settles after hole 18. Nothing is paid mid-round.
 
 ---
 
-## Handicaps and "ticks" (shared by Skins)
+## Handicaps and "ticks" (shared by Skins and Wolf)
 
 Players of different ability are equalized by giving weaker players extra strokes ("ticks") on the hardest holes.
 
@@ -88,9 +88,58 @@ Played only on par-3 holes, for a fixed amount (default **$5**).
 
 ---
 
+## Game 4: Wolf
+
+A points game for **exactly four players** over an 18-hole round. On every hole one player is the Wolf and plays the hole with a partner against the other two, or alone against the other three. See [ADR-0012](adr/0012-wolf-rules.md).
+
+**Settings (per round):** value per point (default **$1**), and the **tee order**: the four players in a fixed order. The default tee order is the order the players were added to the round; the group can reorder it before play.
+
+**Players:** Wolf is not played with two, three or five players, and there are no three-player rules. While a round with Wolf enabled does not have exactly four players, Wolf is **unavailable**: it has no state and is not part of the settlement. A round is created with one player and the others join afterwards, so this is checked whenever the game is scored, not when the round is created.
+
+**Who is the Wolf:**
+- **Holes 1-16:** the Wolf rotates through the tee order. Hole 1 is the first player, hole 2 the second, hole 3 the third, hole 4 the fourth, hole 5 the first again, and so on, so each player is the Wolf four times.
+- **Hole 17:** the player in **last place** on Wolf points after hole 16.
+- **Hole 18:** the player in last place after hole 17. The standings are worked out again, so it need not be the same player as on 17.
+- **Tie for last place:** not decided yet, see [Open Question 4](#open-questions). The engine does not pick. The group records who the Wolf is for that hole; the record is accepted only if that player is one of those tied for last. Until it is recorded the hole **needs a Wolf** and scores no points.
+
+**Choice:** on each hole the Wolf either takes **one partner** (2 v 2) or plays alone as **Lone Wolf** (1 v 3). Blind Wolf (declaring alone before anyone tees off) is not played.
+
+**Recording:** for each hole the group records the Wolf's choice: the partner, or lone. On 17 and 18 with a tie for last place the group also records the Wolf. The app does not check when the choice was made.
+
+**Winning a hole:** net best ball. Each side's score is the **lowest net score** among its players, where net = gross - ticks, with the same relative tick allocation as Skins (see above). The lower side score wins the hole. If the two side scores are equal the hole is **tied**: nobody gets points and nothing carries over to the next hole.
+
+**Points:**
+
+| Outcome | Points |
+| --- | --- |
+| Wolf and partner win | 2 to the Wolf and 2 to the partner |
+| Wolf and partner lose | 3 to each of the two opponents |
+| Lone Wolf wins | 4 to the Wolf |
+| Lone Wolf loses | 1 to each of the three opponents |
+
+**When a hole is scored:** only when all four players have a gross score on it and the Wolf's choice is recorded (and, on 17 or 18 with a tie for last place, the Wolf is recorded). Otherwise it is **pending** and has no points.
+- On holes 1-16 the Wolf comes from the fixed rotation, so a hole can be scored while an earlier hole is still pending.
+- On 17 and 18 the Wolf comes from the standings. Hole 17 is pending until every one of holes 1-16 is scored (won or tied), and hole 18 until hole 17 is too. A hole that is pending, needs a Wolf, or is invalid holds back the holes whose Wolf depends on it.
+
+**Invalid records:** a record that breaks the rules is reported as **invalid** and scores no points. It is never corrected silently and never paid. The cases: the partner is the Wolf; the partner is not a player in the round; a recorded Wolf on holes 1-16 who is not the one the rotation gives; a recorded Wolf on 17 or 18 who is not in last place (or not among those tied for it); a partner recorded together with lone. A record can become invalid afterwards, for example when a corrected score changes who was in last place.
+
+**Money:** at the end, **every pair of players settles the difference in their points** at the value per point. For one player that adds up to
+
+```
+delta = value per point * (4 * own points - total points of all four)
+```
+
+which is whole cents and sums to zero over the four players. Only points from scored holes count. Wolf is **one game over the 18 holes** and is part of the single round settlement. It is played in 18-hole rounds only.
+
+> Example ($1 a point; tee order A, B, C, D): Hole 1, Wolf A takes B and their best ball wins -> A and B get 2 each. Hole 2, Wolf B goes alone and loses -> A, C and D get 1 each. Hole 3, Wolf C takes D and they lose -> A and B get 3 each. Hole 4, Wolf D goes alone and wins -> D gets 4. Points: A 6, B 5, C 1, D 5, 17 in total. A is 1 point up on B, 5 up on C and 1 up on D: A collects $1 + $5 + $1 = **+$7**, which is `4 * 6 - 17`. B: `4 * 5 - 17` = +$3. C: `4 * 1 - 17` = -$13. D: +$3. The four add up to $0.
+
+The engine exposes the tee order, the running points per player, the per-player deltas, whether all 18 holes are scored, and per hole: the Wolf (nullable), the status (won by the Wolf's side, won by the opponents, tied, pending, needs a Wolf, invalid) with the reason when invalid, the recorded choice and partner, the players in last place (17 and 18), the two sides, each side's net best ball, every player's net score, and the points awarded.
+
+---
+
 ## Cross-cutting: settlement
 
-At the end of the round the app computes each player's net position across **all** games (Wad + Skins + Greenies), then reduces it to pairwise payments (who pays whom, how much) by repeatedly matching the largest creditor with the largest debtor, which needs at most one payment fewer than the number of players owed or owing. Those payments drive the Venmo deep links. All intermediate math stays in integer cents; only pairwise transfers are surfaced to the user.
+At the end of the round the app computes each player's net position across **all** games (Wad + Skins + Greenies + Wolf), then reduces it to pairwise payments (who pays whom, how much) by repeatedly matching the largest creditor with the largest debtor, which needs at most one payment fewer than the number of players owed or owing. Those payments drive the Venmo deep links. All intermediate math stays in integer cents; only pairwise transfers are surfaced to the user.
 
 ---
 
@@ -101,3 +150,4 @@ Resolve these with @gillzj00 before implementing the affected behavior. Update t
 1. **Skins — unresolved carryover at the end.** If the final hole is pushed, the carried value has no next hole. Is it simply not paid out, or is there a tiebreak (e.g. a playoff hole, or split among the tied players)? Until answered the engine must not pay it out and should expose the unresolved amount so the UI can show it.
 2. **Leaving mid-round.** If a player leaves before the round ends, what happens to their games? (E.g. settle everything up to the last completed hole, or void their participation in unfinished games.)
 3. **Handicaps for 9-hole rounds.** GHIN computes a separate 9-hole course handicap (about half the index, using the nine's own rating and par). Should a 9-hole round use that, or half of the 18-hole course handicap, or the full 18-hole difference? The engine allocates whatever handicaps it is given across the holes played, ranked by stroke index, so this only affects how the handicaps are computed before allocation.
+4. **Wolf — tie for last place on holes 17 and 18.** The Wolf on 17 and 18 is the player in last place on points. When two or more players are tied for last, who is the Wolf? (E.g. the one earliest or latest in the tee order, the one who was Wolf longest ago, or the group's choice.) Interim behavior, to be confirmed: the engine does not pick. The hole's record may name the Wolf (`wolfUserId`), which is valid only if that player is among those tied for last; a recorded player who is not makes the hole invalid. Until a Wolf is recorded the hole has the status `needs_wolf`, scores no points, and keeps the settlement from being final.
