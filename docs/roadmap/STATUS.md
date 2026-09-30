@@ -42,7 +42,7 @@ Last updated: 2026-09-29
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
 | S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default (requested 2026-09-29) | ios/ | in flight | - |
 | C1 | PRIORITY: course lookup in the app, default course Oak Glen (Stillwater, MN) (requested 2026-09-29) | ios/ (+ decision) | waiting on a decision: how the app reaches the course provider | - |
-| T1 | Death metal theme (skulls, chains; requested 2026-09-29), selectable alongside the golf theme, original artwork only | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
+| T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
 | T2 | Animated graphic per game (requested 2026-09-29): Wolf baring its teeth; Wad as a golf-gloved fist full of money; Skins as a skeletal hand being skinned; Greenies to be proposed. Original vector art drawn in code, Reduce Motion respected | ios/ | queued (after T1) | - |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
 
