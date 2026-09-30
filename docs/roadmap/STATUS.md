@@ -42,7 +42,8 @@ Last updated: 2026-09-29
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
 | S1 | Score entry starts at the hole's par instead of "-" (requested 2026-09-29) | ios/ | in flight | - |
 | C1 | PRIORITY: course lookup in the app, default course Oak Glen (Stillwater, MN) (requested 2026-09-29) | ios/ (+ decision) | waiting on a decision: how the app reaches the course provider | - |
-| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1 and C1) | - |
+| T1 | Death metal theme (skulls, chains; requested 2026-09-29), selectable alongside the golf theme, original artwork only | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
+| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1 and T1) | - |
 
 ## Task in flight
 
