@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "infra/**"
+      - "backend/**"
       - ".github/workflows/terraform.yml"
   push:
     branches: [main]
     paths:
       - "infra/**"
+      - "backend/**"
       - ".github/workflows/terraform.yml"
 
 # OIDC: no long-lived AWS keys. See docs/adr/0009-terraform-github-oidc.md.
@@ -37,6 +39,20 @@ jobs:
 
       - name: Format check
         run: terraform fmt -check -recursive infra
+
+      # The Lambda functions are zipped from backend/dist, so the handlers must
+      # be built before plan and apply.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Build handlers
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v6
