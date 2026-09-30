@@ -37,10 +37,11 @@ Base path: `/v1`.
 - Request and correction shapes are in `backend/src/shared/courseInput.ts`.
 
 ### Rounds
-- `POST /rounds` -> create `{ courseId, teeId, date, holes: 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents } } }`; a game is enabled by including it. `201 { round, joinCode }`; the caller is the first player.
+- `POST /rounds` -> create `{ courseId, teeId, date, holes: 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents }, wolf?: { pointCents } } }`; a game is enabled by including it. `201 { round, joinCode }`; the caller is the first player.
   - `date` is the day of play, `YYYY-MM-DD`.
-  - Amounts are non-negative integer cents (`400 invalid_amount`). An amount left out of an included game takes its default: skins 500, wad 700 start and 200 step, greenies 500. `games` is required and may be `{}`; an unknown game is `400 unknown_game`.
+  - Amounts are non-negative integer cents (`400 invalid_amount`). An amount left out of an included game takes its default: skins 500, wad 700 start and 200 step, greenies 500, wolf 100 a point. `games` is required and may be `{}`; an unknown game is `400 unknown_game`.
   - `holes: 9` is rejected with `400 nine_hole_rounds_unsupported` until the 9-hole handicap rule is decided (domain model, Open Question 3).
+  - Wolf needs exactly four players. A round is created with one player, so creating a round with `wolf` is always accepted; while the round does not have exactly four players, `state.wolf` is `null` and the settlement has the issue `wolf_unavailable` (see Game state and Settlement).
   - The course must already be cached (`404 course_not_found`) and have the tee (`404 tee_not_found`). The tee needs 18 holes with valid stroke indexes (`400 tee_not_usable`). The round keeps its own copy of the tee, so later course corrections do not change a round.
 - `GET /rounds/{roundId}` -> `{ round }`: meta, players, scores and hole events. Players only (`403 not_a_participant`); `404 round_not_found`. `state` is the current game state, computed by the engines on every read (see Game state).
 - `POST /rounds/join` -> `{ joinCode }` joins the caller to a round and returns `200 { round }`. Joining again is a no-op that returns the round. `404 join_code_not_found` for an unknown or expired code, `409 round_full` when the round already has 4 players.
@@ -59,10 +60,20 @@ Base path: `/v1`.
   - `hole` is a whole number 1-18 (`400 invalid_hole`). `gross` is a whole number 1-20 (`400 invalid_gross`), or `null` to clear the score. `userId` must be a player in the round (`400 unknown_player`).
   - A player sets only their own score; setting or clearing another member's is `403 not_score_owner`.
   - Each player's score on a hole is its own item and the last write wins, so writing the same score again changes nothing and players scoring the same hole at once do not affect each other.
-- `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers?: [userId, ...], greenieWinner?: userId | null }`; `200 { round }`. Any participant may. `wadMakers` is ordered by when the putts were made.
-  - Send either field or both (`400 invalid_body` for neither). Only the fields sent are written, and the last write wins per field, so one device setting the greenie does not undo the wad makers another device set.
+- `PUT /rounds/{roundId}/holes/{hole}` -> set the hole's group events `{ wadMakers?: [userId, ...], greenieWinner?: userId | null, wolf?: { choice?, partnerUserId?, wolfUserId? } | null }`; `200 { round }`. Any participant may. `wadMakers` is ordered by when the putts were made.
+  - Send at least one field (`400 invalid_body` for none). Only the fields sent are written, and the last write wins per field, so one device setting the greenie does not undo the wad makers another device set. `wolf` is one field: it is written as a whole.
   - `{hole}` is 1-18 (`400 invalid_hole`). `wadMakers` has at most 4 ids, each a player in the round (`400 unknown_player`) and listed once (`400 duplicate_wad_maker`); `[]` clears it.
   - `greenieWinner` must be a player in the round (`400 unknown_player`) and the hole a par 3 (`400 not_a_par_three`); `null` clears it. A winner whose stored score on the hole is over par is rejected (`400 greenie_winner_over_par`). A winner with no score yet is accepted, because scores and hole events can arrive in any order; the greenie is `pending` in `state` until the score arrives, and `invalid` (not paid) if that score, or a later correction, is over par.
+  - `wolf` is what the group recorded for Wolf on the hole; `null` clears it. `choice` is `"partner"` with `partnerUserId`, or `"lone"`. `wolfUserId` names the Wolf and is only needed on hole 17 or 18 when players are tied for last place (domain model, Open Question 4); it can be sent before the choice. Fields left out are stored as `null`; an object with none of the three set is `400 invalid_body`, as is a `choice` other than the two.
+    - The round must have Wolf enabled (`400 wolf_not_enabled`) and Wolf must be available, which takes exactly four players, each with a course handicap (`409 wolf_unavailable`).
+    - `partnerUserId` and `wolfUserId` must be players in the round (`400 unknown_player`).
+    - The record is then checked by the wolf engine against the round as it is, and rejected with `400 wolf_<reason>` when the engine finds it invalid: `wolf_partner_is_wolf`, `wolf_partner_and_lone`, `wolf_partner_missing`, `wolf_wolf_contradicts_rotation` (holes 1-16) and `wolf_wolf_not_in_last_place` (17 and 18, once the standings are known).
+    - A record that was valid when written can become invalid later, for example when a corrected score changes who was in last place. It is then `invalid` in `state.wolf`, scores no points, and is a settlement issue; nothing is rewritten.
+- `PUT /rounds/{roundId}/tee-order` -> set the order the players tee off in: `{ teeOrder: [userId, ...] }`; `200 { round }`. Players only (`403 not_a_participant`); `404 round_not_found`. Any participant may.
+  - `teeOrder` lists every player in the round exactly once (`400 invalid_tee_order`); an id that is not a player is `400 unknown_player`.
+  - The order can be changed only before play: once the round has a score or a Wolf record it is `409 tee_order_locked`. Clearing them opens it again. The check reads the round and then writes, so a score written at the same moment can slip past it.
+  - `round.teeOrder` is always every player's id in tee order. Until an order is set it is the order the players were added. A player who joins after the order was set goes to the end. Wolf uses it for the rotation on holes 1-16; nothing else uses it yet.
+  - The last write wins, and writing the same order again changes nothing.
 - `GET /rounds/{roundId}/settlement` -> `200 { settlement }`: net positions + pairwise transfers (at most one fewer than the players with a non-zero balance). Players only (`403 not_a_participant`); `404 round_not_found`. See Settlement.
 - `POST /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer paid; `200 { settlement }`. No body.
 - `DELETE /rounds/{roundId}/settlement/transfers/{transferId}/paid` -> mark a transfer unpaid; `200 { settlement }`.
@@ -75,6 +86,11 @@ Base path: `/v1`.
 - `skins`: `{ holes, deltas, complete, carryOutCents }`, or `null` until every player has a course handicap. Each hole has `status` (`won`, `pushed` or `pending`), `carriedInCents`, `atStakeCents`, `winnerUserId` and `net`. A hole is `pending` while it, or an earlier hole, is missing a score. When `complete` is true and `carryOutCents` is not zero, the last hole was pushed: that carryover is unresolved and is **not paid** (domain model, Open Question 1).
 - `wad`: `{ instances, deltas, ignored }` with one instance per nine (`segment` `front` or `back`): `holderUserId`, `valueCents`, `makes` and `complete`. The holder is paid in `deltas` once every player has a score on the nine's last hole.
 - `greenies`: `{ holes, deltas }` with one entry per par 3: `winnerUserId` and `status` (`none`, `awarded`, `pending` or `invalid`). Only `awarded` is paid.
+- `wolf`: `{ teeOrder, holes, points, deltas, complete }` (`WolfResult` in `backend/src/engines/wolf.ts`), or `null` while Wolf is unavailable: the round does not have exactly four players, or a player has no course handicap.
+  - Each hole has `wolfUserId`, `status`, `invalidReason`, `choice`, `partnerUserId`, `lastPlace`, `wolfSide`, `opponents`, `wolfSideNet`, `opponentsNet`, `net` and `points` (the points awarded on the hole, per player).
+  - `status` is `won_by_wolf_side`, `won_by_opponents`, `tied`, `pending`, `needs_wolf` or `invalid`. Only the two `won_` statuses award points. `pending`: a score or the choice is missing, or (17 and 18) an earlier hole is not scored yet. `needs_wolf`: hole 17 or 18 with a tie for last place and no recorded Wolf; `lastPlace` lists the players who can be recorded. `invalid`: see `invalidReason` (`partner_and_lone`, `partner_missing`, `partner_not_a_player`, `wolf_not_a_player`, `partner_is_wolf`, `wolf_contradicts_rotation`, `wolf_not_in_last_place`).
+  - `wolfUserId` is `null` while the Wolf is not known. The sides and their scores are `null` unless the hole is scored. `lastPlace` is `null` on holes 1-16 and while the standings are not known.
+  - `points` on the result is each player's running total, from scored holes only, and `deltas` is `pointCents * (4 * own points - total points)`. `complete` is true when all 18 holes are won or tied.
 - `deltas` is each player's running result in that game, in cents; positive is owed to them.
 
 ### Settlement
@@ -102,7 +118,11 @@ The settlement is derived on every read from the game state: `positions` and `tr
   - `skins_unavailable`: skins is enabled but a player has no course handicap, so skins is not in the positions (`games.skins` is `null`). Set the player's per-round handicap override to resolve it.
   - `greenie_pending` / `greenie_invalid`: a recorded greenie that is not paid (see Game state). Clear or correct the winner, or the score, to resolve it.
   - `wad_make_ignored`: a recorded wad make the engine ignored.
-- `games` holds each enabled game's `deltas`. `positions` has every player, positive is owed to them, and sums to zero.
+  - `wolf_unavailable`: wolf is enabled but the round does not have exactly four players, or a player has no course handicap, so wolf is not in the positions (`games.wolf` is `null`).
+  - `wolf_needs_wolf`: hole 17 or 18 has players tied for last place and no recorded Wolf, so it scores no points. Record the Wolf with `wolfUserId` on the hole to resolve it.
+  - `wolf_invalid`: the hole's Wolf record is invalid and scores no points; the message names the reason. Correct or clear the record, or the score that made it invalid.
+  - `wolf_pending`: every player has a score on the hole and Wolf still cannot score it: the choice is not recorded (`userId` is the Wolf), or it is hole 17 or 18 waiting for an earlier hole (`userId` is `null`). A hole that is missing a score is in `incompleteHoles` instead.
+- `games` holds each enabled game's `deltas`, `wolf` included; the example above is a round without wolf. `positions` has every player, positive is owed to them, and sums to zero.
 - `skinsCarryover` is the skins `carryOutCents`, or `null` when skins is not enabled or unavailable. With `unresolved: true` the last hole was pushed: the amount is shown and is **never part of a position or transfer** (domain model, Open Question 1).
 - `toVenmoHandle` is the payee's `venmoHandle` from their profile, or `null` (no handle, or a guest). The client builds the Venmo deep link; the server builds no links and moves no money.
 - `transferId` is derived from the round, payer, payee and amount. A score correction or a handicap override that changes a transfer gives it a new id, so a paid marker never moves to a different transfer or amount. A marker that matches no current transfer is listed in `stalePayments` (`{ transferId, from, to, amountCents, paidAt, paidBy }`) so the client can show that a payment was recorded before the correction.
@@ -114,7 +134,7 @@ The settlement is derived on every read from the game state: `positions` and `tr
 
 ### Round shape (illustrative)
 
-The `Round` type in `backend/src/shared/rounds.ts`.
+The `Round` type in `backend/src/shared/rounds.ts`. A hole with a Wolf record also has `wolf`, for example `{ "hole": 4, "wadMakers": [], "greenieWinner": null, "wolf": { "choice": "partner", "partnerUserId": "u_2", "wolfUserId": null } }`, and a round with Wolf enabled has `state.wolf`.
 
 ```json
 {
@@ -130,6 +150,7 @@ The `Round` type in `backend/src/shared/rounds.ts`.
   "players": [
     { "userId": "u_1", "displayName": "Zach", "handicapIndex": 13.1, "courseHandicap": 15, "courseHandicapOverride": null, "ticksByHole": { "1": 1, "3": 1 }, "guest": false, "joinedAt": "2026-10-03T14:00:00.000Z" }
   ],
+  "teeOrder": ["u_1"],
   "scores": [
     { "userId": "u_1", "hole": 4, "gross": 4 }
   ],
