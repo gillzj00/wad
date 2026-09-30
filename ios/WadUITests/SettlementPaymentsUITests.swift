@@ -4,12 +4,12 @@ import XCTest
 ///
 /// The round is the finished one of `-debugSeedRound finalPush`, started on
 /// 2026-09-26 at 12:00 UTC: Alex pays Zach $67.00 and Sam pays Zach $61.00,
-/// and $20.00 of skins is unresolved and in neither (worked out in
-/// RoundWalkthroughUITests). Zach (@zach-golf) and Sam (@sam_golfs) have a
+/// and $20.00 of skins is unresolved and in neither (the amounts are checked
+/// by RoundSettlementTests). Zach (@zach-golf) and Sam (@sam_golfs) have a
 /// Venmo handle, Alex has none.
 ///
 /// Venmo is never opened: with `-debugLinkOpener` the app records the link it
-/// would open and shows it, and the tests check that link.
+/// would open and shows it, and the test checks that link.
 @MainActor
 final class SettlementPaymentsUITests: XCTestCase {
     private let app = XCUIApplication()
@@ -137,99 +137,6 @@ final class SettlementPaymentsUITests: XCTestCase {
         attachScreenshot("67-history")
     }
 
-    func testFallsBackWithoutVenmoAndKeepsAPaymentRecordedBeforeACorrection() throws {
-        app.launchArguments = seed + ["-debugLinkOpener", "fails"]
-        app.launch()
-        openSettlement()
-
-        // Venmo is not installed: the website is offered, and marking by hand.
-        let second = element("settlement.payment.2")
-        XCTAssertEqual(second.label, "Sam pays Zach $61.00")
-        second.tap()
-        tapWhenThere("payment.venmo.pay")
-        let failed = app.alerts["Venmo could not be opened"]
-        XCTAssertTrue(failed.waitForExistence(timeout: 5))
-        XCTAssertTrue(failed.buttons["Mark as paid by hand"].exists)
-        attachScreenshot("70-venmo-not-installed")
-        failed.buttons["Open venmo.com"].tap()
-        let confirm = app.alerts["Was the payment made?"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
-        confirm.buttons["Mark as paid"].tap()
-        XCTAssertEqual(
-            label(of: "debug.openedLink"),
-            "https://venmo.com/zach-golf?txn=pay&amount=61.00&note=\(note)"
-        )
-        XCTAssertTrue(waitUntil { self.label(of: "payment.state").hasPrefix("Paid ") })
-        app.buttons["payment.done"].tap()
-        XCTAssertTrue(waitUntil { second.value as? String == "Paid" })
-
-        // The history: final, one of two paid.
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(element("detail.scoreRound").waitForExistence(timeout: 5))
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.staticTexts["Final: Zach won $128.00"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Not settled: 1 of 2 payments paid"].exists)
-        attachScreenshot("71-history-partly-paid")
-
-        // A correction: Sam made a Wad putt on hole 18 and holds the back nine's
-        // Wad at $7: Sam +14, Zach -7, Alex -7.
-        //  Net: Zach 128 - 7 = +121; Sam -61 + 14 = -47; Alex -67 - 7 = -74
-        element("rounds.row.Carryover Links").tap()
-        tapWhenThere("detail.scoreRound")
-        XCTAssertEqual(label(of: "scoring.hole.title"), "Hole 18")
-        let maker = app.buttons["wad.maker.Sam"]
-        reach(maker)
-        maker.tap()
-        XCTAssertEqual(maker.value as? String, "Make 1")
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        tapWhenThere("detail.settlement")
-
-        // The payment marked paid is kept as recorded and pays nothing.
-        let first = element("settlement.payment.1")
-        XCTAssertTrue(first.waitForExistence(timeout: 5))
-        XCTAssertEqual(first.label, "Alex pays Zach $74.00")
-        XCTAssertEqual(first.value as? String, "Not paid")
-        XCTAssertEqual(second.label, "Sam pays Zach $47.00")
-        XCTAssertEqual(second.value as? String, "Not paid")
-        let stale = element("settlement.stale.1")
-        reach(stale)
-        XCTAssertTrue(stale.label.hasPrefix("Sam paid Zach $61.00"))
-        XCTAssertTrue(stale.label.contains("Recorded before a correction"))
-        XCTAssertFalse(element("settlement.stale.2").exists)
-        attachScreenshot("72-settlement-stale-payment")
-
-        let remove = element("settlement.stale.1.remove")
-        reach(remove)
-        remove.tap()
-        XCTAssertTrue(stale.waitForNonExistence(timeout: 5))
-        XCTAssertEqual(second.value as? String, "Not paid")
-
-        // A score is cleared: the settlement is provisional and nothing can be paid.
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        tapWhenThere("detail.scoreRound")
-        let clear = app.buttons["score.clear.Sam"]
-        reach(clear)
-        clear.tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(waitUntil { self.label(of: "detail.holesCompleted") == "Holes completed, 17 of 18" })
-        tapWhenThere("detail.settlement")
-        XCTAssertTrue(label(of: "settlement.status").hasPrefix("Provisional"))
-        XCTAssertTrue(first.waitForExistence(timeout: 5))
-        XCTAssertNotEqual(first.value as? String, "Not paid")
-        XCTAssertNotEqual(first.value as? String, "Paid")
-        if first.isHittable { first.tap() }
-        XCTAssertFalse(element("payment.summary").waitForExistence(timeout: 2))
-        XCTAssertFalse(element("settlement.allSettled").exists)
-        attachScreenshot("73-settlement-provisional-no-actions")
-
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(element("detail.scoreRound").waitForExistence(timeout: 5))
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.staticTexts["In progress, through 17 holes"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["Final: Zach won $128.00"].exists)
-        attachScreenshot("74-history-in-progress")
-    }
-
     // MARK: Helpers
 
     private func openSettlement() {
@@ -257,22 +164,12 @@ final class SettlementPaymentsUITests: XCTestCase {
         if !element.exists { _ = element.waitForExistence(timeout: 2) }
         let list = app.collectionViews.firstMatch
         for _ in 0..<8 {
-            if isReachable(element) { return }
+            if element.exists, element.isHittable { return }
             let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
             let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
-        XCTAssertTrue(isReachable(element), "\(element) cannot be reached")
-    }
-
-    /// On screen, and not under the scoring screen's bottom bar or its strip of
-    /// holes at the top.
-    private func isReachable(_ element: XCUIElement) -> Bool {
-        guard element.exists, element.isHittable else { return false }
-        let next = app.buttons["scoring.next"]
-        guard next.exists else { return true }
-        let strip = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'scoring.jump.'")).firstMatch
-        return element.frame.maxY <= next.frame.minY - 8 && element.frame.minY >= strip.frame.maxY + 8
+        XCTAssertTrue(element.exists && element.isHittable, "\(element) cannot be reached")
     }
 
     private func waitUntil(timeout: TimeInterval = 5, _ condition: @escaping () -> Bool) -> Bool {

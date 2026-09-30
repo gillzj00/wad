@@ -39,6 +39,7 @@ An iPhone app you take onto the golf course to keep score for your group and run
 | IaC/CD | Terraform via GitHub Actions using GitHub OIDC | [0009](adr/0009-terraform-github-oidc.md) |
 | Game rules | "Collect from each" payouts, one settlement per round | [0010](adr/0010-game-rules.md) |
 | Engines on device | Bundle the TypeScript engines and run them in JavaScriptCore; no Swift port | [0011](adr/0011-engines-on-device-javascriptcore.md) |
+| Courses API before auth | Deploy course lookup now behind a shared client token and throttling; interim until Cognito | [0013](adr/0013-courses-api-before-auth.md) |
 
 ## 4. Architecture summary
 
