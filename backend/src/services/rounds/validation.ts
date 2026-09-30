@@ -6,6 +6,7 @@ export const GAME_DEFAULTS = {
   skins: { baseCents: 500 },
   wad: { startCents: 700, stepCents: 200 },
   greenies: { amountCents: 500 },
+  wolf: { pointCents: 100 },
 } as const satisfies Required<GamesConfig>;
 
 export const MAX_DISPLAY_NAME_LENGTH = 40;
