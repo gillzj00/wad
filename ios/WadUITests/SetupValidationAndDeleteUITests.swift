@@ -107,8 +107,9 @@ final class SetupValidationAndDeleteUITests: XCTestCase {
         advance(with: "Create", staysOn: "Games", issues: ["Skins: enter dollars and cents, such as 7 or 7.50."])
         attachScreenshot("43-setup-games-issues")
 
-        // Fixed: the round is created with the two players.
-        replaceText(in: skins, with: "7.50")
+        // Fixed: the round is created with the two players. The form scrolled
+        // to the issue below the scores section, so the field is off screen.
+        replaceText(in: skins, with: "7.50", swiping: .down)
         expectNoIssues()
         app.buttons["Create"].tap()
         XCTAssertTrue(element("detail.scoreRound").waitForExistence(timeout: 5))
