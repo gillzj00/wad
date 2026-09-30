@@ -40,11 +40,14 @@ Last updated: 2026-09-29
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); install-device.sh no longer picks an unavailable phone | ios/ | done | #41 |
 | P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
-| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1) | - |
+| S1 | Score entry starts at the hole's par instead of "-" (requested 2026-09-29) | ios/ | in flight | - |
+| C1 | PRIORITY: course lookup in the app, default course Oak Glen (Stillwater, MN) (requested 2026-09-29) | ios/ (+ decision) | waiting on a decision: how the app reaches the course provider | - |
+| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1 and C1) | - |
 
 ## Task in flight
 
 - W1 (subagent, branch `feat/wolf-engine`)
+- S1 (subagent, branch `feat/ios-score-starts-at-par`)
 
 ## Open PRs
 
@@ -65,6 +68,8 @@ Last updated: 2026-09-29
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
+- Course lookup (asked 2026-09-29): how should the app reach GolfCourseAPI before auth exists? Options sent in chat; recommended: the app calls the provider directly with the owner's own key, entered once on the phone and kept in the Keychain (interim, recorded in an ADR), with courses cached on the device.
+- Score entry (S1) interpretation to confirm: the starting number is par but is not saved until adjusted, tapped, or the hole is left with at least one score entered.
 - Wolf, tie for last place before hole 17 or 18 (asked 2026-09-29): who is the Wolf? Until answered, the app asks the group to pick the Wolf among the tied players and the engine never picks.
 - Which other new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
