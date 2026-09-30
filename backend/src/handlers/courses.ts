@@ -4,6 +4,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import { timingSafeEqual } from "node:crypto";
 import { DynamoCourseCache } from "../services/courses/cache.js";
 import { CourseNotFoundError, CourseService, QueryTooShortError } from "../services/courses/courseService.js";
 import { GolfCourseApiProvider } from "../services/courses/golfCourseApi.js";
@@ -11,8 +12,25 @@ import { ProviderError } from "../services/courses/provider.js";
 import { validateCorrection, validateManualCourse, ValidationError } from "../services/courses/validation.js";
 import { error, json } from "../shared/http.js";
 
+/**
+ * Interim quota guard (ADR-0013): the API is deployed before auth exists, so
+ * every request must carry the shared client token in this header. This is
+ * not authentication; it goes away when the Cognito authorizer lands (M1.1).
+ */
+export const CLIENT_TOKEN_HEADER = "x-wad-client";
+
 class UnauthorizedError extends Error {}
+class InvalidClientTokenError extends Error {}
 class InvalidBodyError extends Error {}
+
+function requireClientToken(event: APIGatewayProxyEventV2, expected: string): void {
+  // API Gateway v2 lowercases header names.
+  const given = event.headers?.[CLIENT_TOKEN_HEADER];
+  if (typeof given !== "string" || given.length === 0) throw new InvalidClientTokenError();
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) throw new InvalidClientTokenError();
+}
 
 /** The caller's user id: the `sub` claim set by the API Gateway JWT authorizer. */
 function callerId(event: APIGatewayProxyEventV2): string {
@@ -32,9 +50,10 @@ function parseBody(event: APIGatewayProxyEventV2): unknown {
   }
 }
 
-export function createHandler(service: CourseService) {
+export function createHandler(service: CourseService, clientToken: () => Promise<string>) {
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
     try {
+      requireClientToken(event, await clientToken());
       switch (event.routeKey) {
         case "GET /v1/courses": {
           const courses = await service.search(event.queryStringParameters?.q ?? "");
@@ -59,6 +78,7 @@ export function createHandler(service: CourseService) {
           return error(404, "route_not_found", `no route for ${event.routeKey}`);
       }
     } catch (err) {
+      if (err instanceof InvalidClientTokenError) return error(401, "invalid_client_token", `a valid ${CLIENT_TOKEN_HEADER} header is required`);
       if (err instanceof UnauthorizedError) return error(401, "unauthorized", "a signed-in user is required");
       if (err instanceof InvalidBodyError) return error(400, "invalid_body", "request body must be valid JSON");
       if (err instanceof ValidationError) return json(400, { error: { code: "validation_failed", message: err.message, field: err.field } });
@@ -74,20 +94,23 @@ export function createHandler(service: CourseService) {
   };
 }
 
-let apiKey: Promise<string> | undefined;
-function loadApiKey(ssm: SSMClient, name: string): Promise<string> {
-  apiKey ??= ssm
-    .send(new GetParameterCommand({ Name: name, WithDecryption: true }))
-    .then((res) => {
-      const value = res.Parameter?.Value;
-      if (!value) throw new Error(`SSM parameter ${name} is empty`);
-      return value;
-    })
-    .catch((err: unknown) => {
-      apiKey = undefined;
-      throw err;
-    });
-  return apiKey;
+/** Reads a SecureString once per container; a failed read is retried on the next call. */
+function ssmValue(ssm: SSMClient, name: string): () => Promise<string> {
+  let value: Promise<string> | undefined;
+  return () => {
+    value ??= ssm
+      .send(new GetParameterCommand({ Name: name, WithDecryption: true }))
+      .then((res) => {
+        const v = res.Parameter?.Value;
+        if (!v) throw new Error(`SSM parameter ${name} is empty`);
+        return v;
+      })
+      .catch((err: unknown) => {
+        value = undefined;
+        throw err;
+      });
+    return value;
+  };
 }
 
 function requireEnv(name: string): string {
@@ -101,10 +124,9 @@ let handlerInstance: ReturnType<typeof createHandler> | undefined;
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   if (!handlerInstance) {
     const ssm = new SSMClient({});
-    const keyParam = requireEnv("GOLFCOURSEAPI_KEY_PARAM");
-    const provider = new GolfCourseApiProvider(() => loadApiKey(ssm, keyParam));
+    const provider = new GolfCourseApiProvider(ssmValue(ssm, requireEnv("GOLFCOURSEAPI_KEY_PARAM")));
     const cache = new DynamoCourseCache(DynamoDBDocumentClient.from(new DynamoDBClient({})), requireEnv("TABLE_NAME"));
-    handlerInstance = createHandler(new CourseService(provider, cache));
+    handlerInstance = createHandler(new CourseService(provider, cache), ssmValue(ssm, requireEnv("CLIENT_TOKEN_PARAM")));
   }
   return handlerInstance(event);
 }
