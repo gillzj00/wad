@@ -89,6 +89,7 @@ Last updated: 2026-09-29
 
 ## Known gaps
 
+- Courses API deployed 2026-09-30 (apply: 14 added). Smoke test without a token returns HTTP 500 instead of the expected 401 on both routes, so the Lambda fails before the token check (most likely reading the SSM parameters at cold start: parameter name, KMS decrypt, or an SDK/bundle problem). CloudWatch logs could not be read: both local AWS profiles need `aws sso login` at the Mac. Blocked until @gillzj00 logs in or reads `/aws/lambda/wad-dev-courses`.
 - Required check on main is `build-test`; must be updated to the new iOS job names when H2 lands. Docs-only PRs cannot merge until #57's always-reporting `changes` job is on main.
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round.
