@@ -18,7 +18,7 @@ Last updated: 2026-09-29
 | P1.2 | Round models and setup flow | done | #18 |
 | P1.3 | Hole-by-hole scoring, UI walkthrough test | done | #20 |
 | P1.4 | Settlement screen, full 18-hole UI walkthrough | done | #22 |
-| P1.5 | Install on device | waiting for phone | - |
+| P1.5 | Install on device | done 2026-09-30 (installed on the owner's iPhone from main at #61) | - |
 
 ## Phase 2 task list
 
@@ -94,11 +94,11 @@ Last updated: 2026-09-29
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
-- Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi); it is paired but unavailable while @gillzj00 is away. `ios/scripts/install-device.sh` now reports this clearly (#41).
+- Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
 - Demo verification (as of #39: 83 unit tests and 6 UI tests, including setup validation and round delete with a relaunch). Earlier: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
-- Venmo: the deep link format is undocumented by Venmo and cannot be tested on a simulator; the handoff to the real Venmo app is unverified until tried on the phone. The app falls back to the web link or marking paid by hand.
+- Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
 - Theme (#43) not checked at large Dynamic Type sizes, with Reduce Motion, or on iOS 17. The app icon is a first version (the W does not follow the flag's wave; dark and tinted variants are opaque).
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
