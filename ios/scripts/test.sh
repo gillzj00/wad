@@ -44,10 +44,14 @@ sys.exit("no available iPhone simulator")
 ')
 
 echo "Testing on simulator $device_id"
+# After the tests xcodebuild may spend up to ten minutes on a sysdiagnose of
+# the simulators before it exits; the result bundle has the logs and
+# screenshots without it.
 xcodebuild test \
   -project Wad.xcodeproj \
   -scheme Wad \
   -destination "id=$device_id" \
+  -collect-test-diagnostics never \
   CODE_SIGNING_ALLOWED=NO \
   ${only[@]+"${only[@]}"} \
   "$@"
