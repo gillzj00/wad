@@ -44,7 +44,7 @@ Last updated: 2026-09-29
 | I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | in flight; the infra PR needs @gillzj00's approval in chat before merge | - |
 | C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | queued (after S1; can start before I1 is merged, against the API contract) | - |
 | T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
-| T2 | Animated graphic per game (requested 2026-09-29): Wolf baring its teeth; Wad as a golf-gloved fist full of money; Skins as a skeletal hand being skinned; Greenies to be proposed. Original vector art drawn in code, Reduce Motion respected | ios/ | queued (after T1) | - |
+| T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
 
 ## Task in flight
@@ -73,6 +73,7 @@ Last updated: 2026-09-29
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
+- Event animations on every player's phone (asked 2026-09-29): in the one-device demo they play on the scoring phone only. Showing them on everyone's phone needs the WebSocket sync (M3.3), which waits on auth and Apple enrollment. Confirm that is acceptable for now.
 - Wolf, tie for last place before hole 17 or 18 (asked 2026-09-29): who is the Wolf? Until answered, the app asks the group to pick the Wolf among the tied players and the engine never picks.
 - Which other new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
@@ -84,6 +85,7 @@ Last updated: 2026-09-29
 
 ## Known gaps
 
+- GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi); it is paired but unavailable while @gillzj00 is away. `ios/scripts/install-device.sh` now reports this clearly (#41).
