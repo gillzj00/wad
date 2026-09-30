@@ -38,11 +38,12 @@ Last updated: 2026-09-29
 | P3.2 | M1.2 profile API handler (code and tests only; no auth infra, no deploy) | backend/ | done | #35 |
 | P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | done | #37 |
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); install-device.sh no longer picks an unavailable phone | ios/ | done | #41 |
-| P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark) | ios/ | in flight | - |
+| P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
+| P4.1 | Wolf game (requested 2026-09-29): rules in domain model + ADR, engine, bundle, demo app | docs/, backend/, ios/ | blocked on rule answers | - |
 
 ## Task in flight
 
-- P3.5 (subagent, branch `feat/ios-golf-theme`)
+- none. Wolf (P4.1) waits on rule answers from @gillzj00.
 
 ## Open PRs
 
@@ -62,7 +63,8 @@ Last updated: 2026-09-29
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
-- Which new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
+- Wolf rules (asked 2026-09-29), needed before any Wolf code: (1) points for partner win, partner loss, Lone Wolf win, Lone Wolf loss, and whether Blind Wolf is played and its points; (2) who is Wolf on holes 17 and 18; (3) tied hole: no points or carry over; (4) net or gross best ball, and which strokes; (5) four players only, or also three, and with what rules; (6) how the tee order is set; (7) dollar value per point and payout (pay the point difference is recommended). Recommendations were sent in chat.
+- Which other new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
 - Handicap override choices to confirm (#32): any player in the round may set or clear any player's override; whole numbers from -10 to 54; the round response shows the effective course handicap plus `courseHandicapOverride`.
 - M5.1 choices to confirm (implemented and documented in #30): settlement is provisional until every hole is scored and there are no issues; marking paid is refused until then (409); payer or payee may mark paid/unpaid, any player for a guest's transfer; an unresolved skins carryover is exposed and does not block final; a transfer id is derived from round, payer, payee and amount so a score correction makes old paid markers stale instead of moving them.
@@ -79,6 +81,7 @@ Last updated: 2026-09-29
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Venmo: the deep link format is undocumented by Venmo and cannot be tested on a simulator; the handoff to the real Venmo app is unverified until tried on the phone. The app falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
+- Theme (#43) not checked at large Dynamic Type sizes, with Reduce Motion, or on iOS 17. The app icon is a first version (the W does not follow the flag's wave; dark and tinted variants are opaque).
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
 - iOS CI runs Xcode 16.4 with an iOS 18 simulator; local runs use iOS 26. Controls in list section headers were not hittable for XCUITest on iOS 18, so they were moved into full-width rows (#20).
