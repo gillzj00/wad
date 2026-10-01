@@ -149,7 +149,7 @@ struct RoundsView: View {
             else { return }
             modelContext.insert(round)
             try? modelContext.save()
-            path = [.detail(round)]
+            path = debugRoute(for: round)
             return
         }
         guard let value = UserDefaults.standard.string(forKey: "debugSetupStep") else { return }
@@ -163,6 +163,18 @@ struct RoundsView: View {
             try? modelContext.save()
             path = [.detail(round)]
         default: break
+        }
+    }
+
+    /// `-debugOpen scoring|settlement|hole:<n>` opens that screen of the seeded
+    /// round instead of its detail, for simulator screenshots.
+    private func debugRoute(for round: Round) -> [RoundsRoute] {
+        switch UserDefaults.standard.string(forKey: "debugOpen") {
+        case "scoring": [.detail(round), .scoring(round)]
+        case "settlement": [.detail(round), .settlement(round)]
+        case let value? where value.hasPrefix("hole:"):
+            Int(value.dropFirst("hole:".count)).map { [.detail(round), .scoringHole(round, $0)] } ?? [.detail(round)]
+        default: [.detail(round)]
         }
     }
     #endif
