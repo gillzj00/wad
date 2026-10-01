@@ -1,167 +1,220 @@
 #!/usr/bin/env swift
-// Draws the app icon: a red flag with a W on a putting green, with a ball
-// beside the hole. Writes the 1024 x 1024 PNGs of AppIcon.appiconset (light,
-// dark and tinted), opaque and without an alpha channel.
+// Draws the app icon: a skull over two crossed flagsticks, in flames. Writes
+// the 1024 x 1024 PNGs of AppIcon.appiconset: the light one on black and
+// opaque, the dark one on a transparent background (the system puts its own
+// behind it) and the tinted one in grays on a transparent background (the
+// system tints it).
 // Usage: swift ios/scripts/make-app-icon.swift
 
 import CoreGraphics
-import CoreText
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
 struct Palette {
-    var skyTop: CGColor
-    var skyBottom: CGColor
-    var fringe: CGColor
-    var green: CGColor
-    var greenLight: CGColor
-    var hole: CGColor
+    /// Nil for a transparent background.
+    var background: CGColor?
+    var glow: CGColor
+    var flame: CGColor
+    var flameCore: CGColor
     var stick: CGColor
     var flag: CGColor
-    var flagShade: CGColor
-    var letter: CGColor
-    var ball: CGColor
-    var ballShade: CGColor
+    var bone: CGColor
+    var hollow: CGColor
+    var ember: CGColor
 }
 
-func rgb(_ hex: UInt32) -> CGColor {
+func rgb(_ hex: UInt32, alpha: CGFloat = 1) -> CGColor {
     CGColor(
         srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
         green: CGFloat((hex >> 8) & 0xFF) / 255,
         blue: CGFloat(hex & 0xFF) / 255,
-        alpha: 1
+        alpha: alpha
     )
 }
 
-func gray(_ white: CGFloat) -> CGColor {
-    CGColor(srgbRed: white, green: white, blue: white, alpha: 1)
+func gray(_ white: CGFloat, alpha: CGFloat = 1) -> CGColor {
+    CGColor(srgbRed: white, green: white, blue: white, alpha: alpha)
 }
 
-let light = Palette(
-    skyTop: rgb(0x0F3A26), skyBottom: rgb(0x1B6E42),
-    fringe: rgb(0x2C8A55), green: rgb(0x45A86B), greenLight: rgb(0x58BB7D),
-    hole: rgb(0x0B2A1B), stick: rgb(0xFFF9EA),
-    flag: rgb(0xD2382F), flagShade: rgb(0xA8261F), letter: rgb(0xFFF9EA),
-    ball: rgb(0xFFFFFF), ballShade: rgb(0xD9DED9)
+let colors = Palette(
+    background: rgb(0x0A0909),
+    glow: rgb(0xFF8324, alpha: 0.55),
+    flame: rgb(0xB5131F), flameCore: rgb(0xFF8C2E),
+    stick: rgb(0xEFE8DC), flag: rgb(0xFF353E),
+    bone: rgb(0xEFE8DC), hollow: rgb(0x0A0909), ember: rgb(0xFF8C2E)
 )
 
 let dark = Palette(
-    skyTop: rgb(0x070C09), skyBottom: rgb(0x12241A),
-    fringe: rgb(0x16402A), green: rgb(0x1F5A3A), greenLight: rgb(0x287049),
-    hole: rgb(0x050A07), stick: rgb(0xF1EEE4),
-    flag: rgb(0xE5554B), flagShade: rgb(0xB83A32), letter: rgb(0xFFF9EA),
-    ball: rgb(0xF4F4F0), ballShade: rgb(0xB9C0BA)
+    background: nil,
+    glow: colors.glow, flame: colors.flame, flameCore: colors.flameCore,
+    stick: colors.stick, flag: colors.flag,
+    bone: colors.bone, hollow: colors.hollow, ember: colors.ember
 )
 
-// The system tints a grayscale image.
+// Grays on transparent: the system tints the image.
 let tinted = Palette(
-    skyTop: gray(0), skyBottom: gray(0.08),
-    fringe: gray(0.2), green: gray(0.3), greenLight: gray(0.38),
-    hole: gray(0.04), stick: gray(0.95),
-    flag: gray(0.8), flagShade: gray(0.62), letter: gray(0.1),
-    ball: gray(1), ballShade: gray(0.7)
+    background: nil,
+    glow: gray(0.5, alpha: 0.4),
+    flame: gray(0.45), flameCore: gray(0.7),
+    stick: gray(0.9), flag: gray(0.6),
+    bone: gray(0.95), hollow: gray(0.05), ember: gray(0.85)
 )
+
+let size: CGFloat = 1024
+
+/// The drawing is laid out on a unit square around the skull's center.
+func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+    CGPoint(x: (x - 0.5) * 1000 + size / 2, y: (y - 0.45) * 1000 + size / 2)
+}
+
+func flame(x: CGFloat, width: CGFloat, tip: CGFloat, base: CGFloat) -> CGPath {
+    let path = CGMutablePath()
+    path.move(to: p(x - width / 2, base))
+    path.addCurve(
+        to: p(x + width * 0.1, tip),
+        control1: p(x - width / 2, base - (base - tip) * 0.5),
+        control2: p(x - width * 0.3, tip + (base - tip) * 0.25)
+    )
+    path.addCurve(
+        to: p(x + width / 2, base),
+        control1: p(x + width * 0.45, tip + (base - tip) * 0.3),
+        control2: p(x + width / 2, base - (base - tip) * 0.4)
+    )
+    path.closeSubpath()
+    return path
+}
 
 func draw(_ palette: Palette, to url: URL) throws {
-    let size = 1024
     let space = CGColorSpace(name: CGColorSpace.sRGB)!
+    let alpha: CGImageAlphaInfo = palette.background == nil ? .premultipliedLast : .noneSkipLast
     guard let context = CGContext(
-        data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
-        space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        data: nil, width: Int(size), height: Int(size), bitsPerComponent: 8, bytesPerRow: 0,
+        space: space, bitmapInfo: alpha.rawValue
     ) else {
         throw CocoaError(.fileWriteUnknown)
     }
     // The origin at the top left, like on screen.
-    context.translateBy(x: 0, y: CGFloat(size))
+    context.translateBy(x: 0, y: size)
     context.scaleBy(x: 1, y: -1)
 
-    // Background.
-    let gradient = CGGradient(
-        colorsSpace: space, colors: [palette.skyTop, palette.skyBottom] as CFArray, locations: [0, 1]
+    if let background = palette.background {
+        context.setFillColor(background)
+        context.fill(CGRect(x: 0, y: 0, width: size, height: size))
+    }
+
+    // The ember glow behind everything.
+    let glow = CGGradient(
+        colorsSpace: space,
+        colors: [palette.glow, palette.glow.copy(alpha: 0)!] as CFArray,
+        locations: [0, 1]
     )!
-    context.drawLinearGradient(
-        gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 0, y: 1024),
-        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+    context.drawRadialGradient(
+        glow, startCenter: p(0.5, 0.8), startRadius: 0, endCenter: p(0.5, 0.8), endRadius: 560, options: []
     )
 
-    // Fringe and green, running off the bottom of the icon.
-    context.setFillColor(palette.fringe)
-    context.fillEllipse(in: CGRect(x: -190, y: 560, width: 1404, height: 760))
-    context.setFillColor(palette.green)
-    context.fillEllipse(in: CGRect(x: -130, y: 600, width: 1284, height: 720))
-    context.setFillColor(palette.greenLight)
-    context.fillEllipse(in: CGRect(x: -40, y: 660, width: 1104, height: 640))
+    // The flagsticks, crossed like bones, with their flags up.
+    for sign in [CGFloat(-1), 1] {
+        let bottom = p(0.5 + sign * 0.46, 0.98)
+        let top = p(0.5 - sign * 0.38, 0.03)
+        context.setLineCap(.round)
+        context.setStrokeColor(palette.hollow)
+        context.setLineWidth(40)
+        context.move(to: bottom)
+        context.addLine(to: top)
+        context.strokePath()
+        context.setStrokeColor(palette.stick)
+        context.setLineWidth(28)
+        context.move(to: bottom)
+        context.addLine(to: top)
+        context.strokePath()
 
-    // The hole.
-    let hole = CGPoint(x: 400, y: 800)
-    context.setFillColor(palette.hole)
-    context.fillEllipse(in: CGRect(x: hole.x - 92, y: hole.y - 30, width: 184, height: 60))
+        context.move(to: top)
+        context.addLine(to: CGPoint(x: top.x - sign * 210, y: top.y + 75))
+        context.addLine(to: CGPoint(x: top.x, y: top.y + 160))
+        context.closePath()
+        context.setFillColor(palette.flag)
+        context.fillPath()
+    }
 
-    // The flag: a rectangle that waves a little, with a shaded fold.
-    let stickWidth: CGFloat = 30
-    let top: CGFloat = 150
-    let flagLeft = hole.x + stickWidth / 2 - 2
-    let flagRight: CGFloat = 860
-    let flagTop = top + 18
-    let flagBottom: CGFloat = 520
-    let flag = CGMutablePath()
-    flag.move(to: CGPoint(x: flagLeft, y: flagTop))
-    flag.addCurve(
-        to: CGPoint(x: flagRight, y: flagTop + 34),
-        control1: CGPoint(x: flagLeft + 150, y: flagTop - 44),
-        control2: CGPoint(x: flagRight - 150, y: flagTop + 78)
-    )
-    flag.addLine(to: CGPoint(x: flagRight, y: flagBottom + 34))
-    flag.addCurve(
-        to: CGPoint(x: flagLeft, y: flagBottom),
-        control1: CGPoint(x: flagRight - 150, y: flagBottom + 78),
-        control2: CGPoint(x: flagLeft + 150, y: flagBottom - 44)
-    )
-    flag.closeSubpath()
-    context.addPath(flag)
-    context.setFillColor(palette.flag)
+    // Flames, rising behind the jaw.
+    let tongues: [(x: CGFloat, w: CGFloat, tip: CGFloat)] = [
+        (0.2, 0.16, 0.5), (0.35, 0.18, 0.36), (0.5, 0.22, 0.28), (0.65, 0.18, 0.38), (0.8, 0.16, 0.53),
+    ]
+    for (x, w, tip) in tongues {
+        context.addPath(flame(x: x, width: w, tip: tip, base: 1.1))
+        context.setFillColor(palette.flame)
+        context.fillPath()
+        context.addPath(flame(x: x, width: w * 0.5, tip: tip + 0.2, base: 1.1))
+        context.setFillColor(palette.flameCore)
+        context.fillPath()
+    }
+
+    // The skull: cranium, cheekbones and jaw in one outline.
+    let skull = CGMutablePath()
+    skull.move(to: p(0.5, 0.1))
+    skull.addCurve(to: p(0.78, 0.42), control1: p(0.7, 0.1), control2: p(0.78, 0.26))
+    skull.addCurve(to: p(0.66, 0.58), control1: p(0.78, 0.5), control2: p(0.72, 0.56))
+    skull.addCurve(to: p(0.6, 0.76), control1: p(0.63, 0.62), control2: p(0.63, 0.72))
+    skull.addCurve(to: p(0.4, 0.76), control1: p(0.56, 0.82), control2: p(0.44, 0.82))
+    skull.addCurve(to: p(0.34, 0.58), control1: p(0.37, 0.72), control2: p(0.37, 0.62))
+    skull.addCurve(to: p(0.22, 0.42), control1: p(0.28, 0.56), control2: p(0.22, 0.5))
+    skull.addCurve(to: p(0.5, 0.1), control1: p(0.22, 0.26), control2: p(0.3, 0.1))
+    skull.closeSubpath()
+    context.addPath(skull)
+    context.setStrokeColor(palette.hollow)
+    context.setLineWidth(24)
+    context.strokePath()
+    context.addPath(skull)
+    context.setFillColor(palette.bone)
     context.fillPath()
 
-    context.saveGState()
-    context.addPath(flag)
-    context.clip()
-    context.setFillColor(palette.flagShade)
-    context.fill(CGRect(x: flagRight - 70, y: 0, width: 200, height: 1024))
-    context.restoreGState()
+    // Eye sockets with an ember in each.
+    for sign in [CGFloat(-1), 1] {
+        context.setFillColor(palette.hollow)
+        context.fillEllipse(in: CGRect(origin: p(0.5 + sign * 0.1 - 0.08, 0.37), size: CGSize(width: 150, height: 150)))
+        let ember = CGRect(origin: p(0.5 + sign * 0.1 - 0.03, 0.44), size: CGSize(width: 60, height: 60))
+        context.setFillColor(palette.ember.copy(alpha: 0.35)!)
+        context.fillEllipse(in: ember.insetBy(dx: -20, dy: -20))
+        context.setFillColor(palette.ember)
+        context.fillEllipse(in: ember)
+    }
 
-    // The W on the flag.
-    let font = CTFontCreateUIFontForLanguage(.emphasizedSystem, 300, nil)!
-    let attributes: [CFString: Any] = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: palette.letter]
-    let line = CTLineCreateWithAttributedString(
-        CFAttributedStringCreate(nil, "W" as CFString, attributes as CFDictionary)!
-    )
-    let bounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
-    let center = CGPoint(x: (flagLeft + flagRight - 70) / 2 + 6, y: (flagTop + flagBottom) / 2 + 14)
-    context.saveGState()
-    // Text is drawn with the origin at the bottom left.
-    context.translateBy(x: center.x, y: center.y)
-    context.scaleBy(x: 1, y: -1)
-    context.textPosition = CGPoint(x: -bounds.midX, y: -bounds.midY)
-    CTLineDraw(line, context)
-    context.restoreGState()
-
-    // The flagstick, in front of the flag's edge.
-    context.setFillColor(palette.stick)
-    let stick = CGPath(
-        roundedRect: CGRect(x: hole.x - stickWidth / 2, y: top, width: stickWidth, height: hole.y - top),
-        cornerWidth: stickWidth / 2, cornerHeight: stickWidth / 2, transform: nil
-    )
-    context.addPath(stick)
+    // The nose.
+    context.move(to: p(0.5, 0.5))
+    context.addLine(to: p(0.465, 0.59))
+    context.addQuadCurve(to: p(0.535, 0.59), control: p(0.5, 0.63))
+    context.closePath()
+    context.setFillColor(palette.hollow)
     context.fillPath()
-    context.fillEllipse(in: CGRect(x: hole.x - 26, y: top - 30, width: 52, height: 52))
 
-    // The ball.
-    let ball = CGRect(x: 650, y: 770, width: 130, height: 130)
-    context.setFillColor(palette.ballShade)
-    context.fillEllipse(in: ball)
-    context.setFillColor(palette.ball)
-    context.fillEllipse(in: ball.insetBy(dx: 9, dy: 9).offsetBy(dx: -7, dy: -7))
+    // Teeth: the gaps between them.
+    context.setStrokeColor(palette.hollow)
+    context.setLineWidth(8)
+    context.addPath(CGPath(
+        roundedRect: CGRect(origin: p(0.38, 0.64), size: CGSize(width: 240, height: 110)),
+        cornerWidth: 12, cornerHeight: 12, transform: nil
+    ))
+    context.strokePath()
+    for gap in 1...5 {
+        let x = 0.38 + 0.24 * CGFloat(gap) / 6
+        context.move(to: p(x, 0.64))
+        context.addLine(to: p(x, 0.75))
+        context.strokePath()
+    }
+    context.setLineWidth(10)
+    context.move(to: p(0.38, 0.695))
+    context.addLine(to: p(0.62, 0.695))
+    context.strokePath()
+
+    // A crack across the cranium.
+    context.setLineWidth(8)
+    context.setLineJoin(.round)
+    context.move(to: p(0.58, 0.12))
+    context.addLine(to: p(0.62, 0.2))
+    context.addLine(to: p(0.58, 0.25))
+    context.addLine(to: p(0.63, 0.33))
+    context.strokePath()
 
     guard
         let image = context.makeImage(),
@@ -179,7 +232,7 @@ let iconSet = script
     .deletingLastPathComponent()
     .appendingPathComponent("Wad/Assets.xcassets/AppIcon.appiconset")
 
-for (name, palette) in [("AppIcon.png", light), ("AppIcon-dark.png", dark), ("AppIcon-tinted.png", tinted)] {
+for (name, palette) in [("AppIcon.png", colors), ("AppIcon-dark.png", dark), ("AppIcon-tinted.png", tinted)] {
     let url = iconSet.appendingPathComponent(name)
     try draw(palette, to: url)
     print("Wrote \(url.path)")
