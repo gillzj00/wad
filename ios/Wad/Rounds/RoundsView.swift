@@ -20,6 +20,7 @@ struct RoundsView: View {
     @State private var setup: SetupPresentation?
     @State private var summaries = RoundSummaryCache()
     @State private var roundToDelete: Round?
+    @State private var showsSettings = false
     #if DEBUG
     @State private var appliedDebugLaunchArguments = false
     #endif
@@ -72,9 +73,16 @@ struct RoundsView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Settings", systemImage: "gearshape") { showsSettings = true }
+                        .accessibilityIdentifier("rounds.settings")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("New round", systemImage: "plus") { setup = SetupPresentation() }
                 }
+            }
+            .sheet(isPresented: $showsSettings) {
+                EventSettingsView()
             }
             .alert(
                 "Delete this round?",

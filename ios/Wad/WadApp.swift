@@ -15,6 +15,10 @@ enum LaunchArgument {
     /// `-debugCourseLookup fixture|off`: the course fixtures instead of the API, or
     /// no lookup at all, as in a build without the API settings.
     static let debugCourseLookup = "debugCourseLookup"
+    /// `-debugAnimations off` plays no event shows, so the UI tests score without waiting.
+    static let debugAnimations = "debugAnimations"
+    /// `-debugEvents birdie,eagle` plays those shows on launch, for screenshots.
+    static let debugEvents = "debugEvents"
     #endif
 }
 

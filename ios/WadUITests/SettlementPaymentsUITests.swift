@@ -13,7 +13,7 @@ import XCTest
 @MainActor
 final class SettlementPaymentsUITests: XCTestCase {
     private let app = XCUIApplication()
-    private let seed = ["-inMemoryStore", "-debugSeedRound", "finalPush", "-debugSeedStartedAt", "1790424000"]
+    private let seed = ["-inMemoryStore", "-debugSeedRound", "finalPush", "-debugSeedStartedAt", "1790424000", "-debugAnimations", "off"]
     private let note = "Wad%3A%20Carryover%20Links%20Sep%2026"
 
     override func setUp() {

@@ -11,7 +11,7 @@ final class RoundWalkthroughUITests: XCTestCase {
 
     func testSetsUpARoundAndScoresTheFirstHoles() throws {
         continueAfterFailure = false
-        app.launchArguments = ["-inMemoryStore", "-debugCourseLookup", "off"]
+        app.launchArguments = ["-inMemoryStore", "-debugCourseLookup", "off", "-debugAnimations", "off"]
         app.launch()
 
         // Rounds, empty.
