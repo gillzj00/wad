@@ -1,2 +1,18 @@
-// Copy to Local.xcconfig and set your Apple development team ID.
+// Copy to Local.xcconfig (git-ignored) and fill in what you have. Nothing in
+// this file is committed.
+
+// Apple development team ID, for device builds.
 DEVELOPMENT_TEAM = XXXXXXXXXX
+
+// Course lookup against the deployed courses API (docs/api.md, "Deployment
+// (dev)"). Leave both blank to build without it: the app then says that
+// course lookup is not configured and courses are entered by hand.
+//
+// Base URL, from the Terraform output:
+//   terraform -chdir=infra/environments/dev output -raw api_base_url
+// "//" starts a comment in an xcconfig, so write the URL with "$()" in it.
+WAD_API_BASE_URL = https:/$()/xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
+
+// The x-wad-client token, from SSM (never logged, never committed):
+//   aws ssm get-parameter --name /wad/dev/client-token --with-decryption --query Parameter.Value --output text
+WAD_API_CLIENT_TOKEN = xxxxxxxx

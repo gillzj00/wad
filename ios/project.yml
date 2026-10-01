@@ -21,7 +21,10 @@ targets:
     sources:
       - Wad
     # Only what the INFOPLIST_KEY_ build settings cannot say: the launch
-    # screen's background color. The rest of the Info.plist is generated.
+    # screen's background color, the location usage string and the courses
+    # API settings, which come from the git-ignored Config/Local.xcconfig and
+    # are empty without it (the app then says lookup is not configured).
+    # The rest of the Info.plist is generated.
     info:
       path: Wad/Info.plist
       properties:
@@ -29,6 +32,9 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: Sand
+        NSLocationWhenInUseUsageDescription: Your location suggests the cached courses near you when you set up a round. It stays on the phone.
+        WAD_API_BASE_URL: $(WAD_API_BASE_URL)
+        WAD_API_CLIENT_TOKEN: $(WAD_API_CLIENT_TOKEN)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gillzj00.wad
