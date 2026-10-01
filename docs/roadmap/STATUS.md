@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-09-29
+Last updated: 2026-10-01
 
 ## Current phase
 
@@ -39,22 +39,20 @@ Last updated: 2026-09-29
 | P3.3 | Research other popular side-bet games (docs/research/side-games.md) | docs/ | done | #37 |
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); install-device.sh no longer picks an unavailable phone | ios/ | done | #41 |
 | P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
-| W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
-| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default (requested 2026-09-29) | ios/ | PR open, blocked on the iOS CI timeout | #59 |
+| W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | done | #49 |
+| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default | ios/ | done | #59 |
 | I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | merged with @gillzj00's approval (plan 14/0/0); apply ran from main | #54 |
-| H1 | Repo hardening: audit done (no credentials; tfplan purged from history by an authorized force-push on 2026-09-30); repo made public 2026-09-30 with branch protection, `dev` environment reviewer, fork-PR approval, secret scanning and push protection; the workflow/docs PR is being rebased | .github/, infra/, root docs, GitHub settings | PR open | #57 |
-| H2 | iOS CI split into unit and UI jobs with parallel simulators (the 20-minute timeout blocks every iOS PR) | .github/, ios/scripts | in flight | - |
-| G1 | Research: geolocation for course suggestion and hole detection | docs/ | PR open (docs/research/geolocation.md) | #58 |
-| C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | queued (next iOS task after the CI split lands) | - |
+| H1 | Repo hardening: audit, history rewrite (tfplan purged), public switch with branch protection, `dev` environment reviewer, fork-PR approval, secret scanning; workflows hardened and SHA-pinned, apply gated on `dev` | .github/, infra/, root docs, GitHub settings | done (bootstrap trust-policy apply pending, see questions) | #57 |
+| H2 | iOS CI split into unit-tests and ui-tests jobs; UI suite pruned to 3 smoke tests (owner: UI tests cost too much) | .github/, ios/scripts | done | #62 |
+| G1 | Research: geolocation for course suggestion and hole detection (docs/research/geolocation.md) | docs/ | done | #58 |
+| C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | in flight | - |
 | T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
 | T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
 
 ## Task in flight
 
-- W1 (subagent, branch `feat/wolf-engine`)
-- H1 rebase (subagent, branch `chore/repo-hardening`)
-- H2 (subagent, branch `ci/ios-split-and-parallel`)
+- C1 course lookup (subagent, branch `feat/ios-course-lookup`)
 
 ## Open PRs
 
@@ -62,7 +60,7 @@ Last updated: 2026-09-29
 
 ## Decisions made
 
-- Repo goes public to get free Actions minutes (owner, 2026-09-29), after the H1 audit findings are confirmed. From then on Claude opens PRs and never merges; @gillzj00 merges every PR (his approval), and every Terraform apply waits for his approval in the `dev` environment. Required approving reviews cannot be used because all PRs are authored by the owner's own account.
+- Repo is public since 2026-09-30 (free Actions minutes). Merge policy as clarified by @gillzj00: Claude may squash-merge its own PRs (authored by the owner's account) once every required check is green; `infra/` PRs still need the owner's approval in chat; every Terraform apply additionally waits for the owner's approval in the `dev` environment. Required checks on main: unit-tests, ui-tests, build-test, plan (strict, up to date). SHA pinning of actions is required.
 - Course lookup (2026-09-29): option B, deploy the courses API before auth with the owner's provider key staying in AWS. This overrides the earlier no-public-endpoint rule for this one endpoint. Interim quota guard: API Gateway throttling plus a shared `x-wad-client` token in SSM; replaced by Cognito in M1.1. Recorded in ADR-0013 (I1).
 - Wolf rules accepted by @gillzj00 on 2026-09-29: four players only; points 2 (Wolf and partner win, each), 3 (each opponent when they lose), 4 (Lone Wolf wins), 1 (each opponent when Lone Wolf loses); no Blind Wolf; Wolf on 17 and 18 is the player in last place on points; tied hole scores nothing and nothing carries; net best ball with the Skins ticks; $1 a point by default, every pair settles the point difference; tee order is the order players were added, reorderable before play; the Wolf's choice is recorded per hole and can be corrected.
 - Engines run on device through JavaScriptCore from an esbuild bundle of `backend/src/engines`; payout math is not ported to Swift. To be recorded in ADR-0011 (P1.1).
@@ -74,6 +72,9 @@ Last updated: 2026-09-29
 - One subagent touching `ios/` at a time; `Wad.xcodeproj` is regenerated with xcodegen, never hand-merged.
 
 ## Questions waiting on @gillzj00
+
+- Run `aws sso login` then `AWS_PROFILE=wad terraform -chdir=infra/bootstrap apply` (expect 0 to add, 1 to change, 0 to destroy: the CI role trust policy from #57). The orchestrator's attempt failed because the SSO session had expired.
+- Approve (or dismiss) the pending `dev` environment deployment for the Terraform run on main triggered by #57; it should plan no infrastructure changes.
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
@@ -90,7 +91,6 @@ Last updated: 2026-09-29
 ## Known gaps
 
 - Courses API deployed and working 2026-09-30: the first deploy crashed at cold start (ESM bundle without `require`, fixed in #61); after the redeploy, requests without `x-wad-client` return 401 and an authenticated search for "oak glen" returns the provider's results, including Oak Glen Golf Course (Stillwater, MN; 18-hole course id `gca-y8jqwys2`, Executive Nine `gca-0zg07p94`). Base URL from the Terraform output `api_base_url`; token in SSM `/wad/dev/client-token`.
-- Required check on main is `build-test`; must be updated to the new iOS job names when H2 lands. Docs-only PRs cannot merge until #57's always-reporting `changes` job is on main.
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
