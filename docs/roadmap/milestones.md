@@ -26,7 +26,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] **M2.1 CourseProvider adapter**: GolfCourseAPI client behind the interface; normalize to our `Course` type; API key from SSM.
 - [~] **M2.2 Course caching**: write-through cache to DynamoDB `COURSE#`, cached searches; `GET /courses` search + `GET /courses/{id}`. Handler code done; **deploying it (Lambda + HTTP API) waits on auth (M1.1)** so the provider quota is not exposed on a public endpoint.
 - [x] **M2.3 Manual course entry + corrections**: `POST /courses`, `POST /courses/{id}/corrections`. Handler code done; corrections are stored as pending suggestions. Deploying waits on auth (M1.1), like M2.2.
-- [ ] **M2.4 iOS course search + scorecard view**: search, select tee, render the scorecard (par + stroke index per hole).
+- [~] **M2.4 iOS course search + scorecard view**: search, select tee, render the scorecard (par + stroke index per hole). The course step of round setup searches the deployed API, picks a tee and fills the holes, with an on-device cache, Oak Glen as the default course, and a "Near me" suggestion from the cached courses (geolocation phase 1); see `ios/README.md`, Course lookup. Still open: a scorecard view of a course outside the setup flow, and manual courses through `POST /courses` once auth lands.
 
 ## M3 — Rounds & scoring  (depends on M1, M2)
 

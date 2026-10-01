@@ -149,8 +149,8 @@ struct StoreMigrationTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         try writePreviousStore()
 
-        // The way the app opens its store (WadApp).
-        let container = try ModelContainer(for: Round.self, configurations: ModelConfiguration(url: storeURL))
+        // The way the app opens its store (WadApp): with the course cache, which the previous version did not have.
+        let container = try ModelContainer(for: Schema(WadSchema.models), configurations: ModelConfiguration(url: storeURL))
         let context = container.mainContext
         let rounds = try context.fetch(FetchDescriptor<Round>())
         #expect(rounds.count == 1)

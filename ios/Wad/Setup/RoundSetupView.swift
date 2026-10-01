@@ -24,9 +24,12 @@ enum SetupStep: Int, CaseIterable, Sendable {
 struct RoundSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.courseLookupService) private var courseLookupService
 
     @State var draft = RoundDraft()
     @State var step = SetupStep.course
+    /// Lives for the whole flow, so a search survives a trip to the next step.
+    @State private var courseModel: CourseStepModel?
     /// Issues are shown once the group has tried to move on from the step.
     @State private var showsIssues = false
     /// Counts the attempts to move on that the issues stopped.
@@ -55,13 +58,21 @@ struct RoundSetupView: View {
             }
         }
         .interactiveDismissDisabled()
+        .task {
+            let model = courseModel ?? CourseStepModel(
+                lookup: CourseLookup(service: courseLookupService, cache: CourseCache(context: modelContext))
+            )
+            courseModel = model
+            await model.loadDefaultCourse()
+            model.applyDefault(to: &draft)
+        }
     }
 
     private var form: some View {
         Form {
             Group {
                 switch step {
-                case .course: CourseStepView(draft: $draft)
+                case .course: CourseStepView(draft: $draft, model: courseModel)
                 case .players: PlayersStepView(draft: $draft)
                 case .games: GamesStepView(draft: $draft)
                 }
@@ -183,10 +194,16 @@ struct SetupProgress: View {
 
 struct CourseStepView: View {
     @Binding var draft: RoundDraft
+    /// The lookup; nil only before the flow has set it up.
+    var model: CourseStepModel?
     @FocusState private var focusedHole: Int?
     @State private var showsStrokeIndexOptions = false
 
     var body: some View {
+        if let model {
+            CourseSearchSection(draft: $draft, model: model)
+        }
+
         Section {
             TextField("Course name", text: $draft.courseName)
                 .textInputAutocapitalization(.words)
@@ -194,10 +211,18 @@ struct CourseStepView: View {
                 .accessibilityIdentifier("setup.courseName")
             NumberRow(title: "Rating", prompt: "Optional", text: $draft.ratingText, keyboard: .decimalPad)
             NumberRow(title: "Slope", prompt: "Optional", text: $draft.slopeText, keyboard: .numberPad)
+            if let selection = draft.course {
+                LabeledContent("Filled from", value: "\(selection.courseName), \(selection.teeText)")
+                    .accessibilityIdentifier("setup.courseSelection")
+            }
         } header: {
             SectionHeader("Course", systemImage: "map")
         } footer: {
             SectionFooter("With a rating and slope, course handicaps are computed from each player's handicap index.")
+        }
+
+        if let model, let course = model.course {
+            CourseTeesSection(draft: $draft, model: model, course: course)
         }
 
         Section {
@@ -500,6 +525,6 @@ struct AmountRow: View {
 #if DEBUG
 #Preview {
     RoundSetupView(draft: .sample, step: .players) { _ in }
-        .modelContainer(for: Round.self, inMemory: true)
+        .modelContainer(WadSchema.previewContainer)
 }
 #endif

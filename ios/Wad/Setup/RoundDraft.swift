@@ -97,6 +97,8 @@ struct RoundDraft: Equatable, Sendable {
     var ratingText = ""
     var slopeText = ""
     var holes = (1...RoundDraft.holeCount).map { Hole(number: $0) }
+    /// The looked-up course and tee the fields above were filled from, if any.
+    var course: CourseSelection?
 
     var players = [Player(), Player()]
 

@@ -14,7 +14,7 @@ final class RoundDeleteUITests: XCTestCase {
     /// 3 players, 54 scores) and the sample round (18 holes, 4 players).
     func testDeletingARoundRemovesItFromTheListAndTheStore() throws {
         let store = ["-debugStoreFile", "ui-test-\(UUID().uuidString)", "-debugStoreCounts"]
-        app.launchArguments = ["-debugSeedRound", "finalPush"] + store
+        app.launchArguments = ["-debugSeedRound", "finalPush", "-debugCourseLookup", "off"] + store
         app.launch()
 
         XCTAssertTrue(element("detail.scoreRound").waitForExistence(timeout: 10))

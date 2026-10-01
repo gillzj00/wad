@@ -29,5 +29,5 @@ struct PlaceholderView: View {
 
 #Preview {
     RootView()
-        .modelContainer(for: Round.self, inMemory: true)
+        .modelContainer(WadSchema.previewContainer)
 }

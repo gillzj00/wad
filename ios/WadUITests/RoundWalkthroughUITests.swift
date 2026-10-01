@@ -11,7 +11,7 @@ final class RoundWalkthroughUITests: XCTestCase {
 
     func testSetsUpARoundAndScoresTheFirstHoles() throws {
         continueAfterFailure = false
-        app.launchArguments = ["-inMemoryStore"]
+        app.launchArguments = ["-inMemoryStore", "-debugCourseLookup", "off"]
         app.launch()
 
         // Rounds, empty.
@@ -69,7 +69,11 @@ final class RoundWalkthroughUITests: XCTestCase {
     private func setUpCourse() {
         let name = app.textFields["setup.courseName"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.tap()
+        // Course lookup is off, so the field starts with the default course's name and the step says why.
+        wait(for: NSPredicate(format: "value == %@", "Oak Glen Golf Course"), evaluatedWith: name)
+        XCTAssertTrue(element("setup.lookupStatus").exists)
+        name.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Oak Glen Golf Course".count))
         name.typeText(courseName + "\n")
 
         // Pars default to 4; the third hole is a par 3.
@@ -213,6 +217,11 @@ final class RoundWalkthroughUITests: XCTestCase {
 
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    private func wait(for predicate: NSPredicate, evaluatedWith element: XCUIElement) {
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: 5), .completed)
     }
 
     private func label(of identifier: String) -> String {

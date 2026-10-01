@@ -18,10 +18,16 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location suggests the cached courses near you when you set up a round. It stays on the phone.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string>Sand</string>
 	</dict>
+	<key>WAD_API_BASE_URL</key>
+	<string>$(WAD_API_BASE_URL)</string>
+	<key>WAD_API_CLIENT_TOKEN</key>
+	<string>$(WAD_API_CLIENT_TOKEN)</string>
 </dict>
 </plist>
