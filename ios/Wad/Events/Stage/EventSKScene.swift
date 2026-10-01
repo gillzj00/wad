@@ -27,6 +27,10 @@ enum Metal {
 /// built once in `build(still:)`. With `still` the scene is the poster frame:
 /// everything in its most dramatic place, no actions, emitters advanced so
 /// particles are there, and the scene paused.
+///
+/// Main actor throughout: SpriteKit drives the scene on the main thread, and
+/// the SDKs differ on whether `SKNode` says so, so the shows say it themselves.
+@MainActor
 class EventSKScene: SKScene {
     let event: GameEvent
     let still: Bool
@@ -45,25 +49,29 @@ class EventSKScene: SKScene {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    nonisolated required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private var builtSize: CGSize?
 
-    override func didMove(to view: SKView) {
-        view.ignoresSiblingOrder = true
-        buildIfNeeded()
+    nonisolated override func didMove(to view: SKView) {
+        MainActor.assumeIsolated {
+            view.ignoresSiblingOrder = true
+            buildIfNeeded()
+        }
     }
 
     /// The scene takes the view's size; if that arrives after `didMove`, the
     /// show is laid out again for it.
-    override func didChangeSize(_ oldSize: CGSize) {
-        super.didChangeSize(oldSize)
-        guard view != nil, let builtSize, abs(builtSize.width - size.width) > 1 || abs(builtSize.height - size.height) > 1 else { return }
-        removeAllActions()
-        removeAllChildren()
-        self.builtSize = nil
-        isPaused = false
-        buildIfNeeded()
+    nonisolated override func didChangeSize(_ oldSize: CGSize) {
+        MainActor.assumeIsolated {
+            super.didChangeSize(oldSize)
+            guard view != nil, let builtSize, abs(builtSize.width - size.width) > 1 || abs(builtSize.height - size.height) > 1 else { return }
+            removeAllActions()
+            removeAllChildren()
+            self.builtSize = nil
+            isPaused = false
+            buildIfNeeded()
+        }
     }
 
     private func buildIfNeeded() {
@@ -200,19 +208,16 @@ class EventSKScene: SKScene {
 
 /// Drawings turned into textures. Each is rendered once and kept, so a show
 /// never draws while it runs.
+@MainActor
 enum Textures {
-    nonisolated(unsafe) private static var cache: [String: SKTexture] = [:]
-    private static let lock = NSLock()
+    private static var cache: [String: SKTexture] = [:]
 
     /// The texture drawn by `draw` into a context `size` points across (y up,
     /// origin at the bottom left like SpriteKit), cached under `key`.
     static func make(_ key: String, size: CGSize, scale: CGFloat = 2, draw: (CGContext, CGSize) -> Void) -> SKTexture {
-        lock.lock()
         if let cached = cache[key] {
-            lock.unlock()
             return cached
         }
-        lock.unlock()
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = false
@@ -224,9 +229,7 @@ enum Textures {
             draw(context, size)
         }
         let texture = SKTexture(image: image)
-        lock.lock()
         cache[key] = texture
-        lock.unlock()
         return texture
     }
 
@@ -407,9 +410,10 @@ enum Draw {
 
 // MARK: - Shaders
 
+@MainActor
 enum Shaders {
     /// Darkens toward the edges.
-    nonisolated(unsafe) static let vignette: SKShader = {
+    static let vignette: SKShader = {
         let shader = SKShader(source: """
         void main() {
             vec2 uv = v_tex_coord - vec2(0.5);
@@ -423,7 +427,7 @@ enum Shaders {
     }()
 
     /// Rolling fire from scrolling noise: a fireball or a burning sky.
-    nonisolated(unsafe) static let fire: SKShader = {
+    static let fire: SKShader = {
         let shader = SKShader(source: """
         float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float noise(vec2 p) {
@@ -446,7 +450,7 @@ enum Shaders {
     }()
 
     /// A flickering glow, for lightning and the mouth of a howling wolf.
-    nonisolated(unsafe) static let pulse: SKShader = {
+    static let pulse: SKShader = {
         let shader = SKShader(source: """
         void main() {
             float d = distance(v_tex_coord, vec2(0.5));
@@ -462,6 +466,7 @@ enum Shaders {
 // MARK: - Emitters
 
 /// Particle systems configured in code.
+@MainActor
 enum Emitters {
     /// Sparks rising and flickering, like a fire's.
     static func embers(width: CGFloat, rate: CGFloat = 30, color: UIColor = Metal.ember) -> SKEmitterNode {

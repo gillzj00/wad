@@ -4,6 +4,7 @@ import UIKit
 /// The creatures of the shows, drawn once into textures: layered paths with
 /// gradients lit from the top left, fur and feather strokes, outlines.
 /// Coordinates in the drawings are y up, like SpriteKit.
+@MainActor
 enum Art {
     // MARK: Wolf
 
