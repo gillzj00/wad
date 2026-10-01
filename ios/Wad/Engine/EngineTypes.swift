@@ -44,11 +44,14 @@ enum Engine {
         var wadMakers: [UserID]
         /// Par 3s only; must have scored par or better.
         var greenieWinner: UserID?
+        /// Wolf only; nil when nothing is recorded for the hole.
+        var wolf: WolfEvent?
 
-        init(hole: Int, wadMakers: [UserID] = [], greenieWinner: UserID? = nil) {
+        init(hole: Int, wadMakers: [UserID] = [], greenieWinner: UserID? = nil, wolf: WolfEvent? = nil) {
             self.hole = hole
             self.wadMakers = wadMakers
             self.greenieWinner = greenieWinner
+            self.wolf = wolf
         }
 
         func encode(to encoder: any Encoder) throws {
@@ -57,7 +60,32 @@ enum Engine {
             try container.encode(wadMakers, forKey: .wadMakers)
             // The TypeScript type is `UserId | null`, so nil is sent as null rather than omitted.
             try container.encode(greenieWinner, forKey: .greenieWinner)
+            // `wolf?: WolfEvent`: absent when nothing is recorded.
+            try container.encodeIfPresent(wolf, forKey: .wolf)
         }
+    }
+
+    /// What the group recorded for Wolf on a hole. The record can be wrong (a
+    /// partner together with lone, say); the engine reports that, the type does
+    /// not prevent it.
+    struct WolfEvent: Codable, Equatable, Sendable {
+        /// The Wolf takes one partner, or plays alone. Nil: not chosen yet.
+        var choice: WolfChoice?
+        /// The partner, with the choice `partner`.
+        var partnerUserId: UserID?
+        /// Who the Wolf is. Needed on holes 17 and 18 when players are tied for
+        /// last place; elsewhere the engine derives the Wolf and checks this against it.
+        var wolfUserId: UserID?
+
+        init(choice: WolfChoice? = nil, partnerUserId: UserID? = nil, wolfUserId: UserID? = nil) {
+            self.choice = choice
+            self.partnerUserId = partnerUserId
+            self.wolfUserId = wolfUserId
+        }
+    }
+
+    enum WolfChoice: String, Codable, Sendable {
+        case partner, lone
     }
 
     // MARK: Skins
@@ -169,6 +197,79 @@ enum Engine {
     struct GreeniesResult: Codable, Equatable, Sendable {
         var holes: [GreenieHoleResult]
         var deltas: Deltas
+    }
+
+    // MARK: Wolf
+
+    struct WolfInput: Codable, Equatable, Sendable {
+        /// Exactly four.
+        var players: [Player]
+        /// The four players' ids in the order they tee off.
+        var teeOrder: [UserID]
+        /// Holes 1 to 18.
+        var holes: [HoleInfo]
+        var scores: [Score]
+        var holeEvents: [HoleEvents]
+        var pointCents: Cents
+    }
+
+    /// See backend/src/engines/wolf.ts. `needsWolf`: hole 17 or 18 with a tie
+    /// for last place and no Wolf recorded; the engine does not pick (Open
+    /// Question 4 in docs/domain-model.md).
+    enum WolfHoleStatus: String, Codable, Sendable {
+        case wonByWolfSide = "won_by_wolf_side"
+        case wonByOpponents = "won_by_opponents"
+        case tied, pending, invalid
+        case needsWolf = "needs_wolf"
+    }
+
+    enum WolfInvalidReason: String, Codable, Sendable {
+        case partnerAndLone = "partner_and_lone"
+        case partnerMissing = "partner_missing"
+        case partnerNotAPlayer = "partner_not_a_player"
+        case wolfNotAPlayer = "wolf_not_a_player"
+        case partnerIsWolf = "partner_is_wolf"
+        case wolfContradictsRotation = "wolf_contradicts_rotation"
+        case wolfNotInLastPlace = "wolf_not_in_last_place"
+    }
+
+    struct WolfHoleResult: Codable, Equatable, Sendable {
+        var hole: Int
+        /// Nil while the Wolf is not known: a pending hole 17 or 18, needs a
+        /// Wolf, or a record that names no valid Wolf.
+        var wolfUserId: UserID?
+        var status: WolfHoleStatus
+        /// Set only when the status is invalid.
+        var invalidReason: WolfInvalidReason?
+        /// The choice as recorded.
+        var choice: WolfChoice?
+        /// The partner as recorded.
+        var partnerUserId: UserID?
+        /// Holes 17 and 18 once the standings are known: the players in last place.
+        var lastPlace: [UserID]?
+        /// The Wolf, and the partner if there is one. Nil unless the hole is scored.
+        var wolfSide: [UserID]?
+        /// Everyone else, in tee order. Nil unless the hole is scored.
+        var opponents: [UserID]?
+        /// Lowest net score on each side. Nil unless the hole is scored.
+        var wolfSideNet: Int?
+        var opponentsNet: Int?
+        /// Net scores for the hole, present once all four players have a score.
+        var net: [UserID: Int]?
+        /// Points awarded on this hole; all zero unless the hole was won.
+        var points: [UserID: Int]
+    }
+
+    struct WolfResult: Codable, Equatable, Sendable {
+        /// The tee order the rotation used.
+        var teeOrder: [UserID]
+        var holes: [WolfHoleResult]
+        /// Running points per player, from scored holes only.
+        var points: [UserID: Int]
+        /// pointCents * (4 * own points - total points): every pair settles the difference in their points.
+        var deltas: Deltas
+        /// True when all 18 holes are won or tied.
+        var complete: Bool
     }
 
     // MARK: Settlement

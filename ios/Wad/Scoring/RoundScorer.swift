@@ -116,20 +116,20 @@ struct RoundScorer {
         try save()
     }
 
-    // MARK: Private
+    // MARK: Shared with the Wolf records (RoundScorer+Wolf.swift)
 
-    private func roundHole(_ number: Int) throws -> RoundHole {
+    func roundHole(_ number: Int) throws -> RoundHole {
         guard let hole = round.hole(number) else { throw ScoringError.unknownHole(number) }
         return hole
     }
 
-    private func requirePlayer(_ playerID: String) throws {
+    func requirePlayer(_ playerID: String) throws {
         guard round.players.contains(where: { $0.playerID == playerID }) else {
             throw ScoringError.unknownPlayer(playerID)
         }
     }
 
-    private func save() throws {
+    func save() throws {
         try round.modelContext?.save()
     }
 }

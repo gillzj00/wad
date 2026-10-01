@@ -25,8 +25,12 @@ extension GameSnapshot {
             guard result.status == .awarded, let winner = result.winnerUserId else { return nil }
             return GreenieWin(hole: result.hole, winnerID: winner)
         }
-        // HOOK: Wolf. `RoundStatus` has no Wolf result yet (W2); when it does,
-        // map the holes won by the Wolf's side here.
+        // Only a hole the Wolf's side won: a hole that is tied, pending, needs a
+        // Wolf, invalid or won by the opponents is not a Wolf show.
+        wolfWins = status.wolf?.holes.compactMap { result in
+            guard result.status == .wonByWolfSide, let side = result.wolfSide else { return nil }
+            return WolfWin(hole: result.hole, winnerIDs: side)
+        } ?? []
     }
 
     /// The snapshot of a round, scored by the shared engine.

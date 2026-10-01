@@ -8,6 +8,8 @@ struct RoundSummary: Equatable, Sendable {
         case notStarted
         /// `inOrder`: the holes scored are the first ones of the round.
         case inProgress(completed: Int, total: Int, inOrder: Bool)
+        /// Every score is in, and a Wolf hole is not scored (needs a Wolf, no choice, or invalid).
+        case wolfUnfinished
         case final
     }
 
@@ -29,13 +31,17 @@ struct RoundSummary: Equatable, Sendable {
     init(settlement: RoundSettlement, payments: PaymentStatus) {
         guard settlement.isFinal else {
             let completed = settlement.completedHoleCount
-            progress = completed == 0
-                ? .notStarted
-                : .inProgress(
+            progress = if settlement.incompleteHoles.isEmpty {
+                .wolfUnfinished
+            } else if completed == 0 {
+                .notStarted
+            } else {
+                .inProgress(
                     completed: completed,
                     total: settlement.holeNumbers.count,
                     inOrder: settlement.isScoredInOrder
                 )
+            }
             return
         }
         progress = .final
@@ -66,6 +72,8 @@ struct RoundSummary: Equatable, Sendable {
             inOrder
                 ? "In progress, through \(completed) \(completed == 1 ? "hole" : "holes")"
                 : "In progress, \(completed) of \(total) holes scored"
+        case .wolfUnfinished:
+            "Not final: a Wolf hole is not scored"
         case .final:
             "Final" + (headline.map { ": " + $0 } ?? "")
         }
@@ -91,6 +99,7 @@ struct RoundSummaryKey: Equatable, Sendable {
     var skins: Engine.SkinsInput
     var wad: Engine.WadInput
     var greenies: Engine.GreeniesInput
+    var wolf: Engine.WolfInput?
     var paid: [PaidRecord]
 
     @MainActor
@@ -98,6 +107,7 @@ struct RoundSummaryKey: Equatable, Sendable {
         skins = round.skinsInput
         wad = round.wadInput
         greenies = round.greeniesInput
+        wolf = round.wolfInput
         paid = round.paidRecords
     }
 }

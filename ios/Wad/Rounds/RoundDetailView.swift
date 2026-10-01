@@ -120,6 +120,17 @@ struct RoundDetailView: View {
                     LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
                     LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
                     LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+                    if let pointCents = round.wolfPointCents {
+                        LabeledContent("Wolf, per point", value: "$" + Money.dollars(fromCents: pointCents))
+                            .accessibilityIdentifier("detail.wolfPoint")
+                        LabeledContent(
+                            "Wolf tee order",
+                            value: round.wolfTeeOrder.map { id in
+                                round.players.first { $0.playerID == id }?.displayName ?? "-"
+                            }.joined(separator: ", ")
+                        )
+                        .accessibilityIdentifier("detail.wolfTeeOrder")
+                    }
                 } header: {
                     SectionHeader("Games", systemImage: "dollarsign.circle")
                 }

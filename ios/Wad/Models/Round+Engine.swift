@@ -31,8 +31,12 @@ extension Round {
     /// Only the holes with something recorded.
     var engineHoleEvents: [Engine.HoleEvents] {
         orderedHoles
-            .filter { !$0.wadMakerIDs.isEmpty || $0.greenieWinnerID != nil }
-            .map { Engine.HoleEvents(hole: $0.number, wadMakers: $0.wadMakerIDs, greenieWinner: $0.greenieWinnerID) }
+            .filter { !$0.wadMakerIDs.isEmpty || $0.greenieWinnerID != nil || $0.wolfEvent != nil }
+            .map {
+                Engine.HoleEvents(
+                    hole: $0.number, wadMakers: $0.wadMakerIDs, greenieWinner: $0.greenieWinnerID, wolf: $0.wolfEvent
+                )
+            }
     }
 
     /// The tee's rating, when the course has one.
