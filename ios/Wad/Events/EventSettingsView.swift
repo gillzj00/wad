@@ -19,7 +19,8 @@ struct EventSettingsView: View {
                     SectionHeader("Celebrations", systemImage: "sparkles")
                 } footer: {
                     SectionFooter(
-                        "Birdies, eagles, greenies, skins and the Wad changing hands get a show on this phone, "
+                        "A hole in one, an albatross, an eagle, a birdie, a snowman (an 8), a greenie, a skin, "
+                            + "the Wad changing hands and a Wolf hole won each get a show on this phone, "
                             + "with sound and vibration. The silent switch mutes the sounds. "
                             + "With Reduce Motion on, each show is a still picture."
                     )

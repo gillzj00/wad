@@ -5,14 +5,14 @@ import Foundation
 /// hole in one that also wins the skin plays the hole in one, then the skin.
 enum GameEventKind: Int, CaseIterable, Comparable, Hashable, Sendable {
     case holeInOne = 0
-    /// Proposed, not yet confirmed by the owner (docs/roadmap/STATUS.md, T2).
+    /// Confirmed by the owner: a huge albatross takes the flag out of a storm.
     case albatross
     case eagle
     case greenie
     case wadTaken
     case skinWon
     case wolfHoleWon
-    /// A gross score of exactly 8. Whether 9 and worse also get one is open.
+    /// A gross score of exactly 8, by the owner's decision: 9 and worse get nothing.
     case snowman
     case birdie
 
