@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-01 (after #68)
+Last updated: 2026-10-01 (after #69)
 
 ## Current phase
 
@@ -49,12 +49,13 @@ Last updated: 2026-10-01 (after #68)
 | T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | done | #66 |
 | T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | done (SpriteKit shows, synthesized sound, haptics, settings switches, Reduce Motion stills; Wolf show triggers through a hook filled by W2) | #68 |
 | T2b | Art pass on the nine animation subjects after owner feedback on #68 (hands read as sausages, see-through gaps in the birdie fist): anatomy-based, cel-shaded, outlined art; the birdie becomes a skeletal hand to match the theme | ios/ | in flight (branch `feat/ios-animation-art`) | - |
-| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | in flight (branch `feat/ios-wolf`) | - |
+| W2 | Wolf in the demo app: setup, tee order, per-hole choice, 17/18 tie prompt (the group picks, the engine never does), live points, pay-the-difference settlement, Wolf show trigger | ios/ | done | #69 |
+| T2c | Generated art for the animation subjects, per `docs/art/animation-assets.md`; needs the owner to generate the PNGs or supply an image-model API key | ios/, docs/ | waiting on the owner | - |
 
 ## Tasks in flight
 
 - T2b animation art pass (subagent, branch `feat/ios-animation-art`), confined to `ios/Wad/Events/Stage/`.
-- W2 Wolf in the app (subagent, branch `feat/ios-wolf`), kept to new files under `ios/Wad/Wolf/` plus small hooks in setup, scoring and settlement; whichever of T2b and W2 merges second rebases first.
+- T2b merges after W2; it brings in main by merge, not rebase.
 - The one-iOS-task-at-a-time rule was relaxed on 2026-10-01 at the owner's request: T1 and T2 run in parallel, conflicts are limited to the generated project (regenerated with xcodegen) and recolored views.
 
 ## Open PRs
@@ -65,6 +66,7 @@ Last updated: 2026-10-01 (after #68)
 
 - Repo is public since 2026-09-30 (free Actions minutes). Merge policy as clarified by @gillzj00: Claude may squash-merge its own PRs (authored by the owner's account) once every required check is green; `infra/` PRs still need the owner's approval in chat; every Terraform apply additionally waits for the owner's approval in the `dev` environment. Required checks on main: unit-tests, ui-tests, build-test, plan (strict, up to date). SHA pinning of actions is required.
 - Course lookup (2026-09-29): option B, deploy the courses API before auth with the owner's provider key staying in AWS. This overrides the earlier no-public-endpoint rule for this one endpoint. Interim quota guard: API Gateway throttling plus a shared `x-wad-client` token in SSM; replaced by Cognito in M1.1. Recorded in ADR-0013 (I1).
+- Art rule relaxed (owner, 2026-10-01): original or generated art, no stock downloads. The animation subjects may be generated PNGs; the asset pack and prompts are in `docs/art/animation-assets.md`. No image generation connector exists in the registry, so the owner either generates the files in any image model or provides an API key outside the repo.
 - Animations (owner, 2026-10-01): the snowman plays for a score of exactly 8 only; the albatross animation (dives out of a lightning storm, rips the flag out, thunderclap) is confirmed. The presentation uses SpriteKit (built in, no dependency); subjects stay original and code-drawn.
 - Animations (#68): events are derived from engine state before and after each change on the scoring screen and play only when they newly appear, so corrections never replay a show; several events from one change play in the fixed order hole in one, albatross, eagle, greenie, Wad, skin, Wolf, snowman, birdie. Sounds are synthesized at runtime; the silent switch mutes them; settings has animation and sound switches; Reduce Motion shows a paused poster frame. SpriteKit is used for the shows (built in, no dependency). On Xcode 16.4 SKNode is main-actor isolated, so the scene code is explicitly @MainActor.
 - Theme (#66): both appearances are dark (light = ash variant, dark = pitch); palette charcoal, card, rule, maroon, crimson, blood, ember, bone, ash; money won is ember, money owed is blood; all 14 text/background pairs are at least 4.5:1 and a unit test enforces it.
@@ -110,6 +112,7 @@ Last updated: 2026-10-01 (after #68)
 - Theme (#66): nav bar title attributes stay on the UIKit proxy (a custom UINavigationBarAppearance hid the large title on iOS 26), so on iOS 18 the light-mode nav bar background is the system material rather than charcoal; light-mode alerts remain system dialogs; the chain overlay on the scoring bars overlaps the list edge by about 4pt. Checked at accessibility-extra-large Dynamic Type on the settlement screen; iOS 17 untested.
 - Course lookup (#64): on iOS 17 a denied location permission shows as "could not be found" after the 15 s timeout (the denial flags on CLLocationUpdate are iOS 18+). The provider's daily quota is about 35 requests; the app caches searches and courses for 7 days and serves stale copies when the API fails. The round does not store the course or tee ids; the draft only notes the selection.
 - Animations (#68) play on the scoring phone only; other players' phones need live sync (M3.3). The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
+- The W2 subagent force-pushed (with lease) its own PR branch after a rebase on 2026-10-01; main was untouched, but the owner's rule is no force-push anywhere. Briefs now say: merge main, never rebase a pushed branch.
 - CI ui-tests flaked once on #64 (round delete test timed out on the suite's cold first launch, 10 s); a rerun passed.
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
