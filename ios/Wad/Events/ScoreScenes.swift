@@ -22,8 +22,8 @@ struct EagleScene: EventScene {
             }
         }
         // Across the screen left to right, bobbing, with a slight climb.
-        let path = Anim.easeInOut(t)
-        let center = CGPoint(x: Anim.lerp(-w * 0.6, w * 1.6, path), y: h * 0.45 - h * 0.08 * path + sin(seconds * 2 * .pi * 1.6) * h * 0.02)
+        let path = t
+        let center = CGPoint(x: Anim.lerp(-w * 0.55, w * 1.55, path), y: h * 0.47 - h * 0.1 * path + sin(seconds * 2 * .pi * 1.6) * h * 0.02)
         let flap = sin(seconds * 2 * .pi * 1.6)
         let span = w * 0.42
         let dark = Color(red: 0.25, green: 0.16, blue: 0.08)
@@ -98,12 +98,12 @@ struct HoleInOneScene: EventScene {
             let age = (seconds - launch - 0.75)
             for i in 0..<32 {
                 let angle = Double(i) / 32 * 2 * .pi + Anim.hash(n, 66)
-                let speed = w * (0.25 + 0.2 * Anim.hash(i + n * 40, 67))
+                let speed = w * (0.35 + 0.25 * Anim.hash(i + n * 40, 67))
                 func at(_ a: Double) -> CGPoint {
                     CGPoint(x: apex.x + cos(angle) * speed * a * (1 - a * 0.25), y: apex.y + sin(angle) * speed * a * (1 - a * 0.25) + h * 0.12 * a * a)
                 }
                 let fade = 1 - life
-                c.capsule(from: at(max(0, age - 0.15)), to: at(age), radius: 2.5 * fade + 0.5, color.opacity(0.9 * fade))
+                c.capsule(from: at(max(0, age - 0.2)), to: at(age), radius: 4 * fade + 1, color.opacity(fade))
                 if (i + Int(seconds * 20)) % 3 == 0 {
                     c.fill(circleAt: at(age), radius: 3, .white.opacity(fade))
                 }
@@ -342,13 +342,15 @@ struct BirdieScene: EventScene {
         let raise = Anim.back(Anim.seg(seconds, 0.2, 0.75))
         let wiggle = sin(seconds * 2 * .pi * 3) * 0.05 * Anim.seg(seconds, 0.75, 1.0)
         let hand = HandModel(u: u) { finger in
-            finger == 4 ? 0.35 : finger == 1 ? 1.25 * (1 - raise) : 1.25
+            finger == 4 ? 0.35 : finger == 1 ? 0.95 * (1 - raise) : 0.95
         }
         c.placed(at: center, rotation: wiggle) { c in
-            c.fill(hand.fleshPath(), with: .color(HandModel.skin))
-            c.stroke(hand.fleshPath(), with: .color(HandModel.skinShade), lineWidth: 3)
-            for (i, bone) in hand.bones.enumerated() where i % 3 != 0 {
-                c.fill(circleAt: bone.from, radius: bone.radius * 0.45, HandModel.skinShade.opacity(0.5))
+            let flesh = hand.fleshPath()
+            c.placed(at: CGPoint(x: 4, y: 5)) { c in c.fill(flesh, with: .color(HandModel.skinShade)) }
+            c.fill(flesh, with: .color(HandModel.skin))
+            // Knuckle creases on the curled fingers and the raised one.
+            for (i, bone) in hand.bones.enumerated() where i % 3 != 0 && i < 12 {
+                c.fill(circleAt: bone.from, radius: bone.radius * 0.5, HandModel.skinShade.opacity(0.35))
             }
             // The nail, on the last bone of the middle finger.
             let last = hand.bones[5]
