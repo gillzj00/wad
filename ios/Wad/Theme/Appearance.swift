@@ -13,22 +13,15 @@ enum Appearance {
         let crimson = UIColor(named: "Crimson") ?? .systemRed
         let blood = UIColor(named: "Blood") ?? .systemRed
 
-        let navigation = UINavigationBarAppearance()
-        navigation.configureWithOpaqueBackground()
-        navigation.backgroundColor = charcoal
-        navigation.shadowColor = rule
-        navigation.largeTitleTextAttributes = [
+        let bar = UINavigationBar.appearance()
+        bar.largeTitleTextAttributes = [
             .font: serif(.largeTitle, weight: .black),
             .foregroundColor: bone,
         ]
-        navigation.titleTextAttributes = [
+        bar.titleTextAttributes = [
             .font: serif(.headline, weight: .bold),
             .foregroundColor: bone,
         ]
-        let bar = UINavigationBar.appearance()
-        bar.standardAppearance = navigation
-        bar.scrollEdgeAppearance = navigation
-        bar.compactAppearance = navigation
 
         let tabs = UITabBarAppearance()
         tabs.configureWithOpaqueBackground()

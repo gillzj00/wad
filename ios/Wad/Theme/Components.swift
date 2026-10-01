@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Lists
 
 extension View {
-    /// A list or form on the sand background. Its rows get the card color with
+    /// A list or form on the charcoal background. Its rows get the card color with
     /// `themedRows()` on the content of the list.
     func themedList() -> some View {
         scrollContentBackground(.hidden)
@@ -47,6 +47,14 @@ struct SectionHeader: View {
         }
         .font(Theme.Typography.overline)
         .foregroundStyle(Theme.Palette.ash)
+    }
+}
+
+extension Text {
+    /// The placeholder of a text field, readable on the card color: the
+    /// system's placeholder gray is for light surfaces.
+    static func prompt(_ text: String) -> Text {
+        Text(text).foregroundStyle(Theme.Palette.ash)
     }
 }
 

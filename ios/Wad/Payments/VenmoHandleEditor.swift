@@ -32,7 +32,7 @@ struct VenmoHandleEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Venmo handle", text: $text)
+                    TextField("Venmo handle", text: $text, prompt: .prompt("Venmo handle"))
                         .keyboardType(.asciiCapable)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)

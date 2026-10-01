@@ -205,7 +205,7 @@ struct CourseStepView: View {
         }
 
         Section {
-            TextField("Course name", text: $draft.courseName)
+            TextField("Course name", text: $draft.courseName, prompt: .prompt("Course name"))
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .accessibilityIdentifier("setup.courseName")
@@ -264,7 +264,7 @@ struct CourseStepView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .accessibilityIdentifier("setup.hole.\(hole.number).par")
-                    TextField("SI", text: $hole.strokeIndexText)
+                    TextField("SI", text: $hole.strokeIndexText, prompt: .prompt("SI"))
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .monospacedDigit()
@@ -313,7 +313,7 @@ struct PlayersStepView: View {
         ForEach(draft.players) { player in
             let binding = binding(for: player)
             Section {
-                TextField("Name", text: binding.name)
+                TextField("Name", text: binding.name, prompt: .prompt("Name"))
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("setup.player.\(number(of: player)).name")
@@ -405,7 +405,7 @@ struct VenmoHandlesStepView: View {
         Section {
             ForEach(Array(draft.players.enumerated()), id: \.element.venmoRowID) { offset, player in
                 LabeledContent(player.trimmedName.isEmpty ? "Player \(offset + 1)" : player.trimmedName) {
-                    TextField("Optional", text: binding(for: player))
+                    TextField("Optional", text: binding(for: player), prompt: .prompt("Optional"))
                         .keyboardType(.asciiCapable)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -491,7 +491,7 @@ struct NumberRow: View {
 
     var body: some View {
         LabeledContent(title) {
-            TextField(prompt, text: $text)
+            TextField(prompt, text: $text, prompt: .prompt(prompt))
                 .keyboardType(keyboard)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
@@ -511,7 +511,7 @@ struct AmountRow: View {
         LabeledContent(title) {
             HStack(spacing: 2) {
                 Text("$").foregroundStyle(Theme.Palette.ash)
-                TextField("0.00", text: $text)
+                TextField("0.00", text: $text, prompt: .prompt("0.00"))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()

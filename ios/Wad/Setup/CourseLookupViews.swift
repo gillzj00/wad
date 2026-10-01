@@ -36,7 +36,7 @@ struct CourseSearchSection: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Theme.Palette.ash)
                 .accessibilityHidden(true)
-            TextField("Course or club name", text: query)
+            TextField("Course or club name", text: query, prompt: .prompt("Course or club name"))
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .submitLabel(.search)

@@ -266,6 +266,8 @@ struct HoleHeader: View {
                 Text("\(number)")
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .fixedSize()
                     .foregroundStyle(Theme.Palette.crimson)
                     .padding(.horizontal, Theme.Spacing.m)
                     .padding(.vertical, Theme.Spacing.xs)
