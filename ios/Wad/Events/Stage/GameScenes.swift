@@ -282,6 +282,7 @@ final class WadScene: EventSKScene {
             hand.texture = frames[2]
             hand.zRotation = -0.05
             rain(from: fingertips, count: 50, continuous: false)
+            rain(from: fingertips, count: 0, continuous: true)
             gold.particleBirthRate = 60
             return
         }
