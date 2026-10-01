@@ -12,6 +12,9 @@ enum LaunchArgument {
     static let debugStoreCounts = "-debugStoreCounts"
     /// `-debugColorScheme light|dark` shows the app in that color scheme.
     static let debugColorScheme = "debugColorScheme"
+    /// `-debugCourseLookup fixture|off`: the course fixtures instead of the API, or
+    /// no lookup at all, as in a build without the API settings.
+    static let debugCourseLookup = "debugCourseLookup"
     #endif
 }
 
@@ -29,7 +32,7 @@ struct WadApp: App {
         }
         #endif
         do {
-            container = try ModelContainer(for: Round.self, configurations: configuration)
+            container = try ModelContainer(for: Schema(WadSchema.models), configurations: configuration)
         } catch {
             fatalError("Could not open the store: \(error)")
         }
@@ -41,8 +44,19 @@ struct WadApp: App {
                 .tint(Theme.Palette.fairway)
                 #if DEBUG
                 .preferredColorScheme(Appearance.debugColorScheme)
+                .environment(\.courseLookupService, Self.courseLookupService)
                 #endif
         }
         .modelContainer(container)
     }
+
+    #if DEBUG
+    private static var courseLookupService: any CourseLookupService {
+        switch UserDefaults.standard.string(forKey: LaunchArgument.debugCourseLookup) {
+        case "fixture": FixtureCourseLookupService()
+        case "off": CourseLookupClient(configuration: CourseLookupConfiguration(baseURL: nil, clientToken: ""))
+        default: CourseLookupClient(configuration: .fromBundle)
+        }
+    }
+    #endif
 }

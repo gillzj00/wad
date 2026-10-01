@@ -8,6 +8,16 @@ enum WadSchema {
         Round.self, RoundHole.self, RoundPlayer.self, HoleScore.self, PaidMarker.self,
         CachedCourse.self, CachedCourseSearch.self,
     ]
+
+    /// An empty in-memory store of every model.
+    static func inMemoryContainer() throws -> ModelContainer {
+        try ModelContainer(for: Schema(models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
+
+    /// For the previews, which have no store to lose.
+    static var previewContainer: ModelContainer {
+        try! inMemoryContainer()
+    }
 }
 
 /// A course looked up on this phone, as the API sent it, so that the round
