@@ -15,13 +15,14 @@ extension RoundSettlement {
     }
 
     /// The Wolf holes whose own record keeps them from being scored: a tie for
-    /// last place without a recorded Wolf, a missing choice, or an invalid
-    /// record. A hole 17 or 18 that only waits for earlier holes is not listed.
+    /// last place without a recorded Wolf, a missing choice on a hole every
+    /// player has scored, or an invalid record. A hole 17 or 18 that only waits
+    /// for earlier holes is not listed, nor is a hole nobody has played yet.
     var unscoredWolfHoles: [Engine.WolfHoleResult] {
         wolf?.holes.filter { hole in
             switch hole.status {
             case .needsWolf, .invalid: true
-            case .pending: hole.choice == nil
+            case .pending: hole.choice == nil && hole.net != nil
             case .wonByWolfSide, .wonByOpponents, .tied: false
             }
         } ?? []
