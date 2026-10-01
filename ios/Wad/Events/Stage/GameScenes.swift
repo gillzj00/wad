@@ -35,11 +35,11 @@ final class WolfScene: EventSKScene {
         wolf.addChild(jaw)
         wolf.addChild(head)
         // Ember light in the eyes, pulsing.
-        for s in [CGFloat(-1), 1] {
+        for eye in Art.wolfEyes {
             let glow = SKSpriteNode(color: Metal.ember, size: CGSize(width: 110 * scale, height: 110 * scale))
             glow.shader = Shaders.pulse
             glow.blendMode = .add
-            glow.position = CGPoint(x: s * 60 * scale, y: 63 * scale)
+            glow.position = CGPoint(x: eye.x * scale, y: eye.y * scale)
             glow.zPosition = 3
             wolf.addChild(glow)
         }

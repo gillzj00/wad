@@ -26,6 +26,11 @@ enum Metal {
     static let boneLight = UIColor(red: 1, green: 0.99, blue: 0.94, alpha: 1)
     static let fleshLight = UIColor(red: 0.98, green: 0.82, blue: 0.7, alpha: 1)
     static let fleshDark = UIColor(red: 0.45, green: 0.24, blue: 0.18, alpha: 1)
+    static let furLight = UIColor(red: 0.64, green: 0.62, blue: 0.64, alpha: 1)
+    static let fur = UIColor(red: 0.42, green: 0.4, blue: 0.43, alpha: 1)
+    static let furDark = UIColor(red: 0.21, green: 0.19, blue: 0.21, alpha: 1)
+    static let furDeep = UIColor(red: 0.11, green: 0.09, blue: 0.11, alpha: 1)
+    static let gum = UIColor(red: 0.45, green: 0.1, blue: 0.14, alpha: 1)
 }
 
 /// One show: a SpriteKit scene with a camera, a flash layer and a vignette,
@@ -432,6 +437,18 @@ enum Draw {
         context.clip()
         fill(context, ellipse(at: point, rx: rx, ry: ry), color)
         context.restoreGState()
+    }
+
+    /// A jagged ring of fur tufts round an ellipse, the tufts leaning down.
+    static func ruff(center: CGPoint, rx: CGFloat, ry: CGFloat, spikes: Int, length: CGFloat, seed: Int, from: CGFloat = 0, to: CGFloat = .pi * 2) -> CGPath {
+        var points: [CGPoint] = []
+        for i in 0...spikes {
+            let a = from + (to - from) * CGFloat(i) / CGFloat(spikes)
+            let out = i % 2 == 0 ? length * (0.6 + CGFloat(Anim.hash(i + seed, 400)) * 0.7) : 0
+            let lean = -0.25 * sin(a) * CGFloat(i % 2)
+            points.append(CGPoint(x: center.x + cos(a + lean) * (rx + out), y: center.y + sin(a + lean) * (ry + out)))
+        }
+        return polygon(points)
     }
 
     /// Fine cracks: a few jagged lines, for bone and ice.
