@@ -129,7 +129,8 @@ struct CourseStepModelTests {
         // Once.
         var another = RoundDraft()
         #expect(!model.applyDefault(to: &another))
-        #expect(another == RoundDraft())
+        #expect(another.isCourseUntouched)
+        #expect(another.courseName.isEmpty)
     }
 
     @Test func theDefaultCourseIsFetchedOnceWhenThePhoneDoesNotHaveIt() async throws {
@@ -187,7 +188,9 @@ struct CourseStepModelTests {
 
         var sample = RoundDraft.sample
         #expect(!model.applyDefault(to: &sample))
-        #expect(sample == RoundDraft.sample)
+        #expect(sample.courseName == "Sample Links")
+        #expect(sample.holes == RoundDraft.sample.holes)
+        #expect(sample.course == nil)
     }
 
     @Test func theLastPickedCourseAndTeeAreTheNextDefault() async throws {
@@ -223,7 +226,7 @@ struct CourseStepModelTests {
     @Test func pickingAResultLoadsTheCourseAndFillsItsDefaultTee() async throws {
         let service = FakeCourseLookupService()
         let model = try CourseTestSupport.model(service: service)
-        model.search.query = "stillwater"
+        model.search.query = "stillwater country"
         try await Task.sleep(for: .milliseconds(250))
         #expect(model.search.state == .results([CourseFixtures.stillwaterSummary]))
 

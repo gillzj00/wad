@@ -55,9 +55,14 @@ struct FakeLocationProvider: LocationProvider {
 @MainActor
 enum CourseTestSupport {
     static let now = Date(timeIntervalSince1970: 1_790_000_000)
+    /// A context does not keep its container alive; dropping the container
+    /// makes the next fetch crash. The tests' containers live for the run.
+    private static var containers: [ModelContainer] = []
 
     static func cache() throws -> CourseCache {
-        CourseCache(context: try WadSchema.inMemoryContainer().mainContext)
+        let container = try WadSchema.inMemoryContainer()
+        containers.append(container)
+        return CourseCache(context: container.mainContext)
     }
 
     static func lookup(service: FakeCourseLookupService, cache: CourseCache? = nil, now: Date = now) throws -> CourseLookup {
