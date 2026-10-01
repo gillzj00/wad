@@ -140,6 +140,8 @@ struct ChainDivider: View {
 
     var body: some View {
         Canvas { context, size in
+            // Nothing to draw before the layout gives it a size.
+            guard size.height > 0, size.width > 0 else { return }
             let linkLength = size.height * 1.9
             let linkHeight = size.height * 0.7
             let stroke = max(1.5, size.height * 0.18)
