@@ -663,7 +663,7 @@ final class BirdieScene: EventSKScene {
         band.position = CGPoint(x: 0, y: handSize.height * 0.06)
         band.zPosition = 2
         hand.addChild(band)
-        let tip = CGPoint(x: hand.position.x + 2 * scale, y: hand.position.y + handSize.height * 0.86)
+        let tip = CGPoint(x: hand.position.x + 2 * scale, y: hand.position.y + handSize.height * 0.62)
         let bird = sprite(Art.bird, size: CGSize(width: w * 0.3, height: w * 0.225), at: at(-0.3, 0.9), z: 20)
 
         if still {

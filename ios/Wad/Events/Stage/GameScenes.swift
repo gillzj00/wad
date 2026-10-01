@@ -270,7 +270,7 @@ final class WadScene: EventSKScene {
         hand.zPosition = 20
         let rest = at(0.5, 0.0)
         addChild(hand)
-        let fingertips = CGPoint(x: rest.x, y: rest.y + Art.handSize.height * scale * 0.86)
+        let fingertips = CGPoint(x: rest.x, y: rest.y + Art.handSize.height * scale * 0.64)
         let gold = Emitters.embers(width: w * 0.3, rate: 0, color: Metal.emberBright)
         gold.position = CGPoint(x: 0, y: Art.handSize.height * scale * 0.55)
         gold.targetNode = self
