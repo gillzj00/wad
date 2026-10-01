@@ -1,0 +1,4 @@
+# The owner reviews everything. "Require review from code owners" is not
+# enabled on main: every PR is authored by this account and GitHub does not
+# let an author approve their own PR. Ownership is expressed by merging.
+* @gillzj00

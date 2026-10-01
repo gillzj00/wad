@@ -41,8 +41,8 @@ The bootstrap state is local by design (it creates the very bucket that would st
 
 ## Day-to-day
 
-- Changes to `infra/**` or `backend/**` on a pull request run `fmt`/`validate`/`plan` (plan posted to the PR).
-- Merges to `main` run `apply` via the CI role.
+- Changes to `infra/**` or `backend/**` on a pull request run `fmt`/`validate`/`plan` in the `plan` job (a required status check; the plan is posted to the PR with the account id redacted). Other pull requests skip the job, which counts as passing.
+- Merges to `main` run the `apply` job via the CI role, after the owner approves the deployment as the required reviewer of the `dev` GitHub Environment.
 - Run `terraform fmt -recursive infra` before committing; CI enforces formatting.
 - Never introduce static AWS access keys and never use admin override to force an apply.
 

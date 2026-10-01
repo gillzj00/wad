@@ -2,10 +2,6 @@ name: Terraform
 
 on:
   pull_request:
-    paths:
-      - "infra/**"
-      - "backend/**"
-      - ".github/workflows/terraform.yml"
   push:
     branches: [main]
     paths:
@@ -14,35 +10,51 @@ on:
       - ".github/workflows/terraform.yml"
 
 # OIDC: no long-lived AWS keys. See docs/adr/0009-terraform-github-oidc.md.
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
-
-concurrency:
-  group: terraform-dev
-  cancel-in-progress: false
+# Least privilege: nothing at the workflow level, each job asks for what it uses.
+permissions: {}
 
 env:
   TF_WORKING_DIR: infra/environments/dev
+  TF_VERSION: "1.11.0"
 
 jobs:
-  terraform:
-    name: dev
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
+  changes:
+    permissions:
+      pull-requests: read
+    uses: ./.github/workflows/changes.yml
+    with:
+      patterns: '^(infra/|backend/|\.github/workflows/(terraform|changes)\.yml$)'
 
-      - uses: hashicorp/setup-terraform@v4
+  # Pull requests: fmt, validate and a read-only plan posted as a PR comment.
+  # Fork pull requests are skipped: GitHub does not issue OIDC tokens to them
+  # and their GITHUB_TOKEN is read-only, so the job could not run anyway.
+  plan:
+    needs: changes
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.changes.outputs.changed == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    concurrency:
+      group: terraform-plan-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: "1.11.0"
+          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Format check
         run: terraform fmt -check -recursive infra
 
       # The Lambda functions are zipped from backend/dist, so the handlers must
       # be built before plan and apply.
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: backend/.nvmrc
           cache: npm
@@ -54,38 +66,53 @@ jobs:
           npm ci
           npm run build
 
+      # Logs of a public repository are public. Repository variables are not
+      # secrets, so mask the ones that identify the AWS account.
+      - name: Mask account identifiers
+        env:
+          ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          echo "::add-mask::$ROLE_ARN"
+          echo "::add-mask::$STATE_BUCKET"
+
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Init
         working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
-          terraform init \
-            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" \
+            -backend-config="region=$AWS_REGION"
 
       - name: Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
+      # -lock=false: a PR plan is read-only and must not contend with an apply
+      # that may be running or waiting for approval on main.
       - name: Plan
-        id: plan
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -input=false -lock=false -no-color -out=tfplan
 
       - name: Comment plan on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const { execSync } = require('child_process');
             const plan = execSync('terraform show -no-color tfplan', {
               cwd: process.env.TF_WORKING_DIR,
               maxBuffer: 10 * 1024 * 1024,
-            }).toString();
+            }).toString()
+              // PR comments are public: redact the AWS account id from ARNs and names.
+              .replace(/\b\d{12}\b/g, '<account-id>');
             const body = ['### Terraform plan (dev)', '```', plan.slice(0, 60000), '```'].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -94,7 +121,73 @@ jobs:
               body,
             });
 
-      - name: Apply
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # Merges to main: plan again from main and apply. The `dev` environment's
+  # required-reviewer rule holds this job until the owner approves it, and
+  # the concurrency group makes sure two applies never overlap.
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: terraform-apply-dev
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Format check
+        run: terraform fmt -check -recursive infra
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Build handlers
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Mask account identifiers
+        env:
+          ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          echo "::add-mask::$ROLE_ARN"
+          echo "::add-mask::$STATE_BUCKET"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -no-color -auto-approve tfplan
+        env:
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" \
+            -backend-config="region=$AWS_REGION"
+
+      - name: Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -no-color -auto-approve tfplan

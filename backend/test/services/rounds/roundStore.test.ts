@@ -235,6 +235,50 @@ describe("DynamoRoundStore", () => {
     await expect(store.setCourseHandicapOverride("r_1", "u_1", 15, { by: "u_1", at: NOW.toISOString() })).rejects.toThrow("throttled");
   });
 
+  it("sets the tee order on the round without touching the rest of the item", async () => {
+    const { store, items, sent } = await created();
+    const before = items.get("ROUND#r_1|META")!;
+    expect((await store.getRound("r_1"))!.meta).toEqual(meta);
+    const change = { by: "u_2", at: "2026-09-29T12:10:00.000Z" };
+
+    await store.setTeeOrder("r_1", ["u_2", "u_1"], change);
+    expect(sent.at(-1)).toEqual({
+      name: "UpdateCommand",
+      input: {
+        TableName: TABLE,
+        Key: { PK: "ROUND#r_1", SK: "META" },
+        UpdateExpression: "SET #order = :order, #at = :at, #by = :by",
+        ConditionExpression: "attribute_exists(PK)",
+        ExpressionAttributeNames: { "#order": "teeOrder", "#at": "teeOrderAt", "#by": "teeOrderBy" },
+        ExpressionAttributeValues: { ":order": ["u_2", "u_1"], ":at": change.at, ":by": "u_2" },
+      },
+    });
+    expect(items.get("ROUND#r_1|META")).toEqual({ ...before, teeOrder: ["u_2", "u_1"], teeOrderAt: change.at, teeOrderBy: "u_2" });
+    expect((await store.getRound("r_1"))!.meta).toEqual({ ...meta, teeOrder: ["u_2", "u_1"] });
+  });
+
+  it("does not create a round item when setting the tee order of a round that does not exist", async () => {
+    const { store, items } = await created();
+    await expect(store.setTeeOrder("r_missing", ["u_1"], { by: "u_1", at: NOW.toISOString() })).rejects.toThrow("conditional");
+    expect(items.has("ROUND#r_missing|META")).toBe(false);
+  });
+
+  it("sets and clears a hole's wolf record and leaves its other events alone", async () => {
+    const { store, items } = await created();
+    const change = { by: "u_1", at: NOW.toISOString() };
+    await store.setHoleEvents("r_1", 4, { wadMakers: ["u_2"] }, change);
+    const wolf = { choice: "partner" as const, partnerUserId: "u_2", wolfUserId: null };
+    await store.setHoleEvents("r_1", 4, { wolf }, change);
+    expect(items.get("ROUND#r_1|HOLE#04")).toMatchObject({ type: "holeEvents", hole: 4, wadMakers: ["u_2"], wolf });
+    expect((await store.getRound("r_1"))!.holes).toEqual([{ hole: 4, wadMakers: ["u_2"], greenieWinner: null, wolf }]);
+
+    await store.setHoleEvents("r_1", 4, { wolf: null }, change);
+    expect(items.get("ROUND#r_1|HOLE#04")).toMatchObject({ wadMakers: ["u_2"], wolf: null });
+    const cleared = (await store.getRound("r_1"))!.holes;
+    expect(cleared).toEqual([{ hole: 4, wadMakers: ["u_2"], greenieWinner: null }]);
+    expect("wolf" in cleared[0]!).toBe(false);
+  });
+
   it("reads a player item written before overrides existed", async () => {
     const { store, items } = await created();
     const old = { ...items.get("ROUND#r_1|PLAYER#u_1")! };

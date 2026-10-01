@@ -122,6 +122,39 @@ export class SettlementService {
         }
       }
     }
+    if (state.wolf !== undefined) {
+      games.wolf = state.wolf?.deltas ?? null;
+      if (!state.wolf) {
+        issues.push({
+          code: "wolf_unavailable",
+          hole: null,
+          userId: null,
+          message: "wolf needs exactly four players, each with a course handicap, so it is not part of this settlement",
+        });
+      } else {
+        deltas.push(state.wolf.deltas);
+        for (const h of state.wolf.holes) {
+          if (h.status === "needs_wolf") {
+            issues.push({
+              code: "wolf_needs_wolf",
+              hole: h.hole,
+              userId: null,
+              message: `players are tied for last place, so hole ${h.hole} needs its wolf recorded; it scores no points until then`,
+            });
+          } else if (h.status === "invalid") {
+            issues.push({
+              code: "wolf_invalid",
+              hole: h.hole,
+              userId: null,
+              message: `the wolf record on hole ${h.hole} is not valid (${h.invalidReason}) and scores no points`,
+            });
+          } else if (h.status === "pending" && h.net !== null) {
+            // A hole that is missing a score is already listed in incompleteHoles.
+            issues.push({ code: "wolf_pending", hole: h.hole, userId: h.wolfUserId, message: `wolf on hole ${h.hole} is not scored yet` });
+          }
+        }
+      }
+    }
 
     const scored = new Set(record.scores.map((s) => `${s.hole}:${s.userId}`));
     const incompleteHoles = record.meta.tee.holes

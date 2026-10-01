@@ -3,6 +3,7 @@
 import type { scoreGreenies } from "../engines/greenies.js";
 import type { SkinsResult } from "../engines/skins.js";
 import type { scoreWad } from "../engines/wad.js";
+import type { WolfResult } from "../engines/wolf.js";
 import type { GamesConfig, HoleEvents, Score, UserId } from "./types.js";
 
 export type RoundStatus = "in_progress";
@@ -46,6 +47,8 @@ export interface RoundState {
   skins?: SkinsResult | null;
   wad?: ReturnType<typeof scoreWad>;
   greenies?: ReturnType<typeof scoreGreenies>;
+  /** Null unless the round has exactly four players, each with a course handicap. */
+  wolf?: WolfResult | null;
 }
 
 export interface Round {
@@ -60,6 +63,8 @@ export interface Round {
   createdAt: string;
   games: GamesConfig;
   players: RoundPlayer[];
+  /** Every player's id in the order they tee off; the order they were added unless it was set. */
+  teeOrder: UserId[];
   scores: Score[];
   holes: HoleEvents[];
   state: RoundState;

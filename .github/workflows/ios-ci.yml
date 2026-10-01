@@ -2,35 +2,43 @@ name: iOS CI
 
 on:
   pull_request:
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios-ci.yml"
   push:
     branches: [main]
     paths:
       - "ios/**"
       - ".github/workflows/ios-ci.yml"
 
-permissions:
-  contents: read
+# Least privilege: nothing at the workflow level, each job asks for what it uses.
+permissions: {}
 
 # A new push to the same branch cancels the run in progress; runs on main are
 # left to finish.
 concurrency:
-  group: ios-ci-${{ github.ref }}
+  group: ios-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Pull requests that do not touch ios/ skip the test jobs; a skipped job
+  # still reports, and counts as passing for the required checks.
+  changes:
+    permissions:
+      pull-requests: read
+    uses: ./.github/workflows/changes.yml
+    with:
+      patterns: '^(ios/|\.github/workflows/(ios-ci|changes)\.yml$)'
+
   # Needs Xcode 16+ (project format 77, Swift 6). The unit tests and the UI
   # tests are separate jobs so that a change is checked in the time the slower
   # one takes, not the sum. Both pick the simulator with ios/scripts/test.sh.
   unit-tests:
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
     runs-on: macos-15
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Xcode version
         run: xcodebuild -version
@@ -42,13 +50,15 @@ jobs:
 
       - name: Upload the test results
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Wad-unit-tests.xcresult
           path: ${{ runner.temp }}/Wad-unit-tests.xcresult
           retention-days: 7
 
   ui-tests:
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
     runs-on: macos-15
     # The three UI tests take a few minutes each on the runner, after a build
     # of about five minutes.
@@ -56,7 +66,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Xcode version
         run: xcodebuild -version
@@ -67,7 +77,7 @@ jobs:
 
       - name: Upload the test results
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Wad-ui-tests.xcresult
           path: ${{ runner.temp }}/Wad-ui-tests.xcresult
