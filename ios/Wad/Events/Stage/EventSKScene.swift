@@ -1,19 +1,24 @@
 import SpriteKit
 import UIKit
 
-/// The look of every show: black, blood, bone and ember.
+/// The look of every show: the app's death metal palette (black, blood,
+/// bone and ember from the asset catalog) with the shades the drawings need.
 enum Metal {
+    private static func asset(_ name: String, _ fallback: UIColor) -> UIColor {
+        UIColor(named: name) ?? fallback
+    }
+
     static let black = UIColor(red: 0.02, green: 0.01, blue: 0.02, alpha: 1)
-    static let charcoal = UIColor(red: 0.1, green: 0.08, blue: 0.09, alpha: 1)
-    static let blood = UIColor(red: 0.62, green: 0.03, blue: 0.06, alpha: 1)
+    static let charcoal = asset("Charcoal", UIColor(red: 0.1, green: 0.08, blue: 0.09, alpha: 1))
+    static let blood = asset("Blood", UIColor(red: 0.62, green: 0.03, blue: 0.06, alpha: 1))
     static let bloodBright = UIColor(red: 0.85, green: 0.08, blue: 0.1, alpha: 1)
     static let bloodDark = UIColor(red: 0.28, green: 0.01, blue: 0.03, alpha: 1)
-    static let bone = UIColor(red: 0.93, green: 0.89, blue: 0.8, alpha: 1)
+    static let bone = asset("Bone", UIColor(red: 0.93, green: 0.89, blue: 0.8, alpha: 1))
     static let boneShade = UIColor(red: 0.7, green: 0.64, blue: 0.52, alpha: 1)
     static let boneDark = UIColor(red: 0.42, green: 0.36, blue: 0.28, alpha: 1)
-    static let ember = UIColor(red: 1, green: 0.42, blue: 0.06, alpha: 1)
+    static let ember = asset("Ember", UIColor(red: 1, green: 0.42, blue: 0.06, alpha: 1))
     static let emberBright = UIColor(red: 1, green: 0.8, blue: 0.25, alpha: 1)
-    static let ash = UIColor(red: 0.45, green: 0.42, blue: 0.42, alpha: 1)
+    static let ash = asset("Ash", UIColor(red: 0.45, green: 0.42, blue: 0.42, alpha: 1))
     static let flesh = UIColor(red: 0.89, green: 0.68, blue: 0.54, alpha: 1)
     static let fleshShade = UIColor(red: 0.62, green: 0.38, blue: 0.28, alpha: 1)
 }
