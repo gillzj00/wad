@@ -125,7 +125,7 @@ struct HoleScoringView: View {
                     systemImage: "dollarsign.circle"
                 )
                 .font(.headline)
-                .foregroundStyle(Theme.Palette.onGreen)
+                .foregroundStyle(Theme.Palette.bone)
             }
             .accessibilityIdentifier("scoring.settlement")
             .emphasizedRows()
@@ -247,8 +247,8 @@ struct HoleScoringView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(Theme.Palette.sand)
-        .overlay(alignment: .top) { Theme.Palette.rule.frame(height: 1) }
+        .background(Theme.Palette.charcoal)
+        .overlay(alignment: .top) { ChainDivider(color: Theme.Palette.rule, height: 8).offset(y: -4) }
     }
 }
 
@@ -264,20 +264,20 @@ struct HoleHeader: View {
         HStack(alignment: .center, spacing: Theme.Spacing.l) {
             HStack(alignment: .center, spacing: Theme.Spacing.m) {
                 Text("\(number)")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded, weight: .black))
                     .monospacedDigit()
-                    .foregroundStyle(Theme.Palette.deepGreen)
+                    .foregroundStyle(Theme.Palette.crimson)
                     .padding(.horizontal, Theme.Spacing.m)
                     .padding(.vertical, Theme.Spacing.xs)
                     .frame(minWidth: 64)
                     .background(
-                        Theme.Palette.onGreen,
+                        Theme.Palette.bone,
                         in: RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .continuous)
                     )
                 VStack(alignment: .leading, spacing: 2) {
                     Image(systemName: "flag.fill")
                         .font(.subheadline)
-                        .foregroundStyle(Theme.Palette.goldOnGreen)
+                        .foregroundStyle(Theme.Palette.ember)
                     Text("Hole")
                         .font(Theme.Typography.overline)
                         .textCase(.uppercase)
@@ -301,9 +301,9 @@ struct HoleHeader: View {
         }
         .padding(Theme.Spacing.l)
         .frame(maxWidth: .infinity)
-        .foregroundStyle(Theme.Palette.onGreen)
+        .foregroundStyle(Theme.Palette.bone)
         .background(
-            Theme.Palette.deepGreen,
+            Theme.Palette.maroon,
             in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
         )
     }
@@ -314,7 +314,7 @@ struct HoleHeader: View {
                 .font(Theme.Typography.overline)
                 .textCase(.uppercase)
                 .tracking(1)
-                .foregroundStyle(Theme.Palette.onGreen.opacity(0.85))
+                .foregroundStyle(Theme.Palette.bone.opacity(0.85))
             Text("\(value)")
                 .font(.system(.title2, design: .rounded, weight: .bold))
                 .monospacedDigit()
@@ -355,7 +355,7 @@ struct HoleStrip: View {
                                 }
                                 .padding(4)
                                 .overlay {
-                                    Circle().strokeBorder(Theme.Palette.ink, lineWidth: hole == current ? 2 : 0)
+                                    Circle().strokeBorder(Theme.Palette.bone, lineWidth: hole == current ? 2 : 0)
                                 }
                         }
                         .buttonStyle(.plain)
@@ -368,8 +368,8 @@ struct HoleStrip: View {
                 .padding(.horizontal)
                 .padding(.vertical, 6)
             }
-            .background(Theme.Palette.sand)
-            .overlay(alignment: .bottom) { Theme.Palette.rule.frame(height: 1) }
+            .background(Theme.Palette.charcoal)
+            .overlay(alignment: .bottom) { ChainDivider(color: Theme.Palette.rule, height: 8).offset(y: 4) }
             .onChange(of: current, initial: true) {
                 if reduceMotion {
                     proxy.scrollTo(current, anchor: .center)
@@ -385,13 +385,12 @@ struct HoleStrip: View {
     }
 
     private func foreground(_ hole: Int) -> Color {
-        if flagged.contains(hole) { return Theme.Palette.card }
-        return completed.contains(hole) ? Theme.Palette.onFairway : Theme.Palette.ink
+        flagged.contains(hole) ? Theme.Palette.charcoal : Theme.Palette.bone
     }
 
     private func background(_ hole: Int) -> Color {
-        if flagged.contains(hole) { return Theme.Palette.flagRed }
-        if completed.contains(hole) { return Theme.Palette.fairway }
+        if flagged.contains(hole) { return Theme.Palette.blood }
+        if completed.contains(hole) { return Theme.Palette.crimson }
         return Theme.Palette.card
     }
 
@@ -447,7 +446,7 @@ struct PlayerScoreRow: View {
                 .lineLimit(1)
             Text(detail)
                 .font(.caption)
-                .foregroundStyle(Theme.Palette.inkSecondary)
+                .foregroundStyle(Theme.Palette.ash)
                 .monospacedDigit()
                 .lineLimit(1)
                 .accessibilityIdentifier("score.detail.\(name)")
@@ -455,7 +454,7 @@ struct PlayerScoreRow: View {
                 // What the circles and squares around the score mean, in words.
                 Text(ScoreNotation.name(gross: gross, par: par))
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(gross < par ? Theme.Palette.flagRed : Theme.Palette.ink)
+                    .foregroundStyle(gross < par ? Theme.Palette.blood : Theme.Palette.bone)
                     .lineLimit(1)
                     .accessibilityIdentifier("score.notation.\(name)")
             }
@@ -470,7 +469,7 @@ struct PlayerScoreRow: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
                     .frame(minWidth: 32, minHeight: 44)
                     .contentShape(Rectangle())
             }
@@ -488,7 +487,7 @@ struct PlayerScoreRow: View {
             Text(gross.map(String.init) ?? "-")
                 .font(Theme.Typography.score)
                 .monospacedDigit()
-                .foregroundStyle(gross == nil ? Theme.Palette.inkSecondary : Theme.Palette.ink)
+                .foregroundStyle(gross == nil ? Theme.Palette.ash : Theme.Palette.bone)
                 .contentTransition(.numericText())
                 .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: gross)
                 .frame(minWidth: markSize, minHeight: markSize)
@@ -515,10 +514,10 @@ struct PlayerScoreRow: View {
         } label: {
             Image(systemName: systemImage)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(Theme.Palette.fairway)
+                .foregroundStyle(Theme.Palette.blood)
                 .frame(width: stepSize, height: stepSize)
-                .background(Theme.Palette.fairway.opacity(0.14), in: Circle())
-                .overlay { Circle().strokeBorder(Theme.Palette.fairway.opacity(0.35), lineWidth: 1) }
+                .background(Theme.Palette.blood.opacity(0.14), in: Circle())
+                .overlay { Circle().strokeBorder(Theme.Palette.blood.opacity(0.35), lineWidth: 1) }
         }
     }
 }
@@ -551,8 +550,8 @@ struct ChoiceChip: View {
                         .font(.subheadline.bold())
                         .monospacedDigit()
                         .frame(minWidth: 24, minHeight: 24)
-                        .foregroundStyle(Theme.Palette.fairway)
-                        .background(Theme.Palette.onFairway, in: Circle())
+                        .foregroundStyle(Theme.Palette.crimson)
+                        .background(Theme.Palette.bone, in: Circle())
                 } else if isSelected {
                     Image(systemName: "checkmark")
                         .font(.subheadline.bold())
@@ -564,9 +563,9 @@ struct ChoiceChip: View {
             }
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .foregroundStyle(isSelected ? Theme.Palette.onFairway : Theme.Palette.ink)
+            .foregroundStyle(Theme.Palette.bone)
             .background(
-                isSelected ? Theme.Palette.fairway : Theme.Palette.sand,
+                isSelected ? Theme.Palette.crimson : Theme.Palette.charcoal,
                 in: RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .continuous)
             )
             .overlay {
@@ -580,25 +579,23 @@ struct ChoiceChip: View {
 
 struct StatusLineView: View {
     let line: StatusLine
-    /// On a row with the deep green background.
-    var onGreen = false
-
-    private var primary: Color { onGreen ? Theme.Palette.onGreen : Theme.Palette.ink }
+    /// On a row with the maroon background.
+    var onMaroon = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             if line.isWarning {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Theme.Palette.flagRed)
+                    .foregroundStyle(Theme.Palette.blood)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(line.title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(line.isWarning ? Theme.Palette.flagRed : primary)
+                    .foregroundStyle(line.isWarning ? Theme.Palette.blood : Theme.Palette.bone)
                 if let detail = line.detail {
                     Text(detail)
                         .font(.caption)
-                        .foregroundStyle(onGreen ? primary.opacity(0.85) : Theme.Palette.inkSecondary)
+                        .foregroundStyle(onMaroon ? Theme.Palette.bone.opacity(0.85) : Theme.Palette.ash)
                 }
             }
         }

@@ -16,7 +16,7 @@ struct ScorecardView: View {
         }
         .font(.caption)
         .monospacedDigit()
-        .foregroundStyle(Theme.Palette.ink)
+        .foregroundStyle(Theme.Palette.bone)
     }
 
     private func nine(
@@ -35,8 +35,8 @@ struct ScorecardView: View {
                     .font(.caption2)
             }
             .fontWeight(.semibold)
-            .foregroundStyle(Theme.Palette.onGreen)
-            .background(Theme.Palette.deepGreen)
+            .foregroundStyle(Theme.Palette.bone)
+            .background(Theme.Palette.maroon)
             .accessibilityElement(children: .combine)
 
             HStack(spacing: 0) {
@@ -47,7 +47,7 @@ struct ScorecardView: View {
                 cell(showsTotal ? "\(scorecard.par(on: Round.frontNine) + scorecard.par(on: Round.backNine))" : "")
                     .fontWeight(.semibold)
             }
-            .background(Theme.Palette.fairway.opacity(0.14))
+            .background(Theme.Palette.crimson.opacity(0.3))
             .accessibilityElement(children: .combine)
 
             ForEach(scorecard.rows) { row in
@@ -104,6 +104,6 @@ struct ScorecardView: View {
     private func summary(_ text: String) -> some View {
         cell(text)
             .fontWeight(.bold)
-            .background(Theme.Palette.fairway.opacity(0.14))
+            .background(Theme.Palette.crimson.opacity(0.3))
     }
 }

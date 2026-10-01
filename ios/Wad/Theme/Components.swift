@@ -7,8 +7,8 @@ extension View {
     /// `themedRows()` on the content of the list.
     func themedList() -> some View {
         scrollContentBackground(.hidden)
-            .background(Theme.Palette.sand.ignoresSafeArea())
-            .foregroundStyle(Theme.Palette.ink)
+            .background(Theme.Palette.charcoal.ignoresSafeArea())
+            .foregroundStyle(Theme.Palette.bone)
     }
 
     /// For the rows of a themed list.
@@ -17,10 +17,10 @@ extension View {
             .listRowSeparatorTint(Theme.Palette.rule)
     }
 
-    /// For the rows of a themed list that stand out, with `onGreen` text.
+    /// For the rows of a themed list that stand out, with `bone` text on maroon.
     func emphasizedRows() -> some View {
-        listRowBackground(Theme.Palette.deepGreen)
-            .listRowSeparatorTint(Theme.Palette.onGreen.opacity(0.25))
+        listRowBackground(Theme.Palette.maroon)
+            .listRowSeparatorTint(Theme.Palette.bone.opacity(0.25))
     }
 }
 
@@ -38,7 +38,7 @@ struct SectionHeader: View {
         HStack(spacing: 6) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .foregroundStyle(Theme.Palette.fairway)
+                    .foregroundStyle(Theme.Palette.blood)
                     .accessibilityHidden(true)
             }
             Text(title)
@@ -46,7 +46,7 @@ struct SectionHeader: View {
                 .tracking(0.8)
         }
         .font(Theme.Typography.overline)
-        .foregroundStyle(Theme.Palette.inkSecondary)
+        .foregroundStyle(Theme.Palette.ash)
     }
 }
 
@@ -60,7 +60,7 @@ struct SectionFooter: View {
 
     var body: some View {
         Text(text)
-            .foregroundStyle(Theme.Palette.inkSecondary)
+            .foregroundStyle(Theme.Palette.ash)
     }
 }
 
@@ -73,16 +73,16 @@ struct ThemedLabeledContentStyle: LabeledContentStyle {
                 configuration.label
                 Spacer(minLength: Theme.Spacing.s)
                 configuration.content
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
                     .multilineTextAlignment(.trailing)
             }
             VStack(alignment: .leading, spacing: 2) {
                 configuration.label
                 configuration.content
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
             }
         }
-        .foregroundStyle(Theme.Palette.ink)
+        .foregroundStyle(Theme.Palette.bone)
         .accessibilityElement(children: .combine)
     }
 }
@@ -98,9 +98,9 @@ struct Card<Content: View>: View {
         content
             .padding(Theme.Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundStyle(emphasized ? Theme.Palette.onGreen : Theme.Palette.ink)
+            .foregroundStyle(Theme.Palette.bone)
             .background(
-                emphasized ? Theme.Palette.deepGreen : Theme.Palette.card,
+                emphasized ? Theme.Palette.maroon : Theme.Palette.card,
                 in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
             )
             .overlay {
@@ -115,7 +115,7 @@ struct Card<Content: View>: View {
 /// A short fact in a capsule, such as "Par 4" or "All settled".
 struct StatPill: View {
     enum Tone {
-        case neutral, brand, gold, warning, onGreen
+        case neutral, ember, blood, bone
     }
 
     let text: String
@@ -124,11 +124,10 @@ struct StatPill: View {
 
     private var foreground: Color {
         switch tone {
-        case .neutral: Theme.Palette.inkSecondary
-        case .brand: Theme.Palette.fairway
-        case .gold: Theme.Palette.gold
-        case .warning: Theme.Palette.flagRed
-        case .onGreen: Theme.Palette.onGreen
+        case .neutral: Theme.Palette.ash
+        case .ember: Theme.Palette.ember
+        case .blood: Theme.Palette.blood
+        case .bone: Theme.Palette.bone
         }
     }
 
@@ -149,8 +148,8 @@ struct StatPill: View {
     }
 }
 
-/// An amount with what it means in words or with its sign. Gold for money
-/// won, red for money owed; the text always says which it is.
+/// An amount with what it means in words or with its sign. Ember for money
+/// won, blood for money owed; the text always says which it is.
 struct MoneyLabel: View {
     /// "Won $20.00", "Owes $1.00", "+$45.00".
     let text: String
@@ -178,9 +177,9 @@ struct PrimaryButtonStyle: ButtonStyle {
             .font(.headline)
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.vertical, Theme.Spacing.m)
-            .foregroundStyle(isEnabled ? Theme.Palette.onFairway : Theme.Palette.inkSecondary)
+            .foregroundStyle(isEnabled ? Theme.Palette.bone : Theme.Palette.ash)
             .background(
-                isEnabled ? Theme.Palette.fairway : Theme.Palette.rule,
+                isEnabled ? Theme.Palette.crimson : Theme.Palette.rule,
                 in: RoundedRectangle(cornerRadius: Theme.Radius.chip + 2, style: .continuous)
             )
             .opacity(configuration.isPressed ? 0.8 : 1)
@@ -198,14 +197,14 @@ struct SecondaryButtonStyle: ButtonStyle {
             .font(.headline)
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.vertical, Theme.Spacing.m)
-            .foregroundStyle(isEnabled ? Theme.Palette.fairway : Theme.Palette.inkSecondary)
+            .foregroundStyle(isEnabled ? Theme.Palette.blood : Theme.Palette.ash)
             .background(
                 Theme.Palette.card,
                 in: RoundedRectangle(cornerRadius: Theme.Radius.chip + 2, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.Radius.chip + 2, style: .continuous)
-                    .strokeBorder(isEnabled ? Theme.Palette.fairway.opacity(0.5) : Theme.Palette.rule, lineWidth: 1)
+                    .strokeBorder(isEnabled ? Theme.Palette.blood.opacity(0.5) : Theme.Palette.rule, lineWidth: 1)
             }
             .opacity(configuration.isPressed ? 0.7 : 1)
     }

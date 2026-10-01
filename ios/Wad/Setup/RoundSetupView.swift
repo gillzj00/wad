@@ -83,7 +83,7 @@ struct RoundSetupView: View {
                 Section {
                     ForEach(Array(issues.enumerated()), id: \.element) { offset, issue in
                         Label(issue.message, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(Theme.Palette.flagRed)
+                            .foregroundStyle(Theme.Palette.blood)
                             .accessibilityElement(children: .ignore)
                             .accessibilityLabel(issue.message)
                             .accessibilityIdentifier("setup.issue.\(offset + 1)")
@@ -174,17 +174,17 @@ struct SetupProgress: View {
             ForEach(SetupStep.allCases, id: \.self) { other in
                 VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                     Capsule()
-                        .fill(other.rawValue <= step.rawValue ? Theme.Palette.fairway : Theme.Palette.rule)
+                        .fill(other.rawValue <= step.rawValue ? Theme.Palette.crimson : Theme.Palette.rule)
                         .frame(height: 4)
                     Text(other.title)
                         .font(.caption.weight(other == step ? .bold : .regular))
-                        .foregroundStyle(other == step ? Theme.Palette.ink : Theme.Palette.inkSecondary)
+                        .foregroundStyle(other == step ? Theme.Palette.bone : Theme.Palette.ash)
                 }
             }
         }
         .padding(.horizontal)
         .padding(.vertical, Theme.Spacing.s)
-        .background(Theme.Palette.sand)
+        .background(Theme.Palette.charcoal)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Step \(step.rawValue + 1) of \(SetupStep.allCases.count): \(step.title)")
     }
@@ -249,14 +249,14 @@ struct CourseStepView: View {
                 Text("Stroke index").frame(width: 100, alignment: .trailing)
             }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.Palette.inkSecondary)
+            .foregroundStyle(Theme.Palette.ash)
 
             ForEach($draft.holes) { $hole in
                 HStack {
                     Text("\(hole.number)")
                         .font(.system(.body, design: .rounded, weight: .semibold))
                         .monospacedDigit()
-                        .foregroundStyle(Theme.Palette.fairway)
+                        .foregroundStyle(Theme.Palette.blood)
                         .frame(width: 40, alignment: .leading)
                     Picker("Par", selection: $hole.par) {
                         ForEach(Array(RoundDraft.parRange), id: \.self) { Text("\($0)").tag($0) }
@@ -510,7 +510,7 @@ struct AmountRow: View {
     var body: some View {
         LabeledContent(title) {
             HStack(spacing: 2) {
-                Text("$").foregroundStyle(Theme.Palette.inkSecondary)
+                Text("$").foregroundStyle(Theme.Palette.ash)
                 TextField("0.00", text: $text)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)

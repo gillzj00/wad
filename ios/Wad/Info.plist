@@ -23,7 +23,7 @@
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>Sand</string>
+		<string>Charcoal</string>
 	</dict>
 	<key>WAD_API_BASE_URL</key>
 	<string>$(WAD_API_BASE_URL)</string>

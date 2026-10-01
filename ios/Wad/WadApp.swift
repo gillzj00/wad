@@ -41,7 +41,7 @@ struct WadApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .tint(Theme.Palette.fairway)
+                .tint(Theme.Palette.blood)
                 #if DEBUG
                 .preferredColorScheme(Appearance.debugColorScheme)
                 .environment(\.courseLookupService, Self.courseLookupService)
