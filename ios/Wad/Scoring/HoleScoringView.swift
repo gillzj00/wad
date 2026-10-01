@@ -6,6 +6,8 @@ import SwiftUI
 struct HoleScoringView: View {
     let round: Round
 
+    @Environment(EventCenter.self) private var events
+
     @State private var holeNumber: Int
     @State private var failure: String?
 
@@ -66,12 +68,17 @@ struct HoleScoringView: View {
         }
     }
 
+    /// Saves a change and plays what it newly triggered: the games are scored
+    /// before and after, and only an event that was not there before plays.
     private func perform(_ change: () throws -> Void) {
+        let before = events.snapshot(of: round)
         do {
             try change()
         } catch {
             failure = String(describing: error)
+            return
         }
+        events.record(round, before: before)
     }
 
     // MARK: Sections
@@ -621,5 +628,6 @@ struct TrailingIconLabelStyle: LabelStyle {
     container.mainContext.insert(round)
     return NavigationStack { HoleScoringView(round: round) }
         .modelContainer(container)
+        .environment(EventCenter())
 }
 #endif

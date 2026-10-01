@@ -55,7 +55,7 @@ final class EventSettings {
     /// `-debugAnimations off` plays nothing, so the UI tests score without
     /// waiting for the shows.
     static var isDisabledByLaunchArgument: Bool {
-        UserDefaults.standard.string(forKey: "debugAnimations") == "off"
+        UserDefaults.standard.string(forKey: LaunchArgument.debugAnimations) == "off"
     }
     #endif
 }

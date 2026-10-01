@@ -14,7 +14,7 @@ final class RoundDeleteUITests: XCTestCase {
     /// 3 players, 54 scores) and the sample round (18 holes, 4 players).
     func testDeletingARoundRemovesItFromTheListAndTheStore() throws {
         let store = ["-debugStoreFile", "ui-test-\(UUID().uuidString)", "-debugStoreCounts"]
-        app.launchArguments = ["-debugSeedRound", "finalPush", "-debugCourseLookup", "off"] + store
+        app.launchArguments = ["-debugSeedRound", "finalPush", "-debugCourseLookup", "off", "-debugAnimations", "off"] + store
         app.launch()
 
         XCTAssertTrue(element("detail.scoreRound").waitForExistence(timeout: 10))
@@ -47,7 +47,7 @@ final class RoundDeleteUITests: XCTestCase {
 
         // A new launch reads the store from disk: the deleted round stays deleted.
         app.terminate()
-        app.launchArguments = store
+        app.launchArguments = store + ["-debugAnimations", "off"]
         app.launch()
         XCTAssertTrue(sample.waitForExistence(timeout: 10))
         XCTAssertFalse(seeded.exists)
