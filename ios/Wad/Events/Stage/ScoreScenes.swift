@@ -669,7 +669,7 @@ final class BirdieScene: EventSKScene {
         if still {
             fist.texture = frames[2]
             burstNode.zRotation = 0.3
-            bird.position = tip + CGPoint(x: 0, y: w * 0.09)
+            bird.position = tip + CGPoint(x: 0, y: w * 0.04)
             return
         }
 
@@ -697,7 +697,7 @@ final class BirdieScene: EventSKScene {
         after(0.9) { [self] in
             let flight = SKAction.customAction(withDuration: 0.7) { [self] node, elapsed in
                 let f = CGFloat(Anim.easeOut(Double(elapsed / 0.7)))
-                node.position = CGPoint(x: Anim.lerp(-0.3, tip.x / w, f) * w, y: Anim.lerp(0.9, tip.y / h, f) * h + sin(f * .pi) * h * 0.08 + w * 0.09)
+                node.position = CGPoint(x: Anim.lerp(-0.3, tip.x / w, f) * w, y: Anim.lerp(0.9, tip.y / h, f) * h + sin(f * .pi) * h * 0.08 + w * 0.04)
             }
             bird.run(.sequence([flight, .repeatForever(.sequence([.moveBy(x: 0, y: 6, duration: 0.18), .moveBy(x: 0, y: -6, duration: 0.18), .wait(forDuration: 0.3)]))]))
             bird.run(.sequence([.wait(forDuration: 0.7), .run { [self] in burst(Emitters.burst(count: 12, speed: 120, color: Metal.bloodBright, scale: 0.08, lifetime: 0.6), at: tip, z: 22) }]))
