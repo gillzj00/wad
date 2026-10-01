@@ -4,7 +4,8 @@ import Testing
 @testable import Wad
 
 /// The models as they were before Venmo handles and paid markers were added
-/// (commit 601ef1d): no `RoundPlayer.venmoHandle`, no `PaidMarker`. The entity
+/// (commit 601ef1d): no `RoundPlayer.venmoHandle`, no `PaidMarker`, and no
+/// `Round.startsEveryHoleAtPar`, which came later. The entity
 /// names are the class names, so a store written with these is a store of the
 /// previous version of the app.
 enum PreviousSchema {
@@ -171,6 +172,7 @@ struct StoreMigrationTests {
         // What is new starts empty.
         #expect(round.orderedPlayers.map(\.venmoHandle) == [nil, nil, nil])
         #expect(round.paidMarkers.isEmpty)
+        #expect(round.startsEveryHoleAtPar == false)
 
         // The round settles as before and takes what is new.
         let bridge = try EngineBridge()

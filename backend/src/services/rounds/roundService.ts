@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { scoreGreenies } from "../../engines/greenies.js";
 import { allocateTicks, courseHandicap } from "../../engines/handicap.js";
 import type { Round, RoundPlayer, RoundState } from "../../shared/rounds.js";
-import type { HoleInfo, Tee, UserId } from "../../shared/types.js";
+import type { HoleInfo, Tee, UserId, WolfEvent } from "../../shared/types.js";
 import { RoundError } from "./errors.js";
-import { computeState } from "./gameState.js";
+import { computeState, wolfState } from "./gameState.js";
 import { generateJoinCode, normalizeJoinCode } from "./joinCode.js";
-import { effectiveCourseHandicap, type PlayerRecord, type RoundRecord, type RoundStore, type TeeSnapshot } from "./roundStore.js";
+import { effectiveCourseHandicap, effectiveTeeOrder, type PlayerRecord, type RoundRecord, type RoundStore, type TeeSnapshot } from "./roundStore.js";
 import {
   isHandicapIndex,
   parseCreateRound,
@@ -16,6 +16,7 @@ import {
   parseHoleParam,
   parseJoinCode,
   parseScore,
+  parseTeeOrder,
 } from "./validation.js";
 
 export const MAX_PLAYERS = 4;
@@ -135,13 +136,14 @@ export class RoundService {
     return toRound(await this.reload(roundId));
   }
 
-  /** Sets the hole's wad makers, its greenie winner or both. Anyone in the round may. */
+  /** Sets any of the hole's wad makers, its greenie winner and its Wolf record. Anyone in the round may. */
   async putHoleEvents(userId: UserId, roundId: string, holeParam: string | undefined, body: unknown): Promise<Round> {
     const hole = parseHoleParam(holeParam);
     const input = parseHoleEvents(body);
     const record = await this.roundForMember(userId, roundId);
     for (const maker of input.wadMakers ?? []) playerIn(record, maker);
     if (typeof input.greenieWinner === "string") checkGreenieWinner(record, hole, input.greenieWinner);
+    if (input.wolf) checkWolf(record, hole, input.wolf);
     await this.store.setHoleEvents(roundId, hole, input, { by: userId, at: this.now().toISOString() });
     return toRound(await this.reload(roundId));
   }
@@ -156,6 +158,24 @@ export class RoundService {
     const target = playerIn(record, playerId ?? "");
     const result = await this.store.setCourseHandicapOverride(roundId, target.userId, override, { by: userId, at: this.now().toISOString() });
     if (result !== "updated") throw unknownPlayer(target.userId);
+    return toRound(await this.reload(roundId));
+  }
+
+  /**
+   * Sets the order the players tee off in, which decides the Wolf on holes 1
+   * to 16. Anyone in the round may, until the round has a score or a Wolf record.
+   */
+  async putTeeOrder(userId: UserId, roundId: string, body: unknown): Promise<Round> {
+    const teeOrder = parseTeeOrder(body);
+    const record = await this.roundForMember(userId, roundId);
+    for (const id of teeOrder) playerIn(record, id);
+    if (teeOrder.length !== record.players.length || new Set(teeOrder).size !== teeOrder.length) {
+      throw new RoundError("validation", "invalid_tee_order", "teeOrder must list every player in the round exactly once");
+    }
+    if (record.scores.length > 0 || record.holes.some((h) => h.wolf !== undefined)) {
+      throw new RoundError("conflict", "tee_order_locked", "the tee order can only be changed before the round has a score or a wolf record");
+    }
+    await this.store.setTeeOrder(roundId, teeOrder, { by: userId, at: this.now().toISOString() });
     return toRound(await this.reload(roundId));
   }
 
@@ -235,6 +255,23 @@ function checkGreenieWinner(record: RoundRecord, hole: number, winner: UserId): 
   }
 }
 
+/**
+ * Checks the Wolf record against the round as it is now, by asking the engine.
+ * A record the engine cannot judge yet (hole 17 or 18 before the standings are
+ * known) is accepted; the engine decides on every read whether the hole scores.
+ */
+function checkWolf(record: RoundRecord, hole: number, wolf: WolfEvent): void {
+  if (!record.meta.games.wolf) throw new RoundError("validation", "wolf_not_enabled", "wolf is not one of this round's games");
+  for (const id of [wolf.partnerUserId, wolf.wolfUserId]) if (typeof id === "string") playerIn(record, id);
+  const others = record.holes.filter((h) => h.hole !== hole);
+  const result = wolfState(record, [...others, { hole, wadMakers: [], greenieWinner: null, wolf }]);
+  if (!result) {
+    throw new RoundError("conflict", "wolf_unavailable", "wolf needs exactly four players, each with a course handicap");
+  }
+  const reason = result.holes.find((h) => h.hole === hole)?.invalidReason;
+  if (reason) throw new RoundError("validation", `wolf_${reason}`, `the wolf record for hole ${hole} is not valid: ${reason}`);
+}
+
 function roundFull(): RoundError {
   return new RoundError("conflict", "round_full", `a round has at most ${MAX_PLAYERS} players`);
 }
@@ -285,6 +322,7 @@ function toRound(record: RoundRecord): Round {
     createdAt: meta.createdAt,
     games: meta.games,
     players: record.players.map((p) => ({ ...p, courseHandicap: effectiveCourseHandicap(p), ticksByHole: ticks?.[p.userId] ?? null })),
+    teeOrder: effectiveTeeOrder(record),
     scores: record.scores,
     holes: record.holes,
     state: computeState(record),

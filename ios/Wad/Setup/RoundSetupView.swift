@@ -440,6 +440,18 @@ struct GamesStepView: View {
         } footer: {
             SectionFooter("Par 3s only. Every amount is collected from each other player.")
         }
+
+        Section {
+            Toggle("Start every hole at par", isOn: $draft.startsEveryHoleAtPar)
+                .accessibilityIdentifier("setup.startsAtPar")
+        } header: {
+            SectionHeader("Scores", systemImage: "pencil.and.list.clipboard")
+        } footer: {
+            SectionFooter(
+                "Every hole starts with par for each player. Change the scores as you play; "
+                    + "the results count the pars on holes you have not played yet."
+            )
+        }
     }
 }
 

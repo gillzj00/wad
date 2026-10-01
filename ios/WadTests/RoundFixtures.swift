@@ -6,9 +6,11 @@ enum RoundFixtures {
     static let pars = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
     static let strokeIndexes = [7, 11, 17, 3, 1, 15, 9, 5, 13, 8, 18, 2, 10, 6, 12, 16, 4, 14]
 
-    /// A valid draft on a tee without rating and slope: handicaps are entered directly.
+    /// A valid draft on a tee without rating and slope: handicaps are entered
+    /// directly. Its holes start unscored, like every draft built on it.
     static func unratedDraft() -> RoundDraft {
         var draft = RoundDraft()
+        draft.startsEveryHoleAtPar = false
         draft.courseName = "Pebble Beach"
         draft.holes = (0..<18).map {
             RoundDraft.Hole(number: $0 + 1, par: pars[$0], strokeIndexText: String(strokeIndexes[$0]))

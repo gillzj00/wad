@@ -32,12 +32,35 @@ export interface HoleEvents {
   wadMakers: UserId[];
   /** Par 3s only; must have scored par or better. */
   greenieWinner: UserId | null;
+  /** Wolf only; absent when nothing is recorded for the hole. */
+  wolf?: WolfEvent;
+}
+
+export type WolfChoice = "partner" | "lone";
+
+/**
+ * What the group recorded for Wolf on a hole. The record can be wrong (a
+ * partner together with "lone", say); the wolf engine reports that, it is not
+ * prevented by the type.
+ */
+export interface WolfEvent {
+  /** The Wolf takes one partner, or plays alone. Null or absent: not chosen yet. */
+  choice?: WolfChoice | null;
+  /** The partner, with choice "partner". */
+  partnerUserId?: UserId | null;
+  /**
+   * Who the Wolf is. Only needed on holes 17 and 18 when players are tied for
+   * last place; elsewhere the engine derives the Wolf and checks this against it.
+   */
+  wolfUserId?: UserId | null;
 }
 
 export interface GamesConfig {
   skins?: { baseCents: Cents };
   wad?: { startCents: Cents; stepCents: Cents };
   greenies?: { amountCents: Cents };
+  /** Needs exactly four players. */
+  wolf?: { pointCents: Cents };
 }
 
 /** Net money change per player; positive = owed to them. Sums to zero. */

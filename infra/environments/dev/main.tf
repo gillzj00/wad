@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }
 
@@ -19,8 +23,11 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
-  name = "${var.project}-${var.env}"
+  name       = "${var.project}-${var.env}"
+  account_id = data.aws_caller_identity.current.account_id
 }
 
 # ---------------------------------------------------------------------------

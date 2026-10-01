@@ -25,8 +25,17 @@ data "aws_caller_identity" "current" {}
 locals {
   state_bucket = "${var.project}-tfstate-${data.aws_caller_identity.current.account_id}"
   # The repo uses GitHub's immutable OIDC subject claims, which embed the
-  # owner and repo numeric IDs: repo:<owner>@<owner_id>/<repo>@<repo_id>:<ref>
-  repo_sub = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:*"
+  # owner and repo numeric IDs: repo:<owner>@<owner_id>/<repo>@<repo_id>:<context>
+  repo_sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}"
+  # Only these workflow contexts may assume the CI role (exact match, no
+  # wildcards): the read-only plan on pull requests, the apply job (which runs
+  # in the `dev` environment, so its subject is the environment, not the ref),
+  # and any other job on main. Fork pull requests never get an OIDC token.
+  ci_subjects = [
+    "${local.repo_sub_prefix}:pull_request",
+    "${local.repo_sub_prefix}:environment:${var.ci_environment}",
+    "${local.repo_sub_prefix}:ref:refs/heads/main",
+  ]
 }
 
 # ---------------------------------------------------------------------------
@@ -87,11 +96,9 @@ data "aws_iam_policy_document" "ci_assume" {
       values   = ["sts.amazonaws.com"]
     }
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      # Tighten later to specific refs/environments, e.g.
-      # repo:owner/repo:ref:refs/heads/main and repo:owner/repo:pull_request
-      values = [local.repo_sub]
+      values   = local.ci_subjects
     }
   }
 }

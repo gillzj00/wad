@@ -5,7 +5,15 @@ import type { Cents, Deltas, UserId } from "./types.js";
 /** Final only when every hole has every player's score and there are no issues. */
 export type SettlementStatus = "provisional" | "final";
 
-export type SettlementIssueCode = "skins_unavailable" | "greenie_pending" | "greenie_invalid" | "wad_make_ignored";
+export type SettlementIssueCode =
+  | "skins_unavailable"
+  | "greenie_pending"
+  | "greenie_invalid"
+  | "wad_make_ignored"
+  | "wolf_unavailable"
+  | "wolf_pending"
+  | "wolf_needs_wolf"
+  | "wolf_invalid";
 
 /** Something in the round that keeps the settlement from being final. */
 export interface SettlementIssue {
@@ -51,8 +59,8 @@ export interface Settlement {
   /** Holes where at least one player has no score. */
   incompleteHoles: number[];
   issues: SettlementIssue[];
-  /** Each enabled game's deltas as the engine returned them; skins is null while it is unavailable. */
-  games: { skins?: Deltas | null; wad?: Deltas; greenies?: Deltas };
+  /** Each enabled game's deltas as the engine returned them; skins and wolf are null while unavailable. */
+  games: { skins?: Deltas | null; wad?: Deltas; greenies?: Deltas; wolf?: Deltas | null };
   positions: Deltas;
   transfers: SettlementTransfer[];
   /** Null when skins is not enabled or is unavailable. */
