@@ -7,25 +7,23 @@ extension Art {
     static var golfBall: SKTexture { Textures.make("golf-ball", size: CGSize(width: 200, height: 200)) { c, size in
         let center = CGPoint(x: 100, y: 100)
         let ball = Draw.circle(at: center, r: 92)
-        Draw.shadowed(c, blur: 10, offset: CGSize(width: 0, height: -6), color: UIColor.black.withAlphaComponent(0.7)) {
-            Draw.sphere(c, ball, [.white, UIColor(white: 0.92, alpha: 1), UIColor(white: 0.55, alpha: 1), UIColor(white: 0.3, alpha: 1)], light: CGPoint(x: 70, y: 135), radius: 125)
-        }
+        Draw.cel(c, ball, base: .white, shadow: UIColor(white: 0.74, alpha: 1), core: UIColor(white: 0.5, alpha: 1), rim: nil, width: 4, depth: 34)
         c.saveGState()
         c.addPath(ball)
         c.clip()
-        for row in 0..<9 {
-            for col in 0..<9 {
-                let x = 20 + CGFloat(col) * 20 + CGFloat(row % 2) * 10
-                let y = 20 + CGFloat(row) * 20
+        // Dimples on a hex grid, shrinking and flattening toward the edge as the sphere turns away.
+        for row in -5...5 {
+            for col in -5...5 {
+                let x = center.x + CGFloat(col) * 22 + CGFloat(abs(row) % 2) * 11
+                let y = center.y + CGFloat(row) * 19
                 let d = hypot(x - center.x, y - center.y)
-                guard d < 80 else { continue }
-                // Dimples shrink toward the edge as the sphere turns away.
-                let r = 6 * (1 - d / 95)
-                let shade = 0.45 + 0.4 * (1 - (x - 70 + y - 135) / 300)
-                Draw.fill(c, Draw.circle(at: CGPoint(x: x, y: y), r: r), UIColor(white: shade, alpha: 0.35))
-                Draw.fill(c, Draw.circle(at: CGPoint(x: x - 1.5, y: y + 1.5), r: r * 0.5), UIColor.white.withAlphaComponent(0.5))
+                guard d < 84 else { continue }
+                let f = 1 - d / 95
+                let lit = (x - center.x) * -0.6 + (y - center.y) * 0.8 > 25
+                Draw.fill(c, Draw.ellipse(at: CGPoint(x: x, y: y), rx: 5.5 * (0.5 + f * 0.5), ry: 5.5 * f), lit ? UIColor(white: 0.8, alpha: 0.7) : UIColor(white: 0.45, alpha: 0.55))
             }
         }
+        Draw.fill(c, Draw.ellipse(at: CGPoint(x: 66, y: 134), rx: 16, ry: 10), UIColor.white.withAlphaComponent(0.9))
         c.restoreGState()
     } }
 
@@ -34,17 +32,16 @@ extension Art {
 
     static var flag: SKTexture { Textures.make("flag", size: flagSize) { c, size in
         let x: CGFloat = 30
-        let pole = CGPath(roundedRect: CGRect(x: x - 5, y: 0, width: 10, height: 420), cornerWidth: 5, cornerHeight: 5, transform: nil)
-        Draw.shadowed(c, blur: 6, offset: CGSize(width: 3, height: -3)) {
-            Draw.shade(c, pole, [Metal.bone, Metal.boneShade, Metal.boneDark], from: CGPoint(x: x - 5, y: 0), to: CGPoint(x: x + 5, y: 0))
-        }
-        Draw.fill(c, Draw.circle(at: CGPoint(x: x, y: 422), r: 9), Metal.boneShade)
+        let pole = CGPath(roundedRect: CGRect(x: x - 6, y: 0, width: 12, height: 420), cornerWidth: 6, cornerHeight: 6, transform: nil)
+        Draw.cel(c, pole, base: Metal.bone, shadow: Metal.boneShade, core: Metal.boneDark.withAlphaComponent(0.5), rim: nil, width: 3, depth: 6)
+        Draw.cel(c, Draw.circle(at: CGPoint(x: x, y: 422), r: 10), base: Metal.bone, shadow: Metal.boneShade, width: 3, depth: 6)
         let cloth = Draw.smooth([CGPoint(x: x + 5, y: 415), CGPoint(x: 200, y: 370), CGPoint(x: 150, y: 330), CGPoint(x: 205, y: 290), CGPoint(x: x + 5, y: 270)], tension: 0.3)
-        Draw.shadowed(c, blur: 8, offset: CGSize(width: 4, height: -4)) {
-            Draw.shade(c, cloth, [Metal.bloodBright, Metal.blood, Metal.bloodDark], from: CGPoint(x: x, y: 415), to: CGPoint(x: 200, y: 290))
-        }
+        Draw.cel(c, cloth, base: Metal.blood, shadow: Metal.bloodDark, rim: Metal.bloodBright, width: 3.5, depth: 24, light: CGVector(dx: -0.9, dy: 0.4))
         // A fold.
-        Draw.fill(c, Draw.polygon([CGPoint(x: 90, y: 395), CGPoint(x: 150, y: 330), CGPoint(x: 90, y: 285)]), Metal.bloodDark.withAlphaComponent(0.5))
+        let fold = CGMutablePath()
+        fold.move(to: CGPoint(x: 95, y: 400))
+        fold.addQuadCurve(to: CGPoint(x: 95, y: 285), control: CGPoint(x: 120, y: 340))
+        Draw.stroke(c, fold, Metal.bloodDark.withAlphaComponent(0.7), width: 3)
         // A skull on the flag, small.
         c.saveGState()
         c.translateBy(x: 55, y: 310)
@@ -53,17 +50,22 @@ extension Art {
         c.restoreGState()
     } }
 
-    private static func skullStamp(_ c: CGContext) {
-        let cranium = Draw.ellipse(at: CGPoint(x: 150, y: 220), rx: 115, ry: 110)
-        Draw.fill(c, cranium, Metal.bone)
-        Draw.fill(c, CGPath(roundedRect: CGRect(x: 80, y: 60, width: 140, height: 90), cornerWidth: 25, cornerHeight: 25, transform: nil), Metal.bone)
+    /// A small flat skull, 300 points across, for stamps on cloth and paper.
+    private static func skullStamp(_ c: CGContext, ink: UIColor = Metal.ink) {
+        let shape = CGMutablePath()
+        shape.addPath(Draw.ellipse(at: CGPoint(x: 150, y: 220), rx: 115, ry: 110))
+        shape.addPath(CGPath(roundedRect: CGRect(x: 80, y: 60, width: 140, height: 100), cornerWidth: 25, cornerHeight: 25, transform: nil))
+        let skull = shape.normalized(using: .winding)
+        Draw.fill(c, skull, Metal.bone)
+        Draw.stroke(c, skull, ink, width: 10)
         for s in [CGFloat(-1), 1] {
-            Draw.fill(c, Draw.ellipse(at: CGPoint(x: 150 + s * 50, y: 210), rx: 36, ry: 32), Metal.bloodDark)
+            Draw.fill(c, Draw.ellipse(at: CGPoint(x: 150 + s * 50, y: 210), rx: 36, ry: 32), ink)
         }
-        Draw.fill(c, Draw.polygon([CGPoint(x: 135, y: 160), CGPoint(x: 165, y: 160), CGPoint(x: 150, y: 125)]), Metal.bloodDark)
+        Draw.fill(c, Draw.polygon([CGPoint(x: 135, y: 160), CGPoint(x: 165, y: 160), CGPoint(x: 150, y: 125)]), ink)
         for i in 0..<5 {
-            Draw.fill(c, CGRect(x: 100 + CGFloat(i) * 22, y: 60, width: 12, height: 35), Metal.bloodDark)
+            Draw.fill(c, CGRect(x: 100 + CGFloat(i) * 22, y: 60, width: 12, height: 35), ink)
         }
+        Draw.fill(c, CGRect(x: 100, y: 92, width: 100, height: 6), ink)
     }
 
     static func fill(_ c: CGContext, _ rect: CGRect, _ color: UIColor) {
@@ -87,8 +89,14 @@ extension Art {
                 return CGPoint(x: 45 + cos(a) * r, y: 35 + sin(a) * r * 0.8)
             }
             let chunk = Draw.polygon(points)
-            Draw.shade(c, chunk, [UIColor(red: 0.25, green: 0.5, blue: 0.15, alpha: 1), UIColor(red: 0.3, green: 0.18, blue: 0.08, alpha: 1), UIColor(red: 0.15, green: 0.08, blue: 0.03, alpha: 1)], from: CGPoint(x: 0, y: 60), to: CGPoint(x: 0, y: 10))
-            Draw.fur(c, along: Array(points.prefix(4)), length: 10, color: UIColor(red: 0.35, green: 0.65, blue: 0.2, alpha: 1), seed: 96 + i)
+            Draw.cel(c, chunk, base: UIColor(red: 0.32, green: 0.2, blue: 0.09, alpha: 1), shadow: UIColor(red: 0.16, green: 0.09, blue: 0.03, alpha: 1), width: 2.5, depth: 14)
+            c.saveGState()
+            c.addPath(chunk)
+            c.clip()
+            Draw.fill(c, Draw.polygon(points.prefix(4) + [CGPoint(x: 45, y: 30)]), UIColor(red: 0.25, green: 0.5, blue: 0.15, alpha: 1))
+            c.restoreGState()
+            Draw.fur(c, along: Array(points.prefix(4)), length: 10, color: UIColor(red: 0.3, green: 0.58, blue: 0.18, alpha: 1), seed: 96 + i)
+            Draw.stroke(c, chunk, Metal.ink, width: 2.5)
         }
     } }
 
@@ -100,19 +108,20 @@ extension Art {
 
     static var bottle: SKTexture { Textures.make("bottle", size: bottleSize) { c, size in
         let cx = size.width / 2
+        let glass = UIColor(red: 0.1, green: 0.34, blue: 0.14, alpha: 1)
+        let glassDark = UIColor(red: 0.04, green: 0.16, blue: 0.06, alpha: 1)
         let body = Draw.smooth([CGPoint(x: cx - 70, y: 20), CGPoint(x: cx + 70, y: 20), CGPoint(x: cx + 72, y: 300), CGPoint(x: cx + 40, y: 380), CGPoint(x: cx + 22, y: 420), CGPoint(x: cx + 22, y: 540), CGPoint(x: cx - 22, y: 540), CGPoint(x: cx - 22, y: 420), CGPoint(x: cx - 40, y: 380), CGPoint(x: cx - 72, y: 300)], tension: 0.35)
-        Draw.shadowed(c, blur: 16, offset: CGSize(width: 0, height: -8), color: UIColor.black.withAlphaComponent(0.8)) {
-            Draw.shade(c, body, [UIColor(red: 0.03, green: 0.14, blue: 0.06, alpha: 1), UIColor(red: 0.12, green: 0.38, blue: 0.16, alpha: 1), UIColor(red: 0.05, green: 0.2, blue: 0.08, alpha: 1), UIColor(red: 0.01, green: 0.06, blue: 0.02, alpha: 1)], from: CGPoint(x: cx - 72, y: 0), to: CGPoint(x: cx + 72, y: 0))
-        }
-        // A highlight stripe down the left and the base.
-        Draw.fill(c, CGPath(roundedRect: CGRect(x: cx - 50, y: 60, width: 14, height: 300), cornerWidth: 7, cornerHeight: 7, transform: nil), UIColor.white.withAlphaComponent(0.18))
+        Draw.cel(c, body, base: glass, shadow: glassDark, core: UIColor(red: 0.01, green: 0.07, blue: 0.02, alpha: 1), rim: UIColor(red: 0.3, green: 0.6, blue: 0.35, alpha: 1), width: 3.5, depth: 36, light: CGVector(dx: -0.95, dy: 0.3))
+        // A highlight stripe down the left and the dark base.
+        Draw.fill(c, CGPath(roundedRect: CGRect(x: cx - 52, y: 60, width: 12, height: 300), cornerWidth: 6, cornerHeight: 6, transform: nil), UIColor.white.withAlphaComponent(0.3))
+        Draw.fill(c, CGPath(roundedRect: CGRect(x: cx - 12, y: 430, width: 6, height: 100), cornerWidth: 3, cornerHeight: 3, transform: nil), UIColor.white.withAlphaComponent(0.3))
         Draw.fill(c, Draw.ellipse(at: CGPoint(x: cx, y: 24), rx: 66, ry: 12), UIColor.black.withAlphaComponent(0.5))
         // Foil and label.
-        let foil = Draw.polygon([CGPoint(x: cx - 24, y: 470), CGPoint(x: cx + 24, y: 470), CGPoint(x: cx + 24, y: 545), CGPoint(x: cx - 24, y: 545)])
-        Draw.shade(c, foil, [UIColor(red: 0.6, green: 0.45, blue: 0.05, alpha: 1), Metal.emberBright, UIColor(red: 0.75, green: 0.55, blue: 0.1, alpha: 1)], from: CGPoint(x: cx - 24, y: 0), to: CGPoint(x: cx + 24, y: 0))
+        let foil = CGPath(rect: CGRect(x: cx - 24, y: 470, width: 48, height: 75), transform: nil)
+        Draw.cel(c, foil, base: Metal.emberBright, shadow: UIColor(red: 0.7, green: 0.5, blue: 0.08, alpha: 1), rim: nil, width: 3, depth: 14, light: CGVector(dx: -0.95, dy: 0.3))
         Draw.fill(c, CGRect(x: cx - 24, y: 478, width: 48, height: 6), Metal.bloodDark)
         let label = CGPath(roundedRect: CGRect(x: cx - 52, y: 120, width: 104, height: 150), cornerWidth: 6, cornerHeight: 6, transform: nil)
-        Draw.shade(c, label, [Metal.bone, Metal.boneShade], from: CGPoint(x: cx - 52, y: 0), to: CGPoint(x: cx + 52, y: 0))
+        Draw.cel(c, label, base: Metal.bone, shadow: Metal.boneShade, rim: nil, width: 3, depth: 24, light: CGVector(dx: -0.95, dy: 0.3))
         Draw.fill(c, CGRect(x: cx - 52, y: 230, width: 104, height: 14), Metal.blood)
         Draw.fill(c, CGRect(x: cx - 52, y: 140, width: 104, height: 8), Metal.blood)
         c.saveGState()
@@ -124,7 +133,7 @@ extension Art {
 
     static var cork: SKTexture { Textures.make("cork", size: CGSize(width: 60, height: 80)) { c, size in
         let shape = Draw.smooth([CGPoint(x: 14, y: 6), CGPoint(x: 46, y: 6), CGPoint(x: 50, y: 40), CGPoint(x: 56, y: 70), CGPoint(x: 30, y: 78), CGPoint(x: 4, y: 70), CGPoint(x: 10, y: 40)], tension: 0.4)
-        Draw.shade(c, shape, [UIColor(red: 0.85, green: 0.7, blue: 0.45, alpha: 1), UIColor(red: 0.6, green: 0.42, blue: 0.22, alpha: 1)], from: CGPoint(x: 10, y: 0), to: CGPoint(x: 50, y: 0))
+        Draw.cel(c, shape, base: UIColor(red: 0.85, green: 0.7, blue: 0.45, alpha: 1), shadow: UIColor(red: 0.6, green: 0.42, blue: 0.22, alpha: 1), width: 3, depth: 12)
         for y in [CGFloat(20), 36] {
             Draw.fill(c, CGRect(x: 12, y: y, width: 36, height: 3), UIColor(red: 0.5, green: 0.32, blue: 0.15, alpha: 0.7))
         }
@@ -135,28 +144,50 @@ extension Art {
     static let billSize = CGSize(width: 160, height: 72)
 
     static var bill: SKTexture { Textures.make("bill", size: billSize) { c, size in
+        let green = UIColor(red: 0.15, green: 0.32, blue: 0.16, alpha: 1)
         let outer = CGPath(roundedRect: CGRect(x: 2, y: 2, width: 156, height: 68), cornerWidth: 4, cornerHeight: 4, transform: nil)
-        Draw.shade(c, outer, [UIColor(red: 0.55, green: 0.75, blue: 0.5, alpha: 1), UIColor(red: 0.35, green: 0.58, blue: 0.33, alpha: 1)], from: CGPoint(x: 0, y: 70), to: CGPoint(x: 160, y: 0))
-        Draw.stroke(c, CGPath(rect: CGRect(x: 9, y: 9, width: 142, height: 54), transform: nil), UIColor(red: 0.15, green: 0.3, blue: 0.15, alpha: 1), width: 2.5)
-        Draw.fill(c, Draw.ellipse(at: CGPoint(x: 80, y: 36), rx: 24, ry: 20), UIColor(red: 0.8, green: 0.88, blue: 0.75, alpha: 1))
+        Draw.cel(c, outer, base: UIColor(red: 0.55, green: 0.74, blue: 0.5, alpha: 1), shadow: UIColor(red: 0.4, green: 0.6, blue: 0.37, alpha: 1), rim: nil, ink: green, width: 2.5, depth: 10)
+        Draw.stroke(c, CGPath(rect: CGRect(x: 9, y: 9, width: 142, height: 54), transform: nil), green, width: 2)
+        // The portrait in its oval frame.
+        let frame = Draw.ellipse(at: CGPoint(x: 80, y: 36), rx: 25, ry: 21)
+        Draw.fill(c, frame, UIColor(red: 0.82, green: 0.9, blue: 0.78, alpha: 1))
+        Draw.stroke(c, frame, green, width: 2)
         c.saveGState()
-        c.translateBy(x: 65, y: 22)
-        c.scaleBy(x: 0.1, y: 0.1)
-        skullStamp(c)
+        c.translateBy(x: 64, y: 20)
+        c.scaleBy(x: 0.105, y: 0.105)
+        skullStamp(c, ink: green)
         c.restoreGState()
+        // Numerals in the corners.
         for corner in [CGPoint(x: 24, y: 36), CGPoint(x: 136, y: 36)] {
-            Draw.fill(c, Draw.circle(at: corner, r: 12), UIColor(red: 0.15, green: 0.3, blue: 0.15, alpha: 1))
-            dollar(c, at: corner, size: 18, color: UIColor(red: 0.8, green: 0.9, blue: 0.75, alpha: 1))
+            Draw.fill(c, Draw.circle(at: corner, r: 12), green)
+            numeral(c, at: corner, size: 16, color: UIColor(red: 0.8, green: 0.9, blue: 0.75, alpha: 1))
         }
+        dollar(c, at: CGPoint(x: 52, y: 20), size: 11, color: green)
+        dollar(c, at: CGPoint(x: 108, y: 52), size: 11, color: green)
     } }
+
+    /// A big "1" drawn as a path, so nothing depends on a font.
+    static func numeral(_ c: CGContext, at p: CGPoint, size s: CGFloat, color: UIColor) {
+        let one = Draw.polygon([
+            CGPoint(x: p.x - s * 0.1, y: p.y + s * 0.5), CGPoint(x: p.x + s * 0.12, y: p.y + s * 0.5), CGPoint(x: p.x + s * 0.12, y: p.y - s * 0.5),
+            CGPoint(x: p.x - s * 0.12, y: p.y - s * 0.5), CGPoint(x: p.x - s * 0.12, y: p.y + s * 0.25), CGPoint(x: p.x - s * 0.32, y: p.y + s * 0.2), CGPoint(x: p.x - s * 0.32, y: p.y + s * 0.34),
+        ])
+        Draw.fill(c, one, color)
+    }
 
     static var coin: SKTexture { Textures.make("coin", size: CGSize(width: 90, height: 90)) { c, size in
         let center = CGPoint(x: 45, y: 45)
-        Draw.shadowed(c, blur: 6, offset: CGSize(width: 0, height: -3)) {
-            Draw.sphere(c, Draw.circle(at: center, r: 40), [Metal.emberBright, UIColor(red: 0.85, green: 0.6, blue: 0.1, alpha: 1), UIColor(red: 0.5, green: 0.3, blue: 0.02, alpha: 1)], light: CGPoint(x: 32, y: 58), radius: 55)
-        }
-        Draw.stroke(c, Draw.circle(at: center, r: 33), UIColor(red: 0.55, green: 0.35, blue: 0.05, alpha: 0.8), width: 3)
-        dollar(c, at: center, size: 40, color: UIColor(red: 0.55, green: 0.35, blue: 0.05, alpha: 1))
+        let gold = UIColor(red: 0.95, green: 0.72, blue: 0.2, alpha: 1)
+        let goldShade = UIColor(red: 0.75, green: 0.5, blue: 0.08, alpha: 1)
+        let goldDark = UIColor(red: 0.5, green: 0.3, blue: 0.03, alpha: 1)
+        Draw.cel(c, Draw.circle(at: center, r: 41), base: gold, shadow: goldShade, core: goldDark, rim: Metal.emberBright, width: 3, depth: 14)
+        // The embossed rim: a ring lit on the top left and shadowed opposite.
+        let inner = Draw.circle(at: center, r: 32)
+        Draw.fill(c, Draw.circle(at: center, r: 34).subtracting(Draw.translated(inner, -2, 2), using: .winding), goldDark.withAlphaComponent(0.8))
+        Draw.fill(c, Draw.circle(at: center, r: 34).subtracting(Draw.translated(inner, 2, -2), using: .winding), Metal.emberBright.withAlphaComponent(0.8))
+        Draw.stroke(c, inner, goldShade, width: 2)
+        dollar(c, at: CGPoint(x: 47, y: 43), size: 40, color: goldDark)
+        dollar(c, at: CGPoint(x: 45, y: 45), size: 40, color: Metal.emberBright)
     } }
 
     /// A dollar sign drawn as a path, so nothing depends on a font.
@@ -180,70 +211,84 @@ extension Art {
         Textures.make("snowball-\(key)", size: CGSize(width: 300, height: 300)) { c, size in
             let center = CGPoint(x: 150, y: 150)
             let ball = Draw.circle(at: center, r: 140)
-            Draw.shadowed(c, blur: 12, offset: CGSize(width: 0, height: -8), color: UIColor.black.withAlphaComponent(0.7)) {
-                Draw.sphere(c, ball, [.white, UIColor(red: 0.93, green: 0.95, blue: 1, alpha: 1), UIColor(red: 0.6, green: 0.68, blue: 0.82, alpha: 1), UIColor(red: 0.35, green: 0.4, blue: 0.55, alpha: 1)], light: CGPoint(x: 100, y: 200), radius: 200)
-            }
+            Draw.cel(c, ball, base: .white, shadow: Metal.snowShade, core: Metal.snowDeep, rim: nil, width: 4, depth: 52)
+            Draw.highlight(c, ball, at: CGPoint(x: 95, y: 205), rx: 32, ry: 20, color: UIColor.white.withAlphaComponent(0.9))
             c.saveGState()
             c.addPath(ball)
             c.clip()
-            for i in 0..<40 {
-                let p = CGPoint(x: 30 + CGFloat(Anim.hash(i, 100)) * 240, y: 30 + CGFloat(Anim.hash(i, 101)) * 240)
-                Draw.fill(c, Draw.circle(at: p, r: 1.5 + CGFloat(Anim.hash(i, 102)) * 2), UIColor.white.withAlphaComponent(0.6))
+            // A few dents in the snow.
+            for i in 0..<5 {
+                let p = CGPoint(x: 60 + CGFloat(Anim.hash(i, 100)) * 180, y: 50 + CGFloat(Anim.hash(i, 101)) * 180)
+                let r = 8 + CGFloat(Anim.hash(i, 102)) * 10
+                let dent = Draw.ellipse(at: p, rx: r, ry: r * 0.55)
+                Draw.fill(c, dent.subtracting(Draw.translated(dent, -r * 0.3, r * 0.35), using: .winding), Metal.snowShade.withAlphaComponent(0.5))
             }
             c.restoreGState()
         }
     }
 
     static var topHat: SKTexture { Textures.make("top-hat", size: CGSize(width: 240, height: 200)) { c, size in
+        let black = UIColor(white: 0.16, alpha: 1)
         let brim = Draw.ellipse(at: CGPoint(x: 120, y: 40), rx: 115, ry: 22)
-        Draw.shadowed(c, blur: 10, offset: CGSize(width: 0, height: -6)) {
-            Draw.shade(c, brim, [UIColor(white: 0.22, alpha: 1), UIColor(white: 0.03, alpha: 1)], from: CGPoint(x: 0, y: 62), to: CGPoint(x: 0, y: 18))
-        }
+        Draw.cel(c, brim, base: UIColor(white: 0.22, alpha: 1), shadow: UIColor(white: 0.06, alpha: 1), rim: UIColor(white: 0.4, alpha: 1), width: 3.5, depth: 12)
         let crown = CGPath(roundedRect: CGRect(x: 48, y: 40, width: 144, height: 150), cornerWidth: 8, cornerHeight: 8, transform: nil)
-        Draw.shade(c, crown, [UIColor(white: 0.3, alpha: 1), UIColor(white: 0.1, alpha: 1), UIColor(white: 0.02, alpha: 1)], from: CGPoint(x: 48, y: 0), to: CGPoint(x: 192, y: 0))
-        Draw.fill(c, CGRect(x: 48, y: 50, width: 144, height: 22), Metal.blood)
-        Draw.fill(c, Draw.ellipse(at: CGPoint(x: 120, y: 190), rx: 72, ry: 10), UIColor(white: 0.18, alpha: 1))
+        Draw.cel(c, crown, base: black, shadow: UIColor(white: 0.05, alpha: 1), rim: UIColor(white: 0.4, alpha: 1), width: 3.5, depth: 40)
+        Draw.cel(c, CGPath(rect: CGRect(x: 48, y: 50, width: 144, height: 24), transform: nil), base: Metal.blood, shadow: Metal.bloodDark, rim: nil, width: 3, depth: 36)
+        Draw.cel(c, Draw.ellipse(at: CGPoint(x: 120, y: 190), rx: 72, ry: 10), base: UIColor(white: 0.2, alpha: 1), shadow: UIColor(white: 0.08, alpha: 1), width: 3, depth: 8)
     } }
 
     static var carrot: SKTexture { Textures.make("carrot", size: CGSize(width: 140, height: 50)) { c, size in
-        let shape = Draw.polygon([CGPoint(x: 4, y: 25), CGPoint(x: 30, y: 46), CGPoint(x: 136, y: 28), CGPoint(x: 30, y: 4)])
-        Draw.shade(c, shape, [Metal.emberBright, Metal.ember, UIColor(red: 0.6, green: 0.2, blue: 0, alpha: 1)], from: CGPoint(x: 0, y: 46), to: CGPoint(x: 0, y: 4))
-        for x in [CGFloat(40), 70, 100] {
-            Draw.fill(c, CGRect(x: x, y: 12, width: 3, height: 26), UIColor(red: 0.6, green: 0.2, blue: 0, alpha: 0.5))
+        let shape = Draw.smooth([CGPoint(x: 6, y: 25), CGPoint(x: 28, y: 46), CGPoint(x: 136, y: 28), CGPoint(x: 28, y: 4)], tension: 0.25)
+        Draw.cel(c, shape, base: Metal.ember, shadow: UIColor(red: 0.75, green: 0.3, blue: 0.02, alpha: 1), rim: Metal.emberBright, width: 3, depth: 14, light: CGVector(dx: -0.3, dy: 0.95))
+        for x in [CGFloat(40), 68, 96] {
+            let seg = CGMutablePath()
+            seg.move(to: CGPoint(x: x, y: 13 + (x - 40) * 0.12))
+            seg.addQuadCurve(to: CGPoint(x: x, y: 38 - (x - 40) * 0.12), control: CGPoint(x: x + 6, y: 25))
+            Draw.stroke(c, seg, Metal.ink.withAlphaComponent(0.6), width: 2.5)
         }
     } }
 
     static var coal: SKTexture { Textures.make("coal", size: CGSize(width: 40, height: 40)) { c, size in
-        let lump = Draw.polygon([CGPoint(x: 6, y: 14), CGPoint(x: 14, y: 4), CGPoint(x: 30, y: 6), CGPoint(x: 36, y: 20), CGPoint(x: 28, y: 36), CGPoint(x: 10, y: 32)])
-        Draw.sphere(c, lump, [UIColor(white: 0.3, alpha: 1), .black], light: CGPoint(x: 14, y: 26), radius: 30)
+        let lump = Draw.smooth([CGPoint(x: 6, y: 14), CGPoint(x: 14, y: 5), CGPoint(x: 30, y: 6), CGPoint(x: 36, y: 20), CGPoint(x: 28, y: 35), CGPoint(x: 10, y: 32)], tension: 0.4)
+        Draw.cel(c, lump, base: UIColor(white: 0.18, alpha: 1), shadow: Metal.ink, rim: nil, width: 3, depth: 8)
+        Draw.fill(c, Draw.ellipse(at: CGPoint(x: 14, y: 26), rx: 5, ry: 3), UIColor.white.withAlphaComponent(0.5))
     } }
 
     /// A twig arm with branches, root at the left.
     static var twig: SKTexture { Textures.make("twig", size: CGSize(width: 280, height: 160)) { c, size in
+        var limbs: [(CGPoint, CGPoint, CGFloat)] = []
         func branch(_ from: CGPoint, angle: CGFloat, length: CGFloat, width: CGFloat, depth: Int) {
             let to = CGPoint(x: from.x + cos(angle) * length, y: from.y + sin(angle) * length)
-            Draw.stroke(c, Draw.capsule(from: from, to: to, radius: 0.001), UIColor(red: 0.28, green: 0.17, blue: 0.08, alpha: 1), width: width)
-            Draw.stroke(c, Draw.capsule(from: from, to: to, radius: 0.001), UIColor(red: 0.45, green: 0.3, blue: 0.15, alpha: 0.6), width: width * 0.4)
+            limbs.append((from, to, width))
             guard depth > 0 else { return }
             branch(to, angle: angle + 0.55, length: length * 0.6, width: width * 0.6, depth: depth - 1)
             branch(to, angle: angle - 0.4, length: length * 0.7, width: width * 0.65, depth: depth - 1)
         }
         branch(CGPoint(x: 10, y: 60), angle: 0.25, length: 120, width: 12, depth: 3)
+        for (from, to, width) in limbs {
+            Draw.stroke(c, Draw.capsule(from: from, to: to, radius: 0.001), Metal.ink, width: width + 5)
+        }
+        for (from, to, width) in limbs {
+            Draw.stroke(c, Draw.capsule(from: from, to: to, radius: 0.001), UIColor(red: 0.32, green: 0.2, blue: 0.1, alpha: 1), width: width)
+            Draw.stroke(c, Draw.capsule(from: CGPoint(x: from.x - 1, y: from.y + 1), to: CGPoint(x: to.x - 1, y: to.y + 1), radius: 0.001), UIColor(red: 0.5, green: 0.34, blue: 0.18, alpha: 0.8), width: width * 0.35)
+        }
     } }
 
     static var scarf: SKTexture { Textures.make("scarf", size: CGSize(width: 220, height: 140)) { c, size in
-        let wrap = Draw.smooth([CGPoint(x: 20, y: 110), CGPoint(x: 200, y: 110), CGPoint(x: 205, y: 80), CGPoint(x: 15, y: 80)], tension: 0.2)
-        Draw.shadowed(c, blur: 8, offset: CGSize(width: 0, height: -5)) {
-            Draw.shade(c, wrap, [Metal.bloodBright, Metal.blood, Metal.bloodDark], from: CGPoint(x: 0, y: 110), to: CGPoint(x: 0, y: 80))
-        }
-        let tail = Draw.smooth([CGPoint(x: 120, y: 95), CGPoint(x: 165, y: 90), CGPoint(x: 190, y: 20), CGPoint(x: 150, y: 10)], tension: 0.3)
-        Draw.shade(c, tail, [Metal.blood, Metal.bloodDark], from: CGPoint(x: 0, y: 95), to: CGPoint(x: 0, y: 10))
+        let wrap = Draw.smooth([CGPoint(x: 20, y: 112), CGPoint(x: 200, y: 112), CGPoint(x: 205, y: 78), CGPoint(x: 15, y: 78)], tension: 0.2)
+        let tail = Draw.smooth([CGPoint(x: 118, y: 95), CGPoint(x: 168, y: 92), CGPoint(x: 192, y: 22), CGPoint(x: 148, y: 12)], tension: 0.3)
+        Draw.cel(c, tail, base: Metal.blood, shadow: Metal.bloodDark, rim: nil, width: 3.5, depth: 16)
         for i in 0..<4 {
-            Draw.fill(c, CGRect(x: 150 + CGFloat(i) * 10, y: 8, width: 4, height: 16), Metal.bloodDark)
+            Draw.fill(c, CGPath(roundedRect: CGRect(x: 150 + CGFloat(i) * 10, y: 4, width: 4, height: 18), cornerWidth: 2, cornerHeight: 2, transform: nil), Metal.ink)
+        }
+        Draw.cel(c, wrap, base: Metal.blood, shadow: Metal.bloodDark, rim: Metal.bloodBright, width: 3.5, depth: 16)
+        for x in [CGFloat(60), 110, 160] {
+            let stripe = CGPath(rect: CGRect(x: x, y: 80, width: 12, height: 30), transform: nil)
+            Draw.fill(c, stripe, Metal.ink.withAlphaComponent(0.5))
         }
     } }
 
-    /// Shards of ice and snow, for the shattering.
+    /// Shards of ice and snow, for the shattering: flat faceted chunks.
     static var shards: [SKTexture] { (0..<3).map { (i: Int) -> SKTexture in
         Textures.make("shard-\(i)", size: CGSize(width: 80, height: 80)) { c, size in
             let points = (0..<5).map { k -> CGPoint in
@@ -251,7 +296,11 @@ extension Art {
                 let r = 22 + CGFloat(Anim.hash(k + i * 5, 105)) * 16
                 return CGPoint(x: 40 + cos(a) * r, y: 40 + sin(a) * r)
             }
-            Draw.shade(c, Draw.polygon(points), [.white, UIColor(red: 0.75, green: 0.85, blue: 1, alpha: 1), UIColor(red: 0.45, green: 0.55, blue: 0.75, alpha: 1)], from: CGPoint(x: 10, y: 70), to: CGPoint(x: 70, y: 10))
+            let chunk = Draw.polygon(points)
+            Draw.cel(c, chunk, base: .white, shadow: Metal.snowShade, core: Metal.snowDeep, rim: nil, width: 3, depth: 16)
+            // A lit facet.
+            Draw.fill(c, Draw.polygon([points[0], points[1], CGPoint(x: 40, y: 40)]), UIColor.white.withAlphaComponent(0.8))
+            Draw.fill(c, Draw.polygon([points[2], points[3], CGPoint(x: 40, y: 40)]), Metal.snowShade.withAlphaComponent(0.6))
         }
     } }
 

@@ -468,8 +468,9 @@ final class SnowmanScene: EventSKScene {
         snowGround.position = at(0.5, 0)
         snowGround.zPosition = -50
         addChild(snowGround)
-        let snow = Emitters.fall(width: w, height: h, rate: 70, speed: 90, texture: Textures.dot, scale: 0.045, color: .white, alpha: 0.9)
-        snow.particleScaleRange = 0.03
+        let snow = Emitters.fall(width: w, height: h, rate: 70, speed: 90, texture: Textures.flake, scale: 0.16, color: .white, alpha: 0.95)
+        snow.particleScaleRange = 0.1
+        snow.particleColorBlendFactor = 0
         snow.xAcceleration = 10
         snow.position = at(0.5, 1.05)
         snow.zPosition = 70

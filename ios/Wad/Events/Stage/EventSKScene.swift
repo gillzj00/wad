@@ -31,6 +31,14 @@ enum Metal {
     static let furDark = UIColor(red: 0.21, green: 0.19, blue: 0.21, alpha: 1)
     static let furDeep = UIColor(red: 0.11, green: 0.09, blue: 0.11, alpha: 1)
     static let gum = UIColor(red: 0.45, green: 0.1, blue: 0.14, alpha: 1)
+    static let eagleBrown = UIColor(red: 0.36, green: 0.22, blue: 0.1, alpha: 1)
+    static let eagleDark = UIColor(red: 0.2, green: 0.11, blue: 0.05, alpha: 1)
+    static let eagleDeep = UIColor(red: 0.1, green: 0.05, blue: 0.02, alpha: 1)
+    static let eagleLight = UIColor(red: 0.55, green: 0.38, blue: 0.2, alpha: 1)
+    static let beakYellow = UIColor(red: 0.98, green: 0.75, blue: 0.15, alpha: 1)
+    static let beakShade = UIColor(red: 0.8, green: 0.5, blue: 0.08, alpha: 1)
+    static let snowShade = UIColor(red: 0.7, green: 0.77, blue: 0.92, alpha: 1)
+    static let snowDeep = UIColor(red: 0.5, green: 0.56, blue: 0.76, alpha: 1)
 }
 
 /// One show: a SpriteKit scene with a camera, a flash layer and a vignette,
@@ -267,6 +275,13 @@ enum Textures {
 
     /// A soft dot for sparks, embers and foam.
     static var dot: SKTexture { radialGlow(color: .white) }
+
+    /// A hard-edged flake with a dark rim, for snow and dust in the foreground.
+    static var flake: SKTexture { make("flake", size: CGSize(width: 32, height: 32), scale: 2) { context, size in
+        let disc = Draw.circle(at: CGPoint(x: 16, y: 16), r: 12)
+        Draw.fill(context, disc, UIColor(white: 0.55, alpha: 1))
+        Draw.fill(context, Draw.circle(at: CGPoint(x: 15, y: 17), r: 10), .white)
+    } }
 
     /// A streak for rain and trails.
     static var streak: SKTexture { make("streak", size: CGSize(width: 4, height: 32), scale: 2) { context, size in
