@@ -71,10 +71,10 @@ struct SettlementView: View {
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill")
                     }
-                    .foregroundStyle(Theme.Palette.flagRed)
+                    .foregroundStyle(Theme.Palette.blood)
                     Text(line.detail ?? "")
                         .font(.subheadline)
-                        .foregroundStyle(Theme.Palette.ink)
+                        .foregroundStyle(Theme.Palette.bone)
                 }
                 .padding(.vertical, 6)
                 .padding(.leading, 6)
@@ -104,7 +104,7 @@ struct SettlementView: View {
             if status.isAllSettled {
                 Label("All settled", systemImage: "checkmark.seal.fill")
                     .font(Theme.Typography.cardTitle)
-                    .foregroundStyle(Theme.Palette.goldOnGreen)
+                    .foregroundStyle(Theme.Palette.ember)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("All settled")
                     .accessibilityIdentifier("settlement.allSettled")
@@ -112,7 +112,7 @@ struct SettlementView: View {
             if settlement.payments.isEmpty {
                 Text(SettlementText.noPayments(settlement))
                     .font(Theme.Typography.cardTitle)
-                    .foregroundStyle(Theme.Palette.onGreen)
+                    .foregroundStyle(Theme.Palette.bone)
                     .padding(.vertical, Theme.Spacing.xs)
                     .accessibilityIdentifier("settlement.noPayments")
             }
@@ -211,7 +211,7 @@ struct SettlementView: View {
                 amountCell("Greenies")
             }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.Palette.inkSecondary)
+            .foregroundStyle(Theme.Palette.ash)
             .accessibilityHidden(true)
 
             ForEach(settlement.players) { player in
@@ -273,7 +273,7 @@ struct SettlementView: View {
         Section {
             if settlement.greenieHoles.isEmpty {
                 Text("The course has no par 3.")
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
             }
             ForEach(settlement.greenieHoles, id: \.hole) { hole in
                 HoleLineRow(
@@ -371,17 +371,17 @@ private struct PaymentRow: View {
                         PaymentText.state(transfer),
                         systemImage: transfer.isPaid ? "checkmark.circle.fill" : "circle"
                     )
-                    .foregroundStyle(transfer.isPaid ? Theme.Palette.goldOnGreen : Theme.Palette.onGreen.opacity(0.85))
+                    .foregroundStyle(transfer.isPaid ? Theme.Palette.ember : Theme.Palette.bone.opacity(0.85))
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
-                        .foregroundStyle(Theme.Palette.onGreen.opacity(0.7))
+                        .foregroundStyle(Theme.Palette.bone.opacity(0.7))
                 }
                 .font(.subheadline)
             }
         }
         .padding(.vertical, Theme.Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .foregroundStyle(Theme.Palette.onGreen)
+        .foregroundStyle(Theme.Palette.bone)
         .contentShape(Rectangle())
     }
 
@@ -394,7 +394,7 @@ private struct PaymentRow: View {
         Text(ScoringText.dollars(transfer.payment.amountCents))
             .font(Theme.Typography.money)
             .monospacedDigit()
-            .foregroundStyle(Theme.Palette.goldOnGreen)
+            .foregroundStyle(Theme.Palette.ember)
     }
 }
 
@@ -402,9 +402,9 @@ private struct PaymentRow: View {
 struct WarningRowBackground: View {
     var body: some View {
         Theme.Palette.card
-            .overlay(Theme.Palette.flagRed.opacity(0.12))
+            .overlay(Theme.Palette.blood.opacity(0.12))
             .overlay(alignment: .leading) {
-                Theme.Palette.flagRed.frame(width: 6)
+                Theme.Palette.blood.frame(width: 6)
             }
     }
 }
@@ -419,7 +419,7 @@ struct HoleLineRow: View {
             Text("\(hole)")
                 .font(.system(.subheadline, design: .rounded, weight: .bold))
                 .monospacedDigit()
-                .foregroundStyle(Theme.Palette.fairway)
+                .foregroundStyle(Theme.Palette.blood)
                 .frame(minWidth: 24, alignment: .trailing)
             StatusLineView(line: line)
         }

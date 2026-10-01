@@ -33,11 +33,11 @@ struct PaymentSheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(payment.fromName) pays \(payment.toName)")
                             .font(Theme.Typography.cardTitle)
-                            .foregroundStyle(Theme.Palette.onGreen)
+                            .foregroundStyle(Theme.Palette.bone)
                         Text(ScoringText.dollars(payment.amountCents))
                             .font(Theme.Typography.moneyLarge)
                             .monospacedDigit()
-                            .foregroundStyle(Theme.Palette.goldOnGreen)
+                            .foregroundStyle(Theme.Palette.ember)
                     }
                     .padding(.vertical, Theme.Spacing.s)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,7 +48,7 @@ struct PaymentSheet: View {
 
                     Label(PaymentText.state(transfer), systemImage: transfer.isPaid ? "checkmark.circle.fill" : "circle")
                         .font(.body.weight(.medium))
-                        .foregroundStyle(transfer.isPaid ? Theme.Palette.fairway : Theme.Palette.inkSecondary)
+                        .foregroundStyle(transfer.isPaid ? Theme.Palette.ember : Theme.Palette.ash)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(PaymentText.state(transfer))
                         .accessibilityIdentifier("payment.state")
@@ -138,7 +138,7 @@ struct PaymentSheet: View {
                         .font(.headline)
                     Text(detail)
                         .font(.subheadline)
-                        .foregroundStyle(Theme.Palette.inkSecondary)
+                        .foregroundStyle(Theme.Palette.ash)
                 }
             } icon: {
                 Image(systemName: systemImage)

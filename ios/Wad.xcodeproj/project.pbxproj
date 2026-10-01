@@ -20,9 +20,11 @@
 		25059043DDDF9DE46BF1C725 /* ScoringText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26319026AF5D8274B08A0004 /* ScoringText.swift */; };
 		2F481E59DD52C65C3D697417 /* RoundFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528D789C9D8A692704AC67C2 /* RoundFixtures.swift */; };
 		314CB8175E781693A5D7C600 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3F794D411FEEBEB887070E /* Appearance.swift */; };
+		31B8EF9220CBFD3C5BCC859C /* SkullIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A176DD7223A1EABDC3795 /* SkullIllustration.swift */; };
 		3D5A388D1059B606E25BC9A4 /* CourseLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC3A2DD73D7BEBB960396D3 /* CourseLookupTests.swift */; };
 		3FB43802011FCC28A6DB1DEF /* PaymentText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F1F7A1BBD8ECECCD3E7C71 /* PaymentText.swift */; };
 		41BC16092F0EF4F55B9EBE34 /* PaymentStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8F63B16EA5B6B33275EA28 /* PaymentStatus.swift */; };
+		437C412F663A653B6D58BD11 /* PaletteContrastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475E17658506CC1C45DC229B /* PaletteContrastTests.swift */; };
 		46518D3A459852119782FD68 /* RoundSettlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616E2202702B51E142873C6F /* RoundSettlement.swift */; };
 		46A969E40B729DB0BB795091 /* SettlementPaymentsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD64146D765EB01244DCE8E2 /* SettlementPaymentsUITests.swift */; };
 		47A74E957AE9C52BD7A7CC14 /* CourseCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16DDF9FA82DB2C7DAA4DA18 /* CourseCache.swift */; };
@@ -49,6 +51,7 @@
 		81F2A809719D15DED3491390 /* RoundSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE8E812D2B4D00B472A6DC93 /* RoundSummary.swift */; };
 		888A9A864196CB2016649D11 /* RoundStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87F046930E8678C6BB01870 /* RoundStoreTests.swift */; };
 		97B5C12FF701DE50A2B33FED /* RoundEngineMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */; };
+		9B91F3112AB53F7CCC8DA302 /* Contrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3A134F3E4F6A7DFCD5F810 /* Contrast.swift */; };
 		A67A2715555DD38A8AA02F57 /* ScorecardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DCCB64A1078BE92554F993 /* ScorecardView.swift */; };
 		A89DA6A02F87D0A107ECC947 /* Scorecard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30520B92F6050E5DBE08F9AB /* Scorecard.swift */; };
 		B042EF833CFA64B858B93FDF /* SetupText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B211A862D53BE2F1E88B0F /* SetupText.swift */; };
@@ -62,7 +65,6 @@
 		C900DF2D1DE8BB6960B83BB8 /* PaymentLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8AD507E0F991DF23F594D7 /* PaymentLedger.swift */; };
 		CDD0B4BC751D424FF90CC3FE /* SetupTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */; };
 		CE4D8A0EFBC72BAF1A9B7A1C /* ScoreNotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B85E46BF1B78CFE04B2CC /* ScoreNotationTests.swift */; };
-		D67CCD0C395FD21BD199F41B /* GolfIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8062BC9445E32788E49690B1 /* GolfIllustration.swift */; };
 		D83D5A7D04DA502F39C38DBC /* SettlementText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E438FFDB8F99D65C5E690F /* SettlementText.swift */; };
 		DA169FB9E57726485329E646 /* engines.js in Resources */ = {isa = PBXBuildFile; fileRef = E15243CD43A4CBE9E9669CE0 /* engines.js */; };
 		DB670CCC67027C7A912170F8 /* EngineTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB6E42DB5879EA56976E812 /* EngineTypes.swift */; };
@@ -95,6 +97,7 @@
 /* Begin PBXFileReference section */
 		03E438FFDB8F99D65C5E690F /* SettlementText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementText.swift; sourceTree = "<group>"; };
 		0B1C7A7CB20FD5B4F010CB46 /* CourseFakes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseFakes.swift; sourceTree = "<group>"; };
+		0B3A134F3E4F6A7DFCD5F810 /* Contrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Contrast.swift; sourceTree = "<group>"; };
 		118E85773F6E4DCD2DE72521 /* CourseLookupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseLookupViews.swift; sourceTree = "<group>"; };
 		20D6263288B8B3A683232856 /* VenmoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoTests.swift; sourceTree = "<group>"; };
 		21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupTextTests.swift; sourceTree = "<group>"; };
@@ -109,6 +112,7 @@
 		3AB6E42DB5879EA56976E812 /* EngineTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTypes.swift; sourceTree = "<group>"; };
 		42A428BA4BA755FB2C3B9853 /* CourseTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseTypes.swift; sourceTree = "<group>"; };
 		44C05F0716A72349D2C6C4F7 /* RoundDeleteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDeleteUITests.swift; sourceTree = "<group>"; };
+		475E17658506CC1C45DC229B /* PaletteContrastTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteContrastTests.swift; sourceTree = "<group>"; };
 		4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineBridgeTests.swift; sourceTree = "<group>"; };
 		4FBB3E4566E4FB8060EBA6FD /* StoreMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreMigrationTests.swift; sourceTree = "<group>"; };
 		51B211A862D53BE2F1E88B0F /* SetupText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupText.swift; sourceTree = "<group>"; };
@@ -126,8 +130,8 @@
 		78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundEngineMappingTests.swift; sourceTree = "<group>"; };
 		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CFDB4A7DE9A3404B98DEC46 /* RoundScorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundScorerTests.swift; sourceTree = "<group>"; };
+		7E1A176DD7223A1EABDC3795 /* SkullIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkullIllustration.swift; sourceTree = "<group>"; };
 		7F6226252CA4567B45F89BCF /* CourseLookupClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseLookupClient.swift; sourceTree = "<group>"; };
-		8062BC9445E32788E49690B1 /* GolfIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GolfIllustration.swift; sourceTree = "<group>"; };
 		842F500205F4A8AA7401C957 /* PaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentSheet.swift; sourceTree = "<group>"; };
 		900F03E39F38789C52B71BE1 /* Round+Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Round+Engine.swift"; sourceTree = "<group>"; };
 		912E188A28C6D1226061D662 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -236,6 +240,7 @@
 				AEC3A2DD73D7BEBB960396D3 /* CourseLookupTests.swift */,
 				EA71740445547E3EF50B7A0B /* CourseStepTests.swift */,
 				4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */,
+				475E17658506CC1C45DC229B /* PaletteContrastTests.swift */,
 				C5FB6ED545DD1295664F678A /* PaymentTests.swift */,
 				BAE26489214D11F38B99B353 /* RoundDraftTests.swift */,
 				78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */,
@@ -365,8 +370,9 @@
 			children = (
 				AF3F794D411FEEBEB887070E /* Appearance.swift */,
 				9AA4302E35C714D619BE1472 /* Components.swift */,
-				8062BC9445E32788E49690B1 /* GolfIllustration.swift */,
+				0B3A134F3E4F6A7DFCD5F810 /* Contrast.swift */,
 				EE51D46F5765B9E0E4177512 /* ScoreNotation.swift */,
+				7E1A176DD7223A1EABDC3795 /* SkullIllustration.swift */,
 				35E6A0FB9254B4C1E0DF6419 /* Theme.swift */,
 			);
 			path = Theme;
@@ -492,6 +498,7 @@
 				3D5A388D1059B606E25BC9A4 /* CourseLookupTests.swift in Sources */,
 				7EBA2F0AD86ECB9D2F9496E3 /* CourseStepTests.swift in Sources */,
 				BDDE34B5B1FAE0C5279FC601 /* EngineBridgeTests.swift in Sources */,
+				437C412F663A653B6D58BD11 /* PaletteContrastTests.swift in Sources */,
 				F9CFF8FB188C1EF97D90BA8E /* PaymentTests.swift in Sources */,
 				62128B2E3BAE0757C69DC9CA /* RoundDraftTests.swift in Sources */,
 				97B5C12FF701DE50A2B33FED /* RoundEngineMappingTests.swift in Sources */,
@@ -514,6 +521,7 @@
 			files = (
 				314CB8175E781693A5D7C600 /* Appearance.swift in Sources */,
 				EC8679E12F161585CB734250 /* Components.swift in Sources */,
+				9B91F3112AB53F7CCC8DA302 /* Contrast.swift in Sources */,
 				47A74E957AE9C52BD7A7CC14 /* CourseCache.swift in Sources */,
 				49B7DCDC3BDBFFBB0FC04B0A /* CourseFixtures.swift in Sources */,
 				6598B07A15B1A43DD76AC169 /* CourseLookup.swift in Sources */,
@@ -525,7 +533,6 @@
 				E657F1FDE817BF34608C883E /* DebugRounds.swift in Sources */,
 				74505FE1E8DDECD31BC8C0DF /* EngineBridge.swift in Sources */,
 				DB670CCC67027C7A912170F8 /* EngineTypes.swift in Sources */,
-				D67CCD0C395FD21BD199F41B /* GolfIllustration.swift in Sources */,
 				6481642D839E1EF7DD65421A /* HoleScoringView.swift in Sources */,
 				EC164D1539497AB652296E08 /* LinkOpener.swift in Sources */,
 				B40097B783C40B9B012D1963 /* LocationFix.swift in Sources */,
@@ -551,6 +558,7 @@
 				D83D5A7D04DA502F39C38DBC /* SettlementText.swift in Sources */,
 				59CDFC1A65E449E9DF900848 /* SettlementView.swift in Sources */,
 				B042EF833CFA64B858B93FDF /* SetupText.swift in Sources */,
+				31B8EF9220CBFD3C5BCC859C /* SkullIllustration.swift in Sources */,
 				01741CD0E2411F6ECA138665 /* Theme.swift in Sources */,
 				164E1BD5B07EA7878F6DA3CF /* VenmoHandle.swift in Sources */,
 				B952AEE187004F397D1274EC /* VenmoHandleEditor.swift in Sources */,

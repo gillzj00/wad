@@ -32,7 +32,7 @@ struct VenmoHandleEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Venmo handle", text: $text)
+                    TextField("Venmo handle", text: $text, prompt: .prompt("Venmo handle"))
                         .keyboardType(.asciiCapable)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -43,7 +43,7 @@ struct VenmoHandleEditor: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if parsed == .invalid {
                             Text(VenmoHandle.rule)
-                                .foregroundStyle(Theme.Palette.flagRed)
+                                .foregroundStyle(Theme.Palette.blood)
                                 .accessibilityIdentifier("venmoHandle.invalid")
                         }
                         SectionFooter("The name after the @ in Venmo. Leave it blank for a player without Venmo. "

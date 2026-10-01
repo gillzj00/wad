@@ -1,37 +1,38 @@
 import SwiftUI
 
 /// The app's look: colors, type, spacing and corner radii. The colors are in
-/// the asset catalog, each with a light and a dark variant.
+/// the asset catalog. Both appearances are dark: the light one is ash (lifted
+/// charcoal) and the dark one is pitch (near black), and the text, blood and
+/// ember colors read at 4.5:1 or better on every surface of both.
 enum Theme {
     enum Palette {
-        /// The brand color and the tint of the controls.
-        static let fairway = Color("Fairway")
-        /// Surfaces that stand out, such as the hole header. Text on it is `onGreen`.
-        static let deepGreen = Color("DeepGreen")
         /// Behind the lists and cards.
-        static let sand = Color("Sand")
+        static let charcoal = Color("Charcoal")
         /// Cards and list rows.
         static let card = Color("Card")
-        /// Warnings, debts and the flag.
-        static let flagRed = Color("FlagRed")
-        /// Money won, on `card` and `sand`.
-        static let gold = Color("Gold")
-        /// Money on `deepGreen`.
-        static let goldOnGreen = Color("GoldOnGreen")
-        static let ink = Color("Ink")
-        static let inkSecondary = Color("InkSecondary")
         /// The lines of the scorecard and the outlines of the cards.
         static let rule = Color("Rule")
-        /// Text on `deepGreen`.
-        static let onGreen = Color("OnGreen")
-        /// Text on `fairway`.
-        static let onFairway = Color("OnFairway")
+        /// Surfaces that stand out, such as the hole header and the payments.
+        /// Text on it is `bone`, money on it is `ember`.
+        static let maroon = Color("Maroon")
+        /// Filled controls: the main button, selected chips, scored holes.
+        /// Text on it is `bone`.
+        static let crimson = Color("Crimson")
+        /// The tint of the controls, warnings, debts and holes that need fixing.
+        /// Bright enough to be text on `card` and `charcoal`.
+        static let blood = Color("Blood")
+        /// Money won and anything that burns: paid, final, settled.
+        static let ember = Color("Ember")
+        /// Text.
+        static let bone = Color("Bone")
+        /// Secondary text.
+        static let ash = Color("Ash")
 
-        /// Won is gold, owed is red and even is quiet. The text says which it
-        /// is as well ("Won", "Owes", "+", "-"); the color only supports it.
+        /// Won is ember, owed is blood and even is quiet. The text says which
+        /// it is as well ("Won", "Owes", "+", "-"); the color only supports it.
         static func money(cents: Int) -> Color {
-            if cents > 0 { return gold }
-            return cents < 0 ? flagRed : inkSecondary
+            if cents > 0 { return ember }
+            return cents < 0 ? blood : ash
         }
     }
 
@@ -49,17 +50,17 @@ enum Theme {
     }
 
     enum Typography {
-        /// Screen and empty-state titles.
-        static let display = Font.system(.title, design: .serif, weight: .bold)
+        /// Screen and empty-state titles: the heaviest serif the system has.
+        static let display = Font.system(.title, design: .serif, weight: .black)
         /// Course names and the titles of cards.
-        static let cardTitle = Font.system(.title3, design: .serif, weight: .semibold)
+        static let cardTitle = Font.system(.title3, design: .serif, weight: .bold)
         /// Small capitals above a value.
-        static let overline = Font.system(.caption, design: .default, weight: .semibold)
+        static let overline = Font.system(.caption, design: .default, weight: .bold)
         /// Scores on the scoring screen.
-        static let score = Font.system(.title, design: .rounded, weight: .bold)
+        static let score = Font.system(.title, design: .rounded, weight: .black)
         /// Amounts that are the point of a row.
-        static let money = Font.system(.title3, design: .rounded, weight: .bold)
+        static let money = Font.system(.title3, design: .rounded, weight: .black)
         /// The amount of a headline card.
-        static let moneyLarge = Font.system(.largeTitle, design: .rounded, weight: .bold)
+        static let moneyLarge = Font.system(.largeTitle, design: .rounded, weight: .black)
     }
 }

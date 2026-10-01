@@ -52,7 +52,7 @@ struct RoundsView: View {
                                 .accessibilityIdentifier("rounds.row.\(round.courseName)")
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Delete", systemImage: "trash") { roundToDelete = round }
-                                        .tint(Theme.Palette.flagRed)
+                                        .tint(Theme.Palette.blood)
                                 }
                             }
                         }
@@ -177,18 +177,18 @@ struct RoundHistoryRow: View {
             VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 Text(round.courseName)
                     .font(Theme.Typography.cardTitle)
-                    .foregroundStyle(Theme.Palette.ink)
+                    .foregroundStyle(Theme.Palette.bone)
                 Text(Self.date(round.startedAt))
                     .font(.subheadline)
-                    .foregroundStyle(Theme.Palette.ink)
+                    .foregroundStyle(Theme.Palette.bone)
                 Text(round.orderedPlayers.map(\.displayName).joined(separator: ", "))
                     .font(.subheadline)
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
                 if let summary {
                     Text(summary.progressText)
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(summary.progress == .final ? Theme.Palette.gold : Theme.Palette.fairway)
+                        .foregroundStyle(summary.progress == .final ? Theme.Palette.ember : Theme.Palette.blood)
                         .padding(.top, 2)
                     if let settled = summary.settledText {
                         StatPill(
@@ -214,10 +214,10 @@ struct RoundHistoryRow: View {
         let isFinal = summary?.progress == .final
         return Image(systemName: isFinal ? "flag.checkered" : "flag.fill")
             .font(.headline)
-            .foregroundStyle(isFinal ? Theme.Palette.onGreen : Theme.Palette.fairway)
+            .foregroundStyle(isFinal ? Theme.Palette.bone : Theme.Palette.blood)
             .padding(10)
             .background(
-                isFinal ? Theme.Palette.deepGreen : Theme.Palette.fairway.opacity(0.14),
+                isFinal ? Theme.Palette.maroon : Theme.Palette.blood.opacity(0.14),
                 in: Circle()
             )
             .accessibilityHidden(true)
@@ -225,8 +225,8 @@ struct RoundHistoryRow: View {
 
     private func tone(_ settled: RoundSummary.Settled?) -> StatPill.Tone {
         switch settled {
-        case .allSettled, .nothingOwed: .brand
-        case .needsFixing, .unsettled: .warning
+        case .allSettled, .nothingOwed: .ember
+        case .needsFixing, .unsettled: .blood
         case nil: .neutral
         }
     }
@@ -243,7 +243,7 @@ private struct StoreCountsView: View {
     var body: some View {
         Text("Stored: \(rounds.count) rounds, \(holes.count) holes, \(players.count) players, \(scores.count) scores")
             .font(.caption)
-            .foregroundStyle(Theme.Palette.inkSecondary)
+            .foregroundStyle(Theme.Palette.ash)
             .padding(.bottom, 4)
             .accessibilityIdentifier("debug.storeCounts")
     }

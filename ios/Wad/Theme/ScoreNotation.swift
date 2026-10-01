@@ -2,7 +2,7 @@ import SwiftUI
 
 /// How a scorecard marks a gross score against par: a circle for a birdie, two
 /// for an eagle or better, a square for a bogey and two for a double bogey or
-/// worse. For display only; no game uses it.
+/// worse. Circles are blood, squares are bone. For display only; no game uses it.
 enum ScoreNotation: Equatable, Sendable {
     case eagleOrBetter
     case birdie
@@ -48,7 +48,7 @@ struct ScoreMark: View {
     var gap: CGFloat = 2.5
 
     private var color: Color {
-        notation.isRound ? Theme.Palette.flagRed : Theme.Palette.ink
+        notation.isRound ? Theme.Palette.blood : Theme.Palette.bone
     }
 
     var body: some View {

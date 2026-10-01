@@ -2,19 +2,48 @@ import SwiftUI
 import UIKit
 
 enum Appearance {
-    /// The titles of the navigation bars in the serif design, in the ink color.
+    /// The bars and the controls that SwiftUI leaves to UIKit, in the palette:
+    /// both appearances are dark, so the system's light bars would glare.
     @MainActor
     static func apply() {
-        let ink = UIColor(named: "Ink") ?? .label
+        let bone = UIColor(named: "Bone") ?? .label
+        let ash = UIColor(named: "Ash") ?? .secondaryLabel
+        let charcoal = UIColor(named: "Charcoal") ?? .systemBackground
+        let rule = UIColor(named: "Rule") ?? .separator
+        let crimson = UIColor(named: "Crimson") ?? .systemRed
+        let blood = UIColor(named: "Blood") ?? .systemRed
+
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [
-            .font: serif(.largeTitle, weight: .bold),
-            .foregroundColor: ink,
+            .font: serif(.largeTitle, weight: .black),
+            .foregroundColor: bone,
         ]
         bar.titleTextAttributes = [
-            .font: serif(.headline, weight: .semibold),
-            .foregroundColor: ink,
+            .font: serif(.headline, weight: .bold),
+            .foregroundColor: bone,
         ]
+
+        let tabs = UITabBarAppearance()
+        tabs.configureWithOpaqueBackground()
+        tabs.backgroundColor = charcoal
+        tabs.shadowColor = rule
+        for item in [tabs.stackedLayoutAppearance, tabs.inlineLayoutAppearance, tabs.compactInlineLayoutAppearance] {
+            item.normal.iconColor = ash
+            item.normal.titleTextAttributes = [.foregroundColor: ash]
+            item.selected.iconColor = blood
+            item.selected.titleTextAttributes = [.foregroundColor: blood]
+        }
+        let tabBar = UITabBar.appearance()
+        tabBar.standardAppearance = tabs
+        tabBar.scrollEdgeAppearance = tabs
+
+        let segmented = UISegmentedControl.appearance()
+        segmented.backgroundColor = charcoal
+        segmented.selectedSegmentTintColor = crimson
+        segmented.setTitleTextAttributes([.foregroundColor: bone], for: .normal)
+        segmented.setTitleTextAttributes([.foregroundColor: bone], for: .selected)
+
+        UITextField.appearance().keyboardAppearance = .dark
     }
 
     /// The system's serif font in a text style, scaled with Dynamic Type.

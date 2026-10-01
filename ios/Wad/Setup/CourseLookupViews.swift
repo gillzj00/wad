@@ -34,9 +34,9 @@ struct CourseSearchSection: View {
     private var searchField: some View {
         HStack {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(Theme.Palette.inkSecondary)
+                .foregroundStyle(Theme.Palette.ash)
                 .accessibilityHidden(true)
-            TextField("Course or club name", text: query)
+            TextField("Course or club name", text: query, prompt: .prompt("Course or club name"))
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -81,7 +81,7 @@ struct CourseSearchSection: View {
             HStack {
                 ProgressView()
                 Text("Loading \(summary.displayName)")
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
             }
         case .failed(let error):
             StatusRow(error.message, systemImage: "exclamationmark.triangle.fill", isProblem: true)
@@ -158,19 +158,19 @@ struct CourseTeesSection: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(tee.name)
-                                .foregroundStyle(Theme.Palette.ink)
+                                .foregroundStyle(Theme.Palette.bone)
                             Text("\(tee.gender.title) - \(tee.ratingText) - par \(tee.par)")
                                 .font(.caption)
-                                .foregroundStyle(Theme.Palette.inkSecondary)
+                                .foregroundStyle(Theme.Palette.ash)
                         }
                         Spacer()
                         if let reason = tee.unavailableReason {
                             Text(reason)
                                 .font(.caption)
-                                .foregroundStyle(Theme.Palette.flagRed)
+                                .foregroundStyle(Theme.Palette.blood)
                         } else if tee.teeId == model.selectedTeeID {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(Theme.Palette.fairway)
+                                .foregroundStyle(Theme.Palette.blood)
                                 .accessibilityHidden(true)
                         }
                     }
@@ -197,11 +197,11 @@ private struct CourseRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(summary.displayName)
-                .foregroundStyle(Theme.Palette.ink)
+                .foregroundStyle(Theme.Palette.bone)
             if let detail, !detail.isEmpty {
                 Text(detail)
                     .font(.caption)
-                    .foregroundStyle(Theme.Palette.inkSecondary)
+                    .foregroundStyle(Theme.Palette.ash)
             }
         }
     }
@@ -222,7 +222,7 @@ private struct StatusRow: View {
     var body: some View {
         Label(text, systemImage: systemImage)
             .font(.subheadline)
-            .foregroundStyle(isProblem ? Theme.Palette.flagRed : Theme.Palette.inkSecondary)
+            .foregroundStyle(isProblem ? Theme.Palette.blood : Theme.Palette.ash)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(text)
     }

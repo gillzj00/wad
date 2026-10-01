@@ -81,7 +81,7 @@ struct RoundDetailView: View {
                                 if let index = player.handicapIndex {
                                     Text("Index \(SetupText.display(handicapIndex: index))")
                                         .font(.caption)
-                                        .foregroundStyle(Theme.Palette.inkSecondary)
+                                        .foregroundStyle(Theme.Palette.ash)
                                 }
                             }
                             Spacer()
@@ -89,7 +89,7 @@ struct RoundDetailView: View {
                                 Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
                                 Text(ticksText(totalTicks?[player.playerID]))
                                     .font(.caption)
-                                    .foregroundStyle(Theme.Palette.inkSecondary)
+                                    .foregroundStyle(Theme.Palette.ash)
                             }
                             .monospacedDigit()
                         }
@@ -143,7 +143,7 @@ struct RoundDetailView: View {
                     .font(Theme.Typography.display)
                 Text(RoundHistoryRow.date(round.startedAt))
                     .font(.subheadline)
-                    .foregroundStyle(Theme.Palette.onGreen.opacity(0.85))
+                    .foregroundStyle(Theme.Palette.bone.opacity(0.85))
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Theme.Spacing.s) { facts(scorecard) }
                     VStack(alignment: .leading, spacing: Theme.Spacing.s) { facts(scorecard) }
@@ -156,12 +156,12 @@ struct RoundDetailView: View {
 
     @ViewBuilder
     private func facts(_ scorecard: Scorecard) -> some View {
-        StatPill(text: "Par \(round.totalPar)", tone: .onGreen)
-        StatPill(text: "\(round.players.count) players", systemImage: "person.2.fill", tone: .onGreen)
+        StatPill(text: "Par \(round.totalPar)", tone: .bone)
+        StatPill(text: "\(round.players.count) players", systemImage: "person.2.fill", tone: .bone)
         StatPill(
             text: "\(scorecard.completedHoleCount) of \(scorecard.holeCount) holes",
             systemImage: "flag.fill",
-            tone: .onGreen
+            tone: .bone
         )
     }
 

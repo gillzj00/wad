@@ -23,8 +23,12 @@
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>Sand</string>
+		<string>Charcoal</string>
 	</dict>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>WAD_API_BASE_URL</key>
 	<string>$(WAD_API_BASE_URL)</string>
 	<key>WAD_API_CLIENT_TOKEN</key>
