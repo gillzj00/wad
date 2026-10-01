@@ -187,4 +187,42 @@ struct StoreMigrationTests {
         #expect(reread.paidRecords == [PaidRecord(payerID: "alex", payeeID: "zach", amountCents: 6700, paidAt: startedAt)])
         #expect(reread.scores.count == 54)
     }
+
+    /// A round from before Wolf does not play it, and the Wolf fields added to
+    /// the round and its holes can be written to the migrated store.
+    @Test func aStoreOfThePreviousVersionHasNoWolfAndTakesIt() throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try writePreviousStore()
+
+        let container = try ModelContainer(for: Schema(WadSchema.models), configurations: ModelConfiguration(url: storeURL))
+        let round = try #require(try container.mainContext.fetch(FetchDescriptor<Round>()).first)
+        #expect(round.playsWolf == false)
+        #expect(round.wolfPointCents == nil)
+        #expect(round.wolfTeeOrderIDs.isEmpty)
+        #expect(round.wolfTeeOrder == ["zach", "sam", "alex"])
+        #expect(round.wolfInput == nil)
+        #expect(round.orderedHoles.allSatisfy { $0.wolfChoice == nil && $0.wolfPartnerID == nil && $0.wolfPlayerID == nil })
+        #expect(round.orderedHoles.allSatisfy { $0.wolfEvent == nil })
+        let bridge = try EngineBridge()
+        #expect(try RoundStatus(round: round, bridge: bridge).wolf == nil)
+        #expect(try RoundSettlement(round: round, bridge: bridge).isFinal)
+
+        // The migrated store takes the new fields.
+        round.wolfPointCents = 100
+        round.wolfTeeOrderIDs = ["sam", "zach", "alex"]
+        round.hole(17)?.wolfChoice = "partner"
+        round.hole(17)?.wolfPartnerID = "sam"
+        round.hole(17)?.wolfPlayerID = "zach"
+        try container.mainContext.save()
+
+        let reread = try #require(try ModelContext(container).fetch(FetchDescriptor<Round>()).first)
+        #expect(reread.wolfPointCents == 100)
+        #expect(reread.wolfTeeOrder == ["sam", "zach", "alex"])
+        #expect(reread.hole(17)?.wolfEvent == Engine.WolfEvent(choice: .partner, partnerUserId: "sam", wolfUserId: "zach"))
+        #expect(reread.hole(16)?.wolfEvent == nil)
+        // Three players: Wolf is on and unavailable, and the round still settles.
+        let settlement = try RoundSettlement(round: reread, bridge: bridge)
+        #expect(settlement.isWolfUnavailable)
+        #expect(settlement.payments.map(\.amountCents) == [6700, 6100])
+    }
 }

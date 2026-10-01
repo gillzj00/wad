@@ -22,8 +22,14 @@ enum SettlementText {
 
     /// A player's result per game, in one line.
     static func games(_ player: RoundSettlement.PlayerResult) -> String {
+        games(player, wolf: false)
+    }
+
+    /// With `wolf`, the round plays Wolf and its column is included.
+    static func games(_ player: RoundSettlement.PlayerResult, wolf: Bool) -> String {
         "\(player.name): Skins \(signed(player.skinsCents)), Wad \(signed(player.wadCents)), "
             + "Greenies \(signed(player.greeniesCents))"
+            + (wolf ? ", Wolf \(signed(player.wolfCents))" : "")
     }
 
     static func holes(_ holes: [Int]) -> String {

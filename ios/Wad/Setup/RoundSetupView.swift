@@ -466,6 +466,8 @@ struct GamesStepView: View {
             SectionFooter("Par 3s only. Every amount is collected from each other player.")
         }
 
+        WolfGamesSection(draft: $draft)
+
         Section {
             Toggle("Start every hole at par", isOn: $draft.startsEveryHoleAtPar)
                 .accessibilityIdentifier("setup.startsAtPar")

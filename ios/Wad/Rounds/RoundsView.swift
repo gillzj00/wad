@@ -122,8 +122,10 @@ struct RoundsView: View {
     /// with the sample draft; `-debugSetupStep detail` creates the sample round
     /// and opens it. `-debugSeedRound finalPush` creates a finished round with an
     /// unresolved skins carryover and opens it; `-debugSeedStartedAt <seconds
-    /// since 1970>` gives it that start. `-debugSeedRound gallery` creates
-    /// several rounds and stays on the list. For simulator screenshots and the UI tests.
+    /// since 1970>` gives it that start. `-debugSeedRound wolf` creates a Wolf
+    /// round whose hole 17 waits for the group to pick the Wolf. `-debugSeedRound
+    /// gallery` creates several rounds and stays on the list. For simulator
+    /// screenshots and the UI tests.
     private func applyDebugLaunchArguments() {
         // The task runs again when the list comes back on screen.
         guard !appliedDebugLaunchArguments else { return }
@@ -140,10 +142,10 @@ struct RoundsView: View {
             try? modelContext.save()
             return
         }
-        if seed == "finalPush" {
+        if seed == "finalPush" || seed == "wolf" {
             guard
                 let bridge = SharedEngine.bridge,
-                let round = try? DebugRounds.finalPush(using: bridge, startedAt: startedAt)
+                let round = try? (seed == "wolf" ? DebugRounds.wolf : DebugRounds.finalPush)(bridge, startedAt)
             else { return }
             modelContext.insert(round)
             try? modelContext.save()
