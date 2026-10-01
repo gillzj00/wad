@@ -25,6 +25,13 @@ final class Round {
     /// exists read false.
     var startsEveryHoleAtPar: Bool = false
 
+    /// Wolf's value per point; nil when Wolf is not played. Rounds from before
+    /// Wolf read nil. See `Round+Wolf.swift`.
+    var wolfPointCents: Int?
+    /// The players' ids in the order they tee off for Wolf. Use `wolfTeeOrder`,
+    /// which fills in players that are missing from it.
+    var wolfTeeOrderIDs: [String] = []
+
     /// Unordered in the store; use `orderedHoles`.
     @Relationship(deleteRule: .cascade, inverse: \RoundHole.round)
     var holes: [RoundHole] = []
@@ -122,6 +129,13 @@ final class RoundHole {
     var wadMakerIDs: [String] = []
     /// Par 3s only.
     var greenieWinnerID: String?
+    /// Wolf: "partner" or "lone" as the group recorded it; nil until chosen.
+    var wolfChoice: String?
+    /// Wolf: the partner, with the choice "partner".
+    var wolfPartnerID: String?
+    /// Wolf: who the Wolf is, recorded on holes 17 and 18 when players are
+    /// tied for last place (Open Question 4 in docs/domain-model.md).
+    var wolfPlayerID: String?
     var round: Round?
 
     init(number: Int, par: Int, strokeIndex: Int) {

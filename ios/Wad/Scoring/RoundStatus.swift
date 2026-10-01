@@ -8,6 +8,8 @@ struct RoundStatus: Equatable, Sendable {
     var skins: Engine.SkinsResult
     var wad: Engine.WadResult
     var greenies: Engine.GreeniesResult
+    /// Nil when Wolf is not played, or unavailable (not exactly four players).
+    var wolf: Engine.WolfResult?
 
     @MainActor
     init(round: Round, bridge: EngineBridge) throws {
@@ -15,11 +17,13 @@ struct RoundStatus: Equatable, Sendable {
         skins = try bridge.scoreSkins(round.skinsInput)
         wad = try bridge.scoreWad(round.wadInput)
         greenies = try bridge.scoreGreenies(round.greeniesInput)
+        wolf = try round.wolfInput.flatMap(bridge.scoreWolf)
     }
 
-    /// Per-game deltas in the order skins, wad, greenies: the input of `EngineBridge.settle`.
+    /// Per-game deltas in the order skins, wad, greenies, then Wolf when it is
+    /// played: the input of `EngineBridge.settle`.
     var gameDeltas: [Engine.Deltas] {
-        [skins.deltas, wad.deltas, greenies.deltas]
+        [skins.deltas, wad.deltas, greenies.deltas] + (wolf.map { [$0.deltas] } ?? [])
     }
 
     func ticks(playerID: String, hole: Int) -> Int? {

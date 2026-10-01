@@ -35,6 +35,15 @@ enum SettlementText {
         guard !settlement.isFinal else {
             return StatusLine(title: "Final", detail: "All \(count) holes are scored.")
         }
+        if settlement.incompleteHoles.isEmpty {
+            // Every score is in; Wolf holds the settlement back.
+            return StatusLine(
+                title: "Provisional, Wolf unfinished",
+                detail: "Not final: \(WolfText.unfinished(settlement.unscoredWolfHoles, name: settlement.name)) "
+                    + "The amounts change until every Wolf hole is scored.",
+                isWarning: true
+            )
+        }
         let completed = settlement.completedHoleCount
         let progress = if completed == 0 {
             "no holes scored"

@@ -13,6 +13,8 @@ struct RoundSettlement: Equatable, Sendable {
         var skinsCents: Int
         var wadCents: Int
         var greeniesCents: Int
+        /// Zero when Wolf is not played.
+        var wolfCents: Int = 0
 
         var id: String { playerID }
     }
@@ -38,6 +40,10 @@ struct RoundSettlement: Equatable, Sendable {
     var wadInstances: [Engine.WadInstanceResult]
     var greenieHoles: [Engine.GreenieHoleResult]
     var greeniesAmountCents: Int
+    /// Nil when Wolf is not played, or unavailable (not exactly four players).
+    var wolf: Engine.WolfResult?
+    /// Wolf's value per point; nil when Wolf is not played.
+    var wolfPointCents: Int?
     /// Display name per player id.
     var names: [String: String]
 
@@ -59,7 +65,8 @@ struct RoundSettlement: Equatable, Sendable {
                 netCents: settlement.positions[player.playerID] ?? 0,
                 skinsCents: status.skins.deltas[player.playerID] ?? 0,
                 wadCents: status.wad.deltas[player.playerID] ?? 0,
-                greeniesCents: status.greenies.deltas[player.playerID] ?? 0
+                greeniesCents: status.greenies.deltas[player.playerID] ?? 0,
+                wolfCents: status.wolf?.deltas[player.playerID] ?? 0
             )
         }
         payments = settlement.transfers.map { transfer in
@@ -75,6 +82,8 @@ struct RoundSettlement: Equatable, Sendable {
         wadInstances = status.wad.instances
         greenieHoles = status.greenies.holes
         greeniesAmountCents = round.greeniesAmountCents
+        wolf = status.wolf
+        wolfPointCents = round.wolfPointCents
         self.names = names
     }
 
@@ -84,9 +93,10 @@ struct RoundSettlement: Equatable, Sendable {
         names[playerID] ?? Self.unknownPlayer
     }
 
-    /// Every hole has every player's score. Until then the numbers are provisional.
+    /// Every hole has every player's score and, when Wolf is played, every Wolf
+    /// hole is scored (`isWolfComplete`). Until then the numbers are provisional.
     var isFinal: Bool {
-        incompleteHoles.isEmpty
+        incompleteHoles.isEmpty && isWolfComplete
     }
 
     var completedHoleCount: Int {
