@@ -66,6 +66,12 @@ final class EngineBridge {
         try call("scoreGreenies", arguments: [input])
     }
 
+    /// Nil when Wolf cannot be played with this input: not exactly four
+    /// players, a tee order that is not those four, or not 18 holes.
+    func scoreWolf(_ input: Engine.WolfInput) throws -> Engine.WolfResult? {
+        try call("scoreWolf", arguments: [input])
+    }
+
     /// WHS course handicap for a tee, from a handicap index.
     func courseHandicap(handicapIndex: Double, tee: Engine.TeeRating) throws -> Int {
         try call("courseHandicap", arguments: [handicapIndex, tee])

@@ -68,6 +68,55 @@ struct GameSnapshotRoundTests {
         #expect(EventDetector.events(before: before, after: after).map(\.kind) == [.greenie, .wadTaken])
     }
 
+    /// A four-player Wolf round: a hole the Wolf's side wins is a Wolf win
+    /// (the Wolf first, then the partner), a hole the opponents win, a tied
+    /// hole and a hole that needs a Wolf are not.
+    @Test func aHoleWonByTheWolfsSideIsAWolfWin() throws {
+        let wolfRound = try WolfRoundTests.wolfDraft().makeRound(using: bridge)
+        container.mainContext.insert(wolfRound)
+        let play = WolfRoundTests(container: container, bridge: bridge)
+        func snapshot() throws -> GameSnapshot {
+            GameSnapshot(round: wolfRound, status: try RoundStatus(round: wolfRound, bridge: bridge))
+        }
+
+        // Hole 1: Zach alone wins. Hole 2: Sam takes Jo and they win. Hole 3:
+        // Alex alone loses to Zach's 2. Hole 4: Jo alone, tied.
+        let before = try snapshot()
+        #expect(before.wolfWins.isEmpty)
+        try play.play(wolfRound, hole: 1, birdie: "zach")
+        try play.play(wolfRound, hole: 2, birdie: "jo", choice: .partner("jo"))
+        try play.play(wolfRound, hole: 3, birdie: "zach")
+        try play.play(wolfRound, hole: 4)
+        let after = try snapshot()
+        #expect(after.wolfWins == [
+            GameSnapshot.WolfWin(hole: 1, winnerIDs: ["zach"]),
+            GameSnapshot.WolfWin(hole: 2, winnerIDs: ["sam", "jo"]),
+        ])
+        let events = EventDetector.events(before: before, after: after).filter { $0.kind == .wolfHoleWon }
+        #expect(events.map(\.hole) == [1, 2])
+        #expect(events.map(\.playerNames) == [["Zach"], ["Sam", "Jo"]])
+
+        // Every other hole to 16 tied: Alex (0 against 5, 3, 3) is the Wolf on
+        // 17 and wins alone, 4 points. Sam and Jo are then tied for last place:
+        // hole 18 needs a Wolf and is no event, even with every score and the
+        // choice in. Once the group picks Sam and Sam's birdie wins, it is.
+        for hole in 5...16 { try play.play(wolfRound, hole: hole) }
+        try play.play(wolfRound, hole: 17, birdie: "alex")
+        let after17 = try snapshot()
+        #expect(after17.wolfWins.last == GameSnapshot.WolfWin(hole: 17, winnerIDs: ["alex"]))
+
+        try play.play(wolfRound, hole: 18, birdie: "sam")
+        let needsWolf = try snapshot()
+        #expect(try RoundStatus(round: wolfRound, bridge: bridge).wolfHole(18)?.status == .needsWolf)
+        #expect(needsWolf.wolfWins.count == 3)
+        #expect(EventDetector.events(before: after17, after: needsWolf).filter { $0.kind == .wolfHoleWon }.isEmpty)
+
+        try RoundScorer(round: wolfRound).setWolf("sam", hole: 18)
+        let picked = try snapshot()
+        #expect(picked.wolfWins.last == GameSnapshot.WolfWin(hole: 18, winnerIDs: ["sam"]))
+        #expect(EventDetector.events(before: needsWolf, after: picked).map(\.kind) == [.wolfHoleWon])
+    }
+
     @Test func aRecordedGreenieWithoutAScoreIsNotAWinYet() throws {
         try scorer.setGross(3, playerID: "alex", hole: 3)
         try scorer.setGreenieWinner("alex", hole: 3)

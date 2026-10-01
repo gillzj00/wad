@@ -24,6 +24,7 @@ struct SettlementView: View {
                     skins(settlement)
                     wad(settlement)
                     greenies(settlement)
+                    WolfSettlementSections(settlement: settlement)
                 }
                 .themedRows()
             } else {
@@ -85,7 +86,7 @@ struct SettlementView: View {
             }
         }
 
-        if !settlement.unpaidGreenies.isEmpty {
+        if !settlement.unpaidGreenies.isEmpty || !settlement.unscoredWolfHoles.isEmpty {
             Section {
                 ForEach(settlement.unpaidGreenies, id: \.hole) { greenie in
                     NavigationLink(value: RoundsRoute.scoringHole(round, greenie.hole)) {
@@ -93,6 +94,7 @@ struct SettlementView: View {
                     }
                     .accessibilityIdentifier("settlement.fix.greenie.\(greenie.hole)")
                 }
+                WolfNeedsFixingRows(round: round, settlement: settlement)
             } header: {
                 SectionHeader("Needs fixing", systemImage: "wrench.adjustable")
             }
@@ -203,12 +205,16 @@ struct SettlementView: View {
     }
 
     private func games(_ settlement: RoundSettlement) -> some View {
-        Section {
+        // With Wolf there are four columns; they get narrower so the names keep room.
+        let showsWolf = settlement.wolf != nil
+        let width: CGFloat = showsWolf ? 66 : 80
+        return Section {
             HStack(spacing: 0) {
                 Text("").frame(maxWidth: .infinity, alignment: .leading)
-                amountCell("Skins")
-                amountCell("Wad")
-                amountCell("Greenies")
+                amountCell("Skins", width: width)
+                amountCell("Wad", width: width)
+                amountCell("Greenies", width: width)
+                if showsWolf { amountCell("Wolf", width: width) }
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(Theme.Palette.ash)
@@ -219,14 +225,17 @@ struct SettlementView: View {
                     Text(player.name)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    amountCell(SettlementText.signed(player.skinsCents)).foregroundStyle(color(player.skinsCents))
-                    amountCell(SettlementText.signed(player.wadCents)).foregroundStyle(color(player.wadCents))
-                    amountCell(SettlementText.signed(player.greeniesCents)).foregroundStyle(color(player.greeniesCents))
+                    amountCell(SettlementText.signed(player.skinsCents), width: width).foregroundStyle(color(player.skinsCents))
+                    amountCell(SettlementText.signed(player.wadCents), width: width).foregroundStyle(color(player.wadCents))
+                    amountCell(SettlementText.signed(player.greeniesCents), width: width).foregroundStyle(color(player.greeniesCents))
+                    if showsWolf {
+                        amountCell(SettlementText.signed(player.wolfCents), width: width).foregroundStyle(color(player.wolfCents))
+                    }
                 }
                 .font(.subheadline)
                 .monospacedDigit()
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(SettlementText.games(player))
+                .accessibilityLabel(SettlementText.games(player, wolf: showsWolf))
                 .accessibilityIdentifier("settlement.games.\(player.name)")
             }
         } header: {
@@ -289,11 +298,11 @@ struct SettlementView: View {
 
     // MARK: Pieces
 
-    private func amountCell(_ text: String) -> some View {
+    private func amountCell(_ text: String, width: CGFloat = 80) -> some View {
         Text(text)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            .frame(width: 80, alignment: .trailing)
+            .frame(width: width, alignment: .trailing)
     }
 
     private func color(_ cents: Int) -> Color {

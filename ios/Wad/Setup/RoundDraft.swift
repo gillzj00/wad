@@ -17,6 +17,7 @@ enum SetupIssue: Hashable, Sendable {
     case courseHandicapInvalid(player: Int)
     case venmoHandleInvalid(player: Int)
     case amountInvalid(game: String)
+    case wolfNeedsFourPlayers
 
     var message: String {
         switch self {
@@ -50,6 +51,8 @@ enum SetupIssue: Hashable, Sendable {
             "Player \(player): the Venmo handle is 5 to 30 letters, digits, hyphens or underscores, or blank."
         case .amountInvalid(let game):
             "\(game): enter dollars and cents, such as 7 or 7.50."
+        case .wolfNeedsFourPlayers:
+            "Wolf is played with exactly 4 players. Add players or turn Wolf off."
         }
     }
 
@@ -106,6 +109,8 @@ struct RoundDraft: Equatable, Sendable {
     var wadStepText = Money.dollars(fromCents: GameSettings.defaults.wadStepCents)
     var skinsBaseText = Money.dollars(fromCents: GameSettings.defaults.skinsBaseCents)
     var greeniesAmountText = Money.dollars(fromCents: GameSettings.defaults.greeniesAmountCents)
+    /// Off unless the group turns it on; needs exactly four players.
+    var wolf = WolfDraft()
 
     /// Save par for every player on every hole when the round is created, so
     /// that scoring is changing the holes that went differently.
@@ -251,6 +256,7 @@ struct RoundDraft: Equatable, Sendable {
         ]
         .filter { Money.cents(fromDollars: $0.1) == nil }
         .map { .amountInvalid(game: $0.0) }
+            + wolf.issues(playerCount: players.count)
     }
 
     // MARK: Round
@@ -285,6 +291,7 @@ struct RoundDraft: Equatable, Sendable {
                 venmoHandle: VenmoHandle.normalized(player.venmoHandleText)
             )
         }
+        wolf.apply(to: round, players: players)
         if startsEveryHoleAtPar {
             for hole in round.holes {
                 for player in round.players {

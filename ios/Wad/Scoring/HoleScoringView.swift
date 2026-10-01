@@ -38,6 +38,9 @@ struct HoleScoringView: View {
                     if hole.number == lastHole, round.isHoleComplete(hole.number) {
                         settlement
                     }
+                    if round.playsWolf {
+                        WolfHoleSection(round: round, hole: hole, status: status, perform: perform)
+                    }
                     wad(hole, status: status)
                     if hole.par == 3 || hole.greenieWinnerID != nil {
                         greenie(hole, status: status)
@@ -57,7 +60,7 @@ struct HoleScoringView: View {
                 holes: round.orderedHoles.map(\.number),
                 current: $holeNumber,
                 completed: Set(round.completedHoles),
-                flagged: Set(status?.invalidGreenieHoles ?? [])
+                flagged: Set((status?.invalidGreenieHoles ?? []) + (status?.flaggedWolfHoles ?? []))
             )
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { navigationBar }

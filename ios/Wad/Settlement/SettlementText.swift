@@ -22,8 +22,14 @@ enum SettlementText {
 
     /// A player's result per game, in one line.
     static func games(_ player: RoundSettlement.PlayerResult) -> String {
+        games(player, wolf: false)
+    }
+
+    /// With `wolf`, the round plays Wolf and its column is included.
+    static func games(_ player: RoundSettlement.PlayerResult, wolf: Bool) -> String {
         "\(player.name): Skins \(signed(player.skinsCents)), Wad \(signed(player.wadCents)), "
             + "Greenies \(signed(player.greeniesCents))"
+            + (wolf ? ", Wolf \(signed(player.wolfCents))" : "")
     }
 
     static func holes(_ holes: [Int]) -> String {
@@ -34,6 +40,15 @@ enum SettlementText {
         let count = settlement.holeNumbers.count
         guard !settlement.isFinal else {
             return StatusLine(title: "Final", detail: "All \(count) holes are scored.")
+        }
+        if settlement.incompleteHoles.isEmpty {
+            // Every score is in; Wolf holds the settlement back.
+            return StatusLine(
+                title: "Provisional, Wolf unfinished",
+                detail: "Not final: \(WolfText.unfinished(settlement.unscoredWolfHoles, name: settlement.name)) "
+                    + "The amounts change until every Wolf hole is scored.",
+                isWarning: true
+            )
         }
         let completed = settlement.completedHoleCount
         let progress = if completed == 0 {
