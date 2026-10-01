@@ -19,7 +19,17 @@ enum EventSynth {
         case .snowman: crumble(&mix)
         case .birdie: sadTrombone(&mix)
         }
-        return mix.finished(peak: kind == .holeInOne ? 1 : 0.75)
+        return mix.finished(peak: kind == .holeInOne ? 1 : 0.75, room: room(for: kind))
+    }
+
+    /// How much of a tail each sound gets: a howl in the hills, a thunderclap
+    /// across a valley, a trombone in a bar.
+    private static func room(for kind: GameEventKind) -> Double {
+        switch kind {
+        case .wolfHoleWon, .albatross, .holeInOne: 0.45
+        case .greenie, .eagle, .snowman: 0.3
+        case .wadTaken, .skinWon, .birdie: 0.18
+        }
     }
 
     // MARK: Sounds
@@ -39,8 +49,18 @@ enum EventSynth {
                 level * envelope($0, duration: 3, attack: 0.35, release: 0.6)
             })
         }
+        for harmonic in 1...3 {
+            let level = 0.25 / pow(Double(harmonic), 1.3)
+            mix.add(at: 0.02, Voice.tone(duration: 3, wave: .sine, frequency: { pitch($0) * Double(harmonic) * 1.004 }) {
+                level * envelope($0, duration: 3, attack: 0.35, release: 0.6)
+            })
+        }
         mix.add(at: 0, Voice.noise(duration: 3, cutoff: { _ in 1500 }) {
             0.05 * envelope($0, duration: 3, attack: 0.5, release: 0.8)
+        })
+        // A growl before the howl.
+        mix.add(at: 0, Voice.tone(duration: 0.6, wave: .sawtooth, frequency: { 70 + 15 * sin(2 * .pi * 30 * $0) }, cutoff: { _ in 400 }) {
+            0.5 * envelope($0, duration: 0.6, attack: 0.05, release: 0.2)
         })
     }
 
@@ -104,6 +124,12 @@ enum EventSynth {
             }, cutoff: { _ in 5500 }) {
                 0.3 * envelope($0, duration: length, attack: 0.03, release: 0.3)
             })
+        }
+        for at in [0.1, 1.3] {
+            mix.add(at: at, Voice.noise(duration: 0.75, cutoff: { 3000 + 2000 * sin(2 * .pi * 28 * $0) }) {
+                0.12 * envelope($0, duration: 0.75, attack: 0.03, release: 0.3)
+            })
+            mix.add(at: at, Voice.noise(duration: 0.02, cutoff: { _ in 9000 }) { _ in 0.5 })
         }
         mix.add(at: 0, Voice.noise(duration: 3, cutoff: { _ in 600 }) {
             0.14 * abs(sin(2 * .pi * 1.5 * $0)) * envelope($0, duration: 3, attack: 0.2, release: 0.6)
@@ -190,7 +216,11 @@ enum EventSynth {
             }, cutoff: { 2500 - 1700 * min($0 / 0.25, 1) }) {
                 0.4 * envelope($0, duration: note.length, attack: 0.03, release: 0.1)
             })
+            mix.add(at: note.at, Voice.noise(duration: note.length, cutoff: { _ in 1200 }) {
+                0.04 * envelope($0, duration: note.length, attack: 0.05, release: 0.1)
+            })
         }
+        mix.add(at: 1.35, Voice.tone(duration: 0.5, wave: .sine, frequency: { _ in 65 }) { 0.5 * exp(-$0 * 6) })
     }
 
     // MARK: Building blocks
@@ -311,12 +341,30 @@ enum EventSynth {
             }
         }
 
-        /// Scaled so the loudest sample is at `peak`.
-        func finished(peak: Float = 1) -> [Float] {
-            let loudest = samples.reduce(0) { max($0, abs($1)) }
-            guard loudest > 0 else { return samples }
+        /// With a tail from a few echoes (`room` 0 is dry), scaled so the
+        /// loudest sample is at `peak`.
+        func finished(peak: Float = 1, room: Double = 0) -> [Float] {
+            var out = samples
+            if room > 0 {
+                // Three feedback delays at prime-ish spacings make a small hall.
+                for delay in [0.0311, 0.0437, 0.0599] {
+                    let d = Int(delay * sampleRate)
+                    let feedback = Float(0.25 + room * 0.45)
+                    var wet = [Float](repeating: 0, count: out.count)
+                    for i in 0..<out.count {
+                        let echo = i >= d ? wet[i - d] * feedback : 0
+                        wet[i] = samples[i] + echo
+                    }
+                    let level = Float(room * 0.35)
+                    for i in 0..<out.count {
+                        out[i] += (wet[i] - samples[i]) * level
+                    }
+                }
+            }
+            let loudest = out.reduce(0) { max($0, abs($1)) }
+            guard loudest > 0 else { return out }
             let gain = peak / loudest
-            return samples.map { $0 * gain }
+            return out.map { $0 * gain }
         }
     }
 }

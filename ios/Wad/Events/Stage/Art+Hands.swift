@@ -31,6 +31,12 @@ struct HandGeometry {
             var point = CGPoint(x: origin.x + Self.bases[finger] * u, y: palm.maxY)
             var angle = CGFloat.pi / 2 + Self.spreads[finger]
             let c = curl(finger)
+            if c >= 0.75 {
+                // Folded into a fist: only the knuckle shows, as a short stub.
+                let next = CGPoint(x: point.x + cos(angle) * 0.3 * u, y: point.y + sin(angle) * 0.3 * u)
+                bones.append(Bone(from: point, to: next, radius: u * 0.1, finger: finger, joint: 0))
+                continue
+            }
             for (joint, share) in [CGFloat(0.42), 0.32, 0.26].enumerated() {
                 angle -= c * (joint == 0 ? 0.6 : 1)
                 let next = CGPoint(x: point.x + cos(angle) * Self.lengths[finger] * share * u, y: point.y + sin(angle) * Self.lengths[finger] * share * u)
@@ -131,6 +137,10 @@ extension Art {
         let u = hand.u, o = hand.origin
         let path = hand.fleshPath()
         Draw.shadowed(c, blur: 18, offset: CGSize(width: 0, height: -10), color: UIColor.black.withAlphaComponent(0.75)) {
+            Draw.fill(c, path, Metal.fleshShade)
+        }
+        // A tight dark shadow all round is the outline of the whole silhouette.
+        Draw.shadowed(c, blur: 3, offset: .zero, color: Metal.fleshShade) {
             Draw.shade(c, path, [UIColor(red: 0.96, green: 0.78, blue: 0.64, alpha: 1), Metal.flesh, Metal.fleshShade], from: CGPoint(x: o.x - u * 0.6, y: o.y + u * 1.4), to: CGPoint(x: o.x + u * 0.8, y: o.y - u * 1.2))
         }
         c.saveGState()
@@ -144,6 +154,13 @@ extension Art {
             crease.move(to: CGPoint(x: b.from.x - dy / len * b.radius * 1.2, y: b.from.y + dx / len * b.radius * 1.2))
             crease.addQuadCurve(to: CGPoint(x: b.from.x + dy / len * b.radius * 1.2, y: b.from.y - dx / len * b.radius * 1.2), control: CGPoint(x: b.from.x + dx / len * b.radius * 0.5, y: b.from.y + dy / len * b.radius * 0.5))
             Draw.stroke(c, crease, Metal.fleshShade.withAlphaComponent(0.6), width: 3)
+        }
+        // Knuckles of the folded fingers.
+        for b in hand.bones where b.finger < 4 && b.joint == 0 && hand.curl(b.finger) >= 0.75 {
+            let crease = CGMutablePath()
+            crease.addArc(center: b.to, radius: b.radius * 0.9, startAngle: 0.2, endAngle: .pi - 0.2, clockwise: false)
+            Draw.stroke(c, crease, Metal.fleshShade.withAlphaComponent(0.7), width: 3)
+            Draw.fill(c, Draw.ellipse(at: CGPoint(x: b.to.x, y: b.to.y + b.radius * 0.2), rx: b.radius * 0.6, ry: b.radius * 0.35), UIColor.white.withAlphaComponent(0.25))
         }
         for b in hand.bones where b.joint == (b.finger == 4 ? 1 : 2) {
             let dx = b.to.x - b.from.x, dy = b.to.y - b.from.y
@@ -165,7 +182,6 @@ extension Art {
             Draw.stroke(c, path, Metal.fleshShade.withAlphaComponent(0.5), width: 2.5)
         }
         c.restoreGState()
-        Draw.stroke(c, path, Metal.fleshShade.withAlphaComponent(0.9), width: 2.5)
     }
 
     /// A studded leather band round the wrist, for the fist.

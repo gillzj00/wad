@@ -104,11 +104,11 @@ final class EagleScene: EventSKScene {
     private func screech(from point: CGPoint) {
         for i in 0..<3 {
             after(Double(i) * 0.1) { [self] in
-                ring(at: point, color: Metal.bone, from: w * 0.05, to: w * 0.6, duration: 0.7, width: 3, z: 15)
+                ring(at: point, color: Metal.bone.withAlphaComponent(0.6), from: w * 0.03, to: w * 0.35, duration: 0.6, width: 2, z: 15)
             }
         }
         if still {
-            ring(at: point, color: Metal.bone, from: w * 0.1, to: w * 0.5, duration: 0.7, width: 3, z: 15)
+            ring(at: point, color: Metal.bone.withAlphaComponent(0.6), from: w * 0.05, to: w * 0.3, duration: 0.6, width: 2, z: 15)
         }
     }
 }
@@ -148,14 +148,10 @@ final class HoleInOneScene: EventSKScene {
         let confetti = confettiRain()
 
         if still {
-            for (i, x) in [CGFloat(0.3), 0.7, 0.5].enumerated() {
-                let apex = at(x, 0.6 + CGFloat(i) * 0.12)
-                let e = Emitters.burst(count: 110, speed: 420, color: colors[i], scale: 0.16, lifetime: 1.9, gravity: -220)
-                e.position = apex
-                e.zPosition = 40
-                addChild(e)
-                e.advanceSimulationTime(0.3 + Double(i) * 0.3)
-                addGlow(at: apex, radius: w * 0.3, color: colors[i], alpha: 0.5, z: 35)
+            for (i, x) in [CGFloat(0.28), 0.72, 0.5].enumerated() {
+                let apex = at(x, 0.5 + CGFloat(i) * 0.1)
+                frozenBurst(at: apex, color: colors[i], age: 0.5 + CGFloat(i) * 0.2, seed: i)
+                addGlow(at: apex, radius: w * 0.3, color: colors[i], alpha: 0.35, z: 35)
             }
             pop(left, cork: true, elapsed: 0.5)
             pop(right, cork: true, elapsed: 0.25)
@@ -189,6 +185,32 @@ final class HoleInOneScene: EventSKScene {
         after(4.4) { [self] in pop(left, cork: false, elapsed: 0) }
     }
 
+    /// A burst caught mid-air for the poster frame: sparks and their trails
+    /// placed where they would be `age` seconds after going off.
+    private func frozenBurst(at apex: CGPoint, color: UIColor, age: CGFloat, seed: Int) {
+        for i in 0..<40 {
+            let angle = CGFloat(i) / 40 * .pi * 2 + CGFloat(Anim.hash(seed, 310))
+            let speed = w * (0.45 + CGFloat(Anim.hash(i + seed * 50, 311)) * 0.3)
+            func at(_ t: CGFloat) -> CGPoint {
+                CGPoint(x: apex.x + cos(angle) * speed * t * (1 - t * 0.3), y: apex.y + sin(angle) * speed * t * (1 - t * 0.3) - 220 * t * t)
+            }
+            let head = at(age), tail = at(max(0, age - 0.12))
+            let trail = SKShapeNode(path: { let p = CGMutablePath(); p.move(to: tail); p.addLine(to: head); return p }())
+            trail.strokeColor = color.withAlphaComponent(0.8)
+            trail.lineWidth = 3
+            trail.lineCap = .round
+            trail.zPosition = 40
+            addChild(trail)
+            let spark = SKSpriteNode(texture: Textures.dot, size: CGSize(width: 14, height: 14))
+            spark.position = head
+            spark.color = i % 3 == 0 ? .white : color
+            spark.colorBlendFactor = 1
+            spark.blendMode = .add
+            spark.zPosition = 41
+            addChild(spark)
+        }
+    }
+
     private func rocket(_ n: Int) {
         let x = w * (0.15 + CGFloat(Anim.hash(n, 300)) * 0.7)
         let apex = CGPoint(x: x, y: h * (0.55 + CGFloat(Anim.hash(n, 301)) * 0.35))
@@ -213,14 +235,14 @@ final class HoleInOneScene: EventSKScene {
         after(0.75) { [self] in
             flash(color, peak: 0.3, duration: 0.4)
             shake(amplitude: 9, duration: 0.35)
-            let big = Emitters.burst(count: 110, speed: 440, color: color, scale: 0.17, lifetime: 1.9, gravity: -220)
+            let big = Emitters.burst(count: 110, speed: 440, color: color, scale: 0.14, lifetime: 1.9, gravity: -220)
             burst(big, at: apex, z: 40)
             let bright = Emitters.burst(count: 60, speed: 380, color: .white, scale: 0.08, lifetime: 1.2, gravity: -220)
             burst(bright, at: apex, z: 41)
             let glow = addGlow(at: apex, radius: w * 0.35, color: color, alpha: 0.9, z: 35)
             glow.run(.sequence([.group([.scale(to: 2, duration: 0.5), .fadeOut(withDuration: 0.5)]), .removeFromParent()]))
-            let smoke = Emitters.smoke(rate: 30, color: UIColor(white: 0.35, alpha: 1), speed: 30, scale: 0.8)
-            smoke.numParticlesToEmit = 12
+            let smoke = Emitters.smoke(rate: 30, color: UIColor(white: 0.22, alpha: 1), speed: 30, scale: 0.45)
+            smoke.numParticlesToEmit = 6
             burst(smoke, at: apex, z: 34)
             after(0.45) { [self] in
                 let crackle = Emitters.burst(count: 50, speed: 180, color: Metal.emberBright, scale: 0.07, lifetime: 0.8, gravity: -300)
@@ -247,8 +269,8 @@ final class HoleInOneScene: EventSKScene {
         foam.particleScaleSpeed = 0.2
         foam.particleAlphaSequence = SKKeyframeSequence(keyframeValues: [1, 0.8, 0], times: [0, 0.5, 1])
         burst(foam, at: mouth, z: 33)
-        let mist = Emitters.smoke(rate: 60, color: Metal.bone, speed: 200, scale: 0.4)
-        mist.numParticlesToEmit = 25
+        let mist = Emitters.smoke(rate: 60, color: Metal.bone, speed: 200, scale: 0.22)
+        mist.numParticlesToEmit = 10
         mist.emissionAngle = foam.emissionAngle
         mist.emissionAngleRange = 0.6
         burst(mist, at: mouth, z: 31)
@@ -446,8 +468,8 @@ final class SnowmanScene: EventSKScene {
         snowGround.position = at(0.5, 0)
         snowGround.zPosition = -50
         addChild(snowGround)
-        let snow = Emitters.fall(width: w, height: h, rate: 50, speed: 90, texture: Textures.dot, scale: 0.12, color: .white, alpha: 0.9)
-        snow.particleScaleRange = 0.08
+        let snow = Emitters.fall(width: w, height: h, rate: 70, speed: 90, texture: Textures.dot, scale: 0.045, color: .white, alpha: 0.9)
+        snow.particleScaleRange = 0.03
         snow.xAcceleration = 10
         snow.position = at(0.5, 1.05)
         snow.zPosition = 70

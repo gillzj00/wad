@@ -39,18 +39,18 @@ final class WolfScene: EventSKScene {
             let glow = SKSpriteNode(color: Metal.ember, size: CGSize(width: 110 * scale, height: 110 * scale))
             glow.shader = Shaders.pulse
             glow.blendMode = .add
-            glow.position = CGPoint(x: s * 60 * scale, y: 33 * scale)
+            glow.position = CGPoint(x: s * 60 * scale, y: 63 * scale)
             glow.zPosition = 3
             wolf.addChild(glow)
         }
         let mouth = CGPoint(x: wolf.position.x, y: wolf.position.y + jawClosed.y - 40 * scale)
-        let open = CGFloat(78) * scale
+        let open = CGFloat(56) * scale
 
         if still {
             jaw.position = CGPoint(x: 0, y: jawClosed.y - open)
             wolf.zRotation = 0.14
             cameraNode.setScale(0.92)
-            ring(at: mouth, color: Metal.bone, from: w * 0.2, to: w * 0.9, duration: 1)
+            ring(at: mouth, color: Metal.bone.withAlphaComponent(0.3), from: w * 0.2, to: w * 0.9, duration: 1, width: 2)
             return
         }
 
@@ -86,9 +86,9 @@ final class WolfScene: EventSKScene {
             breath.particleAlphaSequence = SKKeyframeSequence(keyframeValues: [0, 0.35, 0], times: [0, 0.3, 1])
             breath.zPosition = 4
             wolf.addChild(breath)
-            for i in 0..<4 {
-                after(Double(i) * 0.4) { [self] in
-                    ring(at: mouth, color: Metal.bone, from: w * 0.12, to: w * 1.4, duration: 1.3, width: 5)
+            for i in 0..<3 {
+                after(Double(i) * 0.45) { [self] in
+                    ring(at: mouth, color: Metal.bone.withAlphaComponent(0.35), from: w * 0.12, to: w * 1.1, duration: 1.3, width: 2)
                 }
             }
         }
@@ -199,11 +199,11 @@ final class GreenieScene: EventSKScene {
             shake(amplitude: 26, duration: 0.8)
             zoom(to: 0.9, duration: 0.12, timing: .easeOut)
             after(0.12) { [self] in zoom(to: 1.0, duration: 1.2, timing: .easeOut) }
-            fireball(at: hole, size: w * 1.1, duration: 1.3)
+            fireball(at: hole, size: w * 1.1, duration: 1.7)
             ring(at: hole, color: Metal.bone, from: w * 0.1, to: w * 2.2, duration: 0.9, width: 10, squash: 0.35)
             ring(at: hole, color: Metal.ember, from: w * 0.05, to: w * 1.6, duration: 1.1, width: 6, squash: 0.35)
             crater(at: hole)
-            for e in Emitters.debris(count: 60, textures: Art.turf, speed: 760, scale: 0.6) { burst(e, at: hole) }
+            for e in Emitters.debris(count: 70, textures: Art.turf, speed: 760, scale: 0.45) { burst(e, at: hole) }
             burst(Emitters.burst(count: 160, speed: 560, color: Metal.emberBright, scale: 0.14, lifetime: 1.8), at: hole, z: 46)
             burst(Emitters.burst(count: 60, speed: 300, color: Metal.ember, scale: 0.25, lifetime: 2.2, gravity: -120), at: hole, z: 44)
             let smoke = Emitters.smoke(rate: 45, color: UIColor(white: 0.3, alpha: 1), speed: 140, scale: 1.1)
@@ -238,7 +238,7 @@ final class WadScene: EventSKScene {
         addBackground(top: Metal.black, bottom: UIColor(red: 0.04, green: 0.1, blue: 0.05, alpha: 1))
         // A shaft of light from above.
         let beam = SKShapeNode(path: Draw.polygon([at(0.3, 1.1), at(0.7, 1.1), at(1.1, -0.1), at(-0.1, -0.1)]))
-        beam.fillColor = Metal.bone.withAlphaComponent(0.07)
+        beam.fillColor = Metal.bone.withAlphaComponent(0.035)
         beam.strokeColor = .clear
         beam.zPosition = -80
         addChild(beam)
@@ -281,7 +281,7 @@ final class WadScene: EventSKScene {
             hand.position = rest
             hand.texture = frames[2]
             hand.zRotation = -0.05
-            rain(from: fingertips, count: 90)
+            rain(from: fingertips, count: 50, continuous: false)
             gold.particleBirthRate = 60
             return
         }
@@ -301,17 +301,21 @@ final class WadScene: EventSKScene {
             hand.run(.repeatForever(.animate(with: frames, timePerFrame: 0.09)))
             hand.run(Self.wiggle(0.04, period: 0.36))
             gold.particleBirthRate = 60
-            rain(from: fingertips, count: 140)
-            after(1.2) { [self] in rain(from: fingertips, count: 80) }
+            rain(from: fingertips, count: 90, continuous: false)
+            rain(from: fingertips, count: 0, continuous: true)
         }
         zoom(to: 0.94, duration: 3, timing: .easeOut)
     }
 
     /// Bills and coins flung up out of the hand, flipping as they fall.
-    private func rain(from point: CGPoint, count: Int) {
-        let bills = Emitters.burst(count: count, speed: 820, color: .white, texture: Art.bill, scale: 0.55, lifetime: 3.2, gravity: -950)
+    private func rain(from point: CGPoint, count: Int, continuous: Bool) {
+        let bills = Emitters.burst(count: count, speed: 640, color: .white, texture: Art.bill, scale: 0.55, lifetime: 3.2, gravity: -950)
+        if continuous {
+            bills.numParticlesToEmit = 0
+            bills.particleBirthRate = 28
+        }
         bills.emissionAngle = .pi / 2
-        bills.emissionAngleRange = 1.3
+        bills.emissionAngleRange = 1.0
         bills.particleColorBlendFactor = 0
         bills.particleScaleSpeed = 0
         bills.particleRotationSpeed = 5
@@ -321,7 +325,11 @@ final class WadScene: EventSKScene {
         let flip = SKAction.repeatForever(.sequence([.scaleX(to: 0.1, duration: 0.25), .scaleX(to: 1, duration: 0.25)]))
         bills.particleAction = flip
         burst(bills, at: point, z: 30)
-        let coins = Emitters.burst(count: count / 4, speed: 700, color: .white, texture: Art.coin, scale: 0.4, lifetime: 3, gravity: -950)
+        let coins = Emitters.burst(count: max(count / 4, 1), speed: 560, color: .white, texture: Art.coin, scale: 0.4, lifetime: 3, gravity: -950)
+        if continuous {
+            coins.numParticlesToEmit = 0
+            coins.particleBirthRate = 10
+        }
         coins.emissionAngle = .pi / 2
         coins.emissionAngleRange = 1.2
         coins.particleColorBlendFactor = 0

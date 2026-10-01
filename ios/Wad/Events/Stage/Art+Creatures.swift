@@ -10,7 +10,7 @@ enum Art {
     /// The head without its lower jaw, 560 points square; the mouth line is
     /// at `wolfMouthY` from the bottom. The jaw hangs under it.
     static let wolfHeadSize = CGSize(width: 560, height: 560)
-    static let wolfMouthY: CGFloat = 200
+    static let wolfMouthY: CGFloat = 253
 
     static var wolfHead: SKTexture { Textures.make("wolf-head", size: wolfHeadSize) { c, size in
         let u: CGFloat = 110
@@ -80,8 +80,8 @@ enum Art {
         Draw.fill(c, Draw.ellipse(at: p(-0.1, -0.02), rx: 0.05 * u, ry: 0.03 * u), UIColor.white.withAlphaComponent(0.35))
         // Mouth: the dark inside, the gums and the upper fangs. The lower jaw covers the bottom.
         let mouthTop = p(0, -0.52).y
-        let inside = Draw.polygon([p(-0.72, -0.5), p(0.72, -0.5), p(0.62, -1.3), p(-0.62, -1.3)])
-        Draw.shade(c, inside, [Metal.bloodDark, UIColor(red: 0.1, green: 0, blue: 0.01, alpha: 1)], from: CGPoint(x: cx, y: mouthTop), to: p(0, -1.3))
+        let inside = Draw.polygon([p(-0.72, -0.5), p(0.72, -0.5), p(0.66, -1.6), p(-0.66, -1.6)])
+        Draw.shade(c, inside, [Metal.bloodDark, UIColor(red: 0.1, green: 0, blue: 0.01, alpha: 1)], from: CGPoint(x: cx, y: mouthTop), to: p(0, -1.6))
         Draw.fill(c, Draw.polygon([p(-0.72, -0.5), p(0.72, -0.5), p(0.72, -0.62), p(-0.72, -0.62)]), UIColor(red: 0.45, green: 0.12, blue: 0.16, alpha: 1))
         for i in 0..<9 {
             let x = -0.62 + CGFloat(i) * 0.155
@@ -113,11 +113,11 @@ enum Art {
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: cx + x * u, y: top + y * u) }
         let fur = UIColor(red: 0.34, green: 0.33, blue: 0.36, alpha: 1)
         let furDark = UIColor(red: 0.14, green: 0.13, blue: 0.15, alpha: 1)
-        let chin = Draw.smooth([p(-0.75, 0), p(0.75, 0), p(0.62, -1.3), p(0.2, -2.05), p(-0.2, -2.05), p(-0.62, -1.3)], tension: 0.4)
+        let chin = Draw.smooth([p(-0.8, 0), p(0.8, 0), p(0.72, -0.9), p(0.32, -1.4), p(-0.32, -1.4), p(-0.72, -0.9)], tension: 0.4)
         Draw.shadowed(c, blur: 12, offset: CGSize(width: 0, height: -6), color: UIColor.black.withAlphaComponent(0.8)) {
             Draw.shade(c, chin, [fur, furDark], from: p(0, 0), to: p(0, -2))
         }
-        Draw.fur(c, along: Draw.resample([p(0.7, -0.3), p(0.62, -1.3), p(0.2, -2.05), p(-0.2, -2.05), p(-0.62, -1.3), p(-0.7, -0.3)], count: 40), length: 12, color: furDark, seed: 21)
+        Draw.fur(c, along: Draw.resample([p(0.75, -0.3), p(0.72, -0.9), p(0.32, -1.4), p(-0.32, -1.4), p(-0.72, -0.9), p(-0.75, -0.3)], count: 40), length: 12, color: furDark, seed: 21)
         let inside = Draw.polygon([p(-0.68, 0), p(0.68, 0), p(0.52, -0.95), p(-0.52, -0.95)])
         Draw.shade(c, inside, [Metal.bloodDark, UIColor(red: 0.12, green: 0, blue: 0.02, alpha: 1)], from: p(0, -0.95), to: p(0, 0))
         let tongue = Draw.ellipse(at: p(0, -0.45), rx: 0.38 * u, ry: 0.3 * u)
@@ -167,8 +167,7 @@ enum Art {
             for i in 0..<9 {
                 let x = -1.2 + CGFloat(i) * 0.3 + CGFloat(row % 2) * 0.15
                 let y = 0.4 - CGFloat(row) * 0.2
-                let scallop = Draw.ellipse(at: p(x, y), rx: 0.17 * u, ry: 0.1 * u)
-                Draw.stroke(c, scallop, brownDark.withAlphaComponent(0.6), width: 2)
+                Draw.feather(c, at: p(x, y), rx: 0.17 * u, ry: 0.1 * u, dark: brownDark, light: brownLight)
             }
         }
         c.restoreGState()
@@ -242,7 +241,7 @@ enum Art {
             for i in 0..<5 {
                 let y = 0.4 + CGFloat(row) * 0.45
                 let x = -0.75 + CGFloat(i) * 0.3 + CGFloat(row % 2) * 0.15
-                Draw.stroke(c, Draw.ellipse(at: p(x, y), rx: 0.17 * u * narrow, ry: 0.22 * u), dark.withAlphaComponent(0.55), width: 2)
+                Draw.feather(c, at: p(x, y), rx: 0.17 * u * narrow, ry: 0.22 * u, dark: dark, light: light)
             }
         }
         // Feather shafts radiating to the trailing edge.
@@ -343,6 +342,18 @@ enum Art {
 }
 
 extension Draw {
+    /// One feather of a row: a U-shaped tip, shadow below and a lit edge.
+    static func feather(_ c: CGContext, at center: CGPoint, rx: CGFloat, ry: CGFloat, dark: UIColor, light: UIColor) {
+        let tip = CGMutablePath()
+        var transform = CGAffineTransform(translationX: center.x, y: center.y).scaledBy(x: rx, y: ry)
+        tip.addArc(center: .zero, radius: 1, startAngle: .pi, endAngle: 0, clockwise: true, transform: transform)
+        stroke(c, tip, dark.withAlphaComponent(0.75), width: 3)
+        transform = transform.translatedBy(x: 0, y: 2.5 / ry)
+        let edge = CGMutablePath()
+        edge.addArc(center: .zero, radius: 1, startAngle: .pi, endAngle: 0, clockwise: true, transform: transform)
+        stroke(c, edge, light.withAlphaComponent(0.45), width: 1.5)
+    }
+
     /// Evenly spaced points along a closed polyline, for fur along a smooth outline.
     static func resample(_ points: [CGPoint], count: Int) -> [CGPoint] {
         var lengths: [CGFloat] = [0]
