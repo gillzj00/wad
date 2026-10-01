@@ -33,3 +33,9 @@ variable "github_repo_id" {
   type        = string
   default     = "1387929117"
 }
+
+variable "ci_environment" {
+  description = "GitHub Environment the Terraform apply job runs in; its required-reviewer rule gates deploys."
+  type        = string
+  default     = "dev"
+}

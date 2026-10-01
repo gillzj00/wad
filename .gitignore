@@ -15,6 +15,9 @@ coverage/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
+# Saved plans embed a state snapshot (account id, ARNs, bucket names).
+tfplan
+*.tfplan
 crash.log
 crash.*.log
 *.tfvars
@@ -34,10 +37,20 @@ ios/**/*.xcuserstate
 ios/**/xcuserdata/
 ios/**/.swiftpm/
 *.xcworkspace/xcuserdata/
+*.xcresult
 .build/
+# Per-developer signing (team id) lives here; copy Local.xcconfig.example.
 ios/Config/Local.xcconfig
+*.mobileprovision
+*.p8
+*.p12
+*.cer
+*.certSigningRequest
 
 # IDE
 .idea/
 *.iml
 .vscode/
+
+# Local agent worktrees and session state
+.claude/

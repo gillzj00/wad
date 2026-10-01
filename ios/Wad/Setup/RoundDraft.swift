@@ -105,6 +105,10 @@ struct RoundDraft: Equatable, Sendable {
     var skinsBaseText = Money.dollars(fromCents: GameSettings.defaults.skinsBaseCents)
     var greeniesAmountText = Money.dollars(fromCents: GameSettings.defaults.greeniesAmountCents)
 
+    /// Save par for every player on every hole when the round is created, so
+    /// that scoring is changing the holes that went differently.
+    var startsEveryHoleAtPar = true
+
     // MARK: Course
 
     var trimmedCourseName: String { courseName.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -262,7 +266,8 @@ struct RoundDraft: Equatable, Sendable {
             startedAt: startedAt,
             courseRating: tee?.courseRating,
             slope: tee?.slope,
-            settings: settings
+            settings: settings,
+            startsEveryHoleAtPar: startsEveryHoleAtPar
         )
         round.holes = holes.map { RoundHole(number: $0.number, par: $0.par, strokeIndex: $0.strokeIndex ?? 0) }
         round.players = try players.enumerated().map { offset, player in
@@ -278,17 +283,26 @@ struct RoundDraft: Equatable, Sendable {
                 venmoHandle: VenmoHandle.normalized(player.venmoHandleText)
             )
         }
+        if startsEveryHoleAtPar {
+            for hole in round.holes {
+                for player in round.players {
+                    round.setGross(hole.par, playerID: player.playerID, hole: hole.number)
+                }
+            }
+        }
         return round
     }
 }
 
 #if DEBUG
 extension RoundDraft {
-    /// A filled-in draft for simulator runs and previews.
+    /// A filled-in draft for simulator runs and previews. Its holes start
+    /// unscored, so the seeded rounds and the UI tests record every score.
     static var sample: RoundDraft {
         let pars = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
         let strokeIndexes = [7, 11, 17, 3, 1, 15, 9, 5, 13, 8, 18, 2, 10, 6, 12, 16, 4, 14]
         var draft = RoundDraft()
+        draft.startsEveryHoleAtPar = false
         draft.courseName = "Sample Links"
         draft.ratingText = "72.5"
         draft.slopeText = "131"

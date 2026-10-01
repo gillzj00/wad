@@ -5,3 +5,4 @@ export { scoreGreenies } from "./greenies.js";
 export { scoreSkins } from "./skins.js";
 export { scoreWad } from "./wad.js";
 export { settle } from "./settlement.js";
+export { scoreWolf } from "./wolf.js";

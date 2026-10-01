@@ -33,6 +33,19 @@ Full detail lives in [docs/architecture.md](docs/architecture.md).
 | `infra/` | Terraform: `bootstrap/`, reusable `modules/`, per-env stacks under `environments/` |
 | `.github/workflows/` | CI/CD, including Terraform plan-on-PR / apply-on-main |
 
+## Public repository
+
+This repository is public so the project can use GitHub Actions freely. Some things are deliberately not in it:
+
+- **Secrets and keys** — no AWS access keys (CI assumes an IAM role through GitHub OIDC), no course-data provider key (it lives in AWS SSM), no client tokens. `.env` files and `*.tfvars` are gitignored; only the `*.example` templates are committed.
+- **Apple signing** — the development team id lives in the gitignored `ios/Config/Local.xcconfig` (copy `Local.xcconfig.example`). Provisioning profiles and certificates are never committed.
+- **Device identifiers** — no real device UDIDs; the test fixtures use synthetic ids.
+- **AWS account details and Terraform state** — the account id, state bucket and role ARN are GitHub repository variables, state stays in S3, and saved plans (`tfplan`) are gitignored.
+
+How changes land: every change goes through a pull request. `main` is protected (no direct pushes, force pushes or deletions; status checks required; applies to administrators). Pull requests from forks run CI only after the owner approves the run, get a read-only token and cannot assume the AWS role. A Terraform apply runs only on a merge to `main` and waits for the owner's approval as the required reviewer of the `dev` GitHub Environment.
+
+Security issues: see [SECURITY.md](SECURITY.md).
+
 ## Getting started
 
 The project is not yet buildable. The first task is Milestone 0 (foundations) in [docs/roadmap/milestones.md](docs/roadmap/milestones.md), which includes the one-time Terraform bootstrap described in [infra/README.md](infra/README.md).
