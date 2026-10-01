@@ -21,6 +21,11 @@ enum Metal {
     static let ash = asset("Ash", UIColor(red: 0.45, green: 0.42, blue: 0.42, alpha: 1))
     static let flesh = UIColor(red: 0.89, green: 0.68, blue: 0.54, alpha: 1)
     static let fleshShade = UIColor(red: 0.62, green: 0.38, blue: 0.28, alpha: 1)
+    /// The ink outline that holds every drawn form.
+    static let ink = UIColor(red: 0.07, green: 0.04, blue: 0.05, alpha: 1)
+    static let boneLight = UIColor(red: 1, green: 0.99, blue: 0.94, alpha: 1)
+    static let fleshLight = UIColor(red: 0.98, green: 0.82, blue: 0.7, alpha: 1)
+    static let fleshDark = UIColor(red: 0.45, green: 0.24, blue: 0.18, alpha: 1)
 }
 
 /// One show: a SpriteKit scene with a camera, a flash layer and a vignette,
@@ -392,6 +397,43 @@ enum Draw {
         }
     }
 
+    /// The key light of every drawing: from the top left.
+    static let keyLight = CGVector(dx: -0.6, dy: 0.8)
+
+    static func translated(_ path: CGPath, _ dx: CGFloat, _ dy: CGFloat) -> CGPath {
+        var transform = CGAffineTransform(translationX: dx, y: dy)
+        return path.copy(using: &transform) ?? path
+    }
+
+    /// Cel shading: a flat base, a shadow crescent on the side away from the
+    /// key light (the shape minus itself moved toward the light, so the
+    /// shadow follows the form), an optional darker core along the edge, a
+    /// rim light sliver on that dark edge, and the ink outline.
+    static func cel(_ context: CGContext, _ path: CGPath, base: UIColor, shadow: UIColor, core: UIColor? = nil, rim: UIColor? = nil, ink: UIColor? = Metal.ink, width: CGFloat = 3, depth: CGFloat, light: CGVector = keyLight) {
+        let shape = path.normalized(using: .winding)
+        fill(context, shape, base)
+        let crescent = shape.subtracting(translated(shape, light.dx * depth, light.dy * depth), using: .winding)
+        fill(context, crescent, shadow)
+        if let core {
+            fill(context, shape.subtracting(translated(shape, light.dx * depth * 0.45, light.dy * depth * 0.45), using: .winding), core)
+        }
+        if let rim {
+            fill(context, shape.subtracting(translated(shape, light.dx * width * 1.1, light.dy * width * 1.1), using: .winding), rim)
+        }
+        if let ink {
+            stroke(context, shape, ink, width: width)
+        }
+    }
+
+    /// A cartoon highlight: a soft-edged flat blob toward the light.
+    static func highlight(_ context: CGContext, _ clip: CGPath, at point: CGPoint, rx: CGFloat, ry: CGFloat, color: UIColor = UIColor.white.withAlphaComponent(0.5)) {
+        context.saveGState()
+        context.addPath(clip)
+        context.clip()
+        fill(context, ellipse(at: point, rx: rx, ry: ry), color)
+        context.restoreGState()
+    }
+
     /// Fine cracks: a few jagged lines, for bone and ice.
     static func cracks(_ context: CGContext, around c: CGPoint, count: Int, length: CGFloat, color: UIColor, seed: Int) {
         for i in 0..<count {
@@ -554,6 +596,16 @@ enum Emitters {
         e.particleColorBlendFactor = 1
         e.particleAlpha = alpha
         e.particleAlphaRange = alpha * 0.4
+        return e
+    }
+
+    /// Blood drops flung out, falling point first.
+    static func drops(count: Int, speed: CGFloat, scale: CGFloat, lifetime: CGFloat) -> SKEmitterNode {
+        let e = burst(count: count, speed: speed, color: .white, texture: Art.bloodDrop, scale: scale, lifetime: lifetime, gravity: -1100)
+        e.particleColorBlendFactor = 0
+        e.particleRotationSpeed = 0
+        e.particleRotationRange = 0.6
+        e.particleScaleSpeed = 0
         return e
     }
 
