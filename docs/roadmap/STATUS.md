@@ -18,7 +18,7 @@ Last updated: 2026-09-29
 | P1.2 | Round models and setup flow | done | #18 |
 | P1.3 | Hole-by-hole scoring, UI walkthrough test | done | #20 |
 | P1.4 | Settlement screen, full 18-hole UI walkthrough | done | #22 |
-| P1.5 | Install on device | waiting for phone | - |
+| P1.5 | Install on device | done 2026-09-30 (installed on the owner's iPhone from main at #61) | - |
 
 ## Phase 2 task list
 
@@ -40,11 +40,12 @@ Last updated: 2026-09-29
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); install-device.sh no longer picks an unavailable phone | ios/ | done | #41 |
 | P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | in flight | - |
-| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default (requested 2026-09-29) | ios/ | in flight | - |
-| I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | PR open; waiting for the CI plan comment and @gillzj00's approval ("approve #54") | #54 |
-| H1 | HIGH PRIORITY (2026-09-29): repo hardening before going public: secrets audit of the full history, .gitignore, remove the committed bootstrap tfplan, least-privilege workflows pinned by SHA, apply gated on a `dev` environment with @gillzj00 as required reviewer, branch protection on main, Actions restricted; owner merges every PR from now on | .github/, infra/, root docs, GitHub settings | in flight | - |
-| G1 | Research: geolocation for course suggestion and hole detection (requested 2026-09-29) | docs/ | in flight | - |
-| C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | queued (after S1; can start before I1 is merged, against the API contract) | - |
+| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default (requested 2026-09-29) | ios/ | PR open, blocked on the iOS CI timeout | #59 |
+| I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | merged with @gillzj00's approval (plan 14/0/0); apply ran from main | #54 |
+| H1 | Repo hardening: audit done (no credentials; tfplan purged from history by an authorized force-push on 2026-09-30); repo made public 2026-09-30 with branch protection, `dev` environment reviewer, fork-PR approval, secret scanning and push protection; the workflow/docs PR is being rebased | .github/, infra/, root docs, GitHub settings | PR open | #57 |
+| H2 | iOS CI split into unit and UI jobs with parallel simulators (the 20-minute timeout blocks every iOS PR) | .github/, ios/scripts | in flight | - |
+| G1 | Research: geolocation for course suggestion and hole detection | docs/ | PR open (docs/research/geolocation.md) | #58 |
+| C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | queued (next iOS task after the CI split lands) | - |
 | T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
 | T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
@@ -52,9 +53,8 @@ Last updated: 2026-09-29
 ## Task in flight
 
 - W1 (subagent, branch `feat/wolf-engine`)
-- S1 (subagent, branch `feat/ios-score-starts-at-par`)
-- H1 (subagent, branch `chore/repo-hardening`)
-- G1 (subagent, branch `docs/geolocation-research`)
+- H1 rebase (subagent, branch `chore/repo-hardening`)
+- H2 (subagent, branch `ci/ios-split-and-parallel`)
 
 ## Open PRs
 
@@ -89,14 +89,16 @@ Last updated: 2026-09-29
 
 ## Known gaps
 
+- Courses API deployed and working 2026-09-30: the first deploy crashed at cold start (ESM bundle without `require`, fixed in #61); after the redeploy, requests without `x-wad-client` return 401 and an authenticated search for "oak glen" returns the provider's results, including Oak Glen Golf Course (Stillwater, MN; 18-hole course id `gca-y8jqwys2`, Executive Nine `gca-0zg07p94`). Base URL from the Terraform output `api_base_url`; token in SSM `/wad/dev/client-token`.
+- Required check on main is `build-test`; must be updated to the new iOS job names when H2 lands. Docs-only PRs cannot merge until #57's always-reporting `changes` job is on main.
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
-- Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi); it is paired but unavailable while @gillzj00 is away. `ios/scripts/install-device.sh` now reports this clearly (#41).
+- Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
 - Demo verification (as of #39: 83 unit tests and 6 UI tests, including setup validation and round delete with a relaunch). Earlier: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
-- Venmo: the deep link format is undocumented by Venmo and cannot be tested on a simulator; the handoff to the real Venmo app is unverified until tried on the phone. The app falls back to the web link or marking paid by hand.
+- Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
 - Theme (#43) not checked at large Dynamic Type sizes, with Reduce Motion, or on iOS 17. The app icon is a first version (the W does not follow the flag's wave; dark and tinted variants are opaque).
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
