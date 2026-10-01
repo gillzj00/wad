@@ -20,6 +20,11 @@ final class Round {
     var skinsBaseCents: Int
     var greeniesAmountCents: Int
 
+    /// The round was created with par saved for every player on every hole,
+    /// to be changed as the round is played. Rounds from before this setting
+    /// exists read false.
+    var startsEveryHoleAtPar: Bool = false
+
     /// Unordered in the store; use `orderedHoles`.
     @Relationship(deleteRule: .cascade, inverse: \RoundHole.round)
     var holes: [RoundHole] = []
@@ -42,7 +47,8 @@ final class Round {
         startedAt: Date = .now,
         courseRating: Double? = nil,
         slope: Int? = nil,
-        settings: GameSettings = .defaults
+        settings: GameSettings = .defaults,
+        startsEveryHoleAtPar: Bool = false
     ) {
         self.id = id
         self.courseName = courseName
@@ -53,6 +59,7 @@ final class Round {
         self.wadStepCents = settings.wadStepCents
         self.skinsBaseCents = settings.skinsBaseCents
         self.greeniesAmountCents = settings.greeniesAmountCents
+        self.startsEveryHoleAtPar = startsEveryHoleAtPar
     }
 
     var orderedHoles: [RoundHole] {
