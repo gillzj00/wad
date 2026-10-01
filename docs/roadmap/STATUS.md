@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-01
+Last updated: 2026-10-01 (after #64)
 
 ## Current phase
 
@@ -45,14 +45,16 @@ Last updated: 2026-10-01
 | H1 | Repo hardening: audit, history rewrite (tfplan purged), public switch with branch protection, `dev` environment reviewer, fork-PR approval, secret scanning; workflows hardened and SHA-pinned, apply gated on `dev` | .github/, infra/, root docs, GitHub settings | done (bootstrap trust-policy apply pending, see questions) | #57 |
 | H2 | iOS CI split into unit-tests and ui-tests jobs; UI suite pruned to 3 smoke tests (owner: UI tests cost too much) | .github/, ios/scripts | done | #62 |
 | G1 | Research: geolocation for course suggestion and hole detection (docs/research/geolocation.md) | docs/ | done | #58 |
-| C1 | PRIORITY: course lookup in the app against the deployed API, default course Oak Glen (Stillwater, MN) | ios/ | in flight | - |
-| T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | queued (after S1; C1 goes first if its decision is in) | - |
-| T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | queued (after T1) | - |
-| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after W1, S1, C1, T1 and T2) | - |
+| C1 | Course lookup in round setup against the deployed API (debounced, cache-first, 7-day on-device cache, tee pick fills par/stroke index/rating/slope, manual entry stays), default course Oak Glen or the last pick on the phone, "Near me" ranking of cached courses (geolocation phase 1) | ios/ | done | #64 |
+| T1 | Death metal theme replaces the golf theme entirely (owner decision 2026-09-29: skulls, fire, chains; no theme picker), original artwork only, new app icon | ios/ | in flight (branch `feat/ios-death-metal-theme`) | - |
+| T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | in flight (branch `feat/ios-event-animations`, merges after T1) | - |
+| W2 | Wolf in the demo app: setup, tee order, per-hole choice, status, settlement | ios/ | queued (after T1 and T2) | - |
 
-## Task in flight
+## Tasks in flight
 
-- C1 course lookup (subagent, branch `feat/ios-course-lookup`)
+- T1 death metal theme (subagent, branch `feat/ios-death-metal-theme`), merges first.
+- T2 event animations (subagent, branch `feat/ios-event-animations`), kept to new files under `ios/Wad/Events/`; rebases onto T1 before its PR merges.
+- The one-iOS-task-at-a-time rule was relaxed on 2026-10-01 at the owner's request: T1 and T2 run in parallel, conflicts are limited to the generated project (regenerated with xcodegen) and recolored views.
 
 ## Open PRs
 
@@ -69,12 +71,14 @@ Last updated: 2026-10-01
 - Open Question 1: the unresolved skins carryover is displayed and never paid out.
 - Handicaps (revised after @gillzj00 asked on 2026-09-29): manual course entry takes an optional course rating and slope. When given, a player enters their handicap index and the app computes the course handicap through the engine's `courseHandicap`, with a per-round override. Without rating/slope the course handicap is entered directly. The course API is not used in Phase 1 (local-only; the key stays in SSM and `GET /courses` is not deployed until auth).
 - ADR-0011 accepted and merged (#16).
-- One subagent touching `ios/` at a time; `Wad.xcodeproj` is regenerated with xcodegen, never hand-merged.
+- `Wad.xcodeproj` is regenerated with xcodegen, never hand-merged. Parallel `ios/` tasks are allowed when their files barely overlap (owner, 2026-10-01); the later PR rebases onto the earlier one.
+- Course lookup in the app (#64): the base URL and `x-wad-client` token reach the app only through the git-ignored `ios/Config/Local.xcconfig` (Info.plist keys); a build without them works by hand. The default tee is the first usable men's tee in the API's order (Blue at Oak Glen); the last course and tee picked on the phone become the next default. Nearest-course suggestion ranks only courses cached on the phone, never preselects, and no coordinate leaves the device.
 
 ## Questions waiting on @gillzj00
 
-- Run `aws sso login` then `AWS_PROFILE=wad terraform -chdir=infra/bootstrap apply` (expect 0 to add, 1 to change, 0 to destroy: the CI role trust policy from #57). The orchestrator's attempt failed because the SSO session had expired.
-- Approve (or dismiss) the pending `dev` environment deployment for the Terraform run on main triggered by #57; it should plan no infrastructure changes.
+- Approve (or dismiss) the pending `dev` environment deployment for the Terraform run on main triggered by #57 (https://github.com/gillzj00/wad/actions/runs/36874649636); it plans no infrastructure changes. The bootstrap apply from #57 is done (owner, 2026-10-01).
+- Default tee for course lookup (#64): the first usable men's tee in the API's order. Say if a specific tee by name is wanted instead.
+- Albatross animation (T2): built behind the same system as the others but marked as proposed until confirmed. Does a score of 9 or more also get the snowman, or only exactly 8?
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
@@ -100,7 +104,9 @@ Last updated: 2026-10-01
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
-- Theme (#43) not checked at large Dynamic Type sizes, with Reduce Motion, or on iOS 17. The app icon is a first version (the W does not follow the flag's wave; dark and tinted variants are opaque).
+- Theme (#43) not checked at large Dynamic Type sizes, with Reduce Motion, or on iOS 17. Being replaced by T1.
+- Course lookup (#64): on iOS 17 a denied location permission shows as "could not be found" after the 15 s timeout (the denial flags on CLLocationUpdate are iOS 18+). The provider's daily quota is about 35 requests; the app caches searches and courses for 7 days and serves stale copies when the API fails. The round does not store the course or tee ids; the draft only notes the selection.
+- CI ui-tests flaked once on #64 (round delete test timed out on the suite's cold first launch, 10 s); a rerun passed. The app icon is a first version (the W does not follow the flag's wave; dark and tinted variants are opaque).
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
 - iOS CI runs Xcode 16.4 with an iOS 18 simulator; local runs use iOS 26. Controls in list section headers were not hittable for XCUITest on iOS 18, so they were moved into full-width rows (#20).
