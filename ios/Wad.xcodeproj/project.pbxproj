@@ -72,6 +72,7 @@
 		A89DA6A02F87D0A107ECC947 /* Scorecard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30520B92F6050E5DBE08F9AB /* Scorecard.swift */; };
 		B042EF833CFA64B858B93FDF /* SetupText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B211A862D53BE2F1E88B0F /* SetupText.swift */; };
 		B40097B783C40B9B012D1963 /* LocationFix.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BDB91EB391D066C2320A1C /* LocationFix.swift */; };
+		B4D2C2FB526BCA899AA06436 /* WolfEngineBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3D66F13418D25AF32E4F0F /* WolfEngineBridgeTests.swift */; };
 		B819C488273527A314D695B2 /* VenmoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20D6263288B8B3A683232856 /* VenmoTests.swift */; };
 		B952AEE187004F397D1274EC /* VenmoHandleEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF4BDC00105CB02B119E77C /* VenmoHandleEditor.swift */; };
 		BAB7FF7A4BBFC3D034744691 /* EventQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DDA93C4D7483CA3BAE0849 /* EventQueueTests.swift */; };
@@ -192,6 +193,7 @@
 		B99C6AA1DB2376BE531C0676 /* DebugRounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRounds.swift; sourceTree = "<group>"; };
 		BAE26489214D11F38B99B353 /* RoundDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDraftTests.swift; sourceTree = "<group>"; };
 		BAE2C17388A7B361E43BC6DA /* WadUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE3D66F13418D25AF32E4F0F /* WolfEngineBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfEngineBridgeTests.swift; sourceTree = "<group>"; };
 		BF48B724C43F7D8EA1D73131 /* RoundDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDraft.swift; sourceTree = "<group>"; };
 		C4F09760D77B321EFB56F66D /* HoleScoringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoleScoringView.swift; sourceTree = "<group>"; };
 		C5FB6ED545DD1295664F678A /* PaymentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentTests.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 				21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */,
 				4FBB3E4566E4FB8060EBA6FD /* StoreMigrationTests.swift */,
 				20D6263288B8B3A683232856 /* VenmoTests.swift */,
+				BE3D66F13418D25AF32E4F0F /* WolfEngineBridgeTests.swift */,
 			);
 			path = WadTests;
 			sourceTree = "<group>";
@@ -605,6 +608,7 @@
 				CDD0B4BC751D424FF90CC3FE /* SetupTextTests.swift in Sources */,
 				F871197F76B101191942CC47 /* StoreMigrationTests.swift in Sources */,
 				B819C488273527A314D695B2 /* VenmoTests.swift in Sources */,
+				B4D2C2FB526BCA899AA06436 /* WolfEngineBridgeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
