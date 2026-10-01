@@ -420,6 +420,10 @@ enum Draw {
     /// The key light of every drawing: from the top left.
     static let keyLight = CGVector(dx: -0.6, dy: 0.8)
 
+    /// `CGPoint(x:y:)` with one overload, so long lists of points with
+    /// arithmetic in them stay cheap for the type checker.
+    static func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
+
     static func translated(_ path: CGPath, _ dx: CGFloat, _ dy: CGFloat) -> CGPath {
         var transform = CGAffineTransform(translationX: dx, y: dy)
         return path.copy(using: &transform) ?? path

@@ -83,25 +83,27 @@ struct HandGeometry {
     /// knuckles, narrower at the wrist, with the web of the thumb.
     var palmPath: CGPath {
         let p = palm
+        let q = Draw.point
         return Draw.smooth([
-            CGPoint(x: p.minX + u * 0.1, y: p.minY - u * 0.05),
-            CGPoint(x: p.maxX - u * 0.08, y: p.minY - u * 0.05),
-            CGPoint(x: p.maxX + u * 0.06, y: p.midY - u * 0.1),
-            CGPoint(x: p.maxX + u * 0.02, y: p.maxY - u * 0.02),
-            CGPoint(x: p.midX, y: p.maxY + u * 0.04),
-            CGPoint(x: p.minX - u * 0.02, y: p.maxY - u * 0.05),
-            CGPoint(x: p.minX - u * 0.06, y: p.midY + u * 0.05),
-            CGPoint(x: p.minX - u * 0.02, y: p.minY + u * 0.2),
+            q(p.minX + u * 0.1, p.minY - u * 0.05),
+            q(p.maxX - u * 0.08, p.minY - u * 0.05),
+            q(p.maxX + u * 0.06, p.midY - u * 0.1),
+            q(p.maxX + u * 0.02, p.maxY - u * 0.02),
+            q(p.midX, p.maxY + u * 0.04),
+            q(p.minX - u * 0.02, p.maxY - u * 0.05),
+            q(p.minX - u * 0.06, p.midY + u * 0.05),
+            q(p.minX - u * 0.02, p.minY + u * 0.2),
         ], tension: 0.5)
     }
 
     /// The forearm, narrowest at the wrist, widening down out of the picture.
     var forearmPath: CGPath {
         let w = wrist
+        let q = Draw.point
         return Draw.smooth([
-            CGPoint(x: w.x - u * 0.3, y: w.y + u * 0.12), CGPoint(x: w.x + u * 0.3, y: w.y + u * 0.12),
-            CGPoint(x: w.x + u * 0.33, y: w.y - u * 0.3), CGPoint(x: w.x + u * 0.4, y: w.y - u * 1.1), CGPoint(x: w.x + u * 0.42, y: w.y - u * 1.6),
-            CGPoint(x: w.x - u * 0.42, y: w.y - u * 1.6), CGPoint(x: w.x - u * 0.4, y: w.y - u * 1.1), CGPoint(x: w.x - u * 0.33, y: w.y - u * 0.3),
+            q(w.x - u * 0.3, w.y + u * 0.12), q(w.x + u * 0.3, w.y + u * 0.12),
+            q(w.x + u * 0.33, w.y - u * 0.3), q(w.x + u * 0.4, w.y - u * 1.1), q(w.x + u * 0.42, w.y - u * 1.6),
+            q(w.x - u * 0.42, w.y - u * 1.6), q(w.x - u * 0.4, w.y - u * 1.1), q(w.x - u * 0.33, w.y - u * 0.3),
         ], tension: 0.4)
     }
 }
@@ -138,9 +140,10 @@ extension Art {
         let ha = r * headA, hb = r * headB
         if length < r * 2.2 {
             // Seen nearly end on: just the head, a rounded knob with a dip between its condyles.
+            let q = Draw.point
             let knob = Draw.smooth([
-                CGPoint(x: 0, y: hb * 0.6), CGPoint(x: length * 0.5, y: hb * 0.95), CGPoint(x: length, y: hb * 0.55), CGPoint(x: length * 0.92, y: 0),
-                CGPoint(x: length, y: -hb * 0.55), CGPoint(x: length * 0.5, y: -hb * 0.95), CGPoint(x: 0, y: -hb * 0.6), CGPoint(x: -ha * 0.1, y: 0),
+                q(0, hb * 0.6), q(length * 0.5, hb * 0.95), q(length, hb * 0.55), q(length * 0.92, 0),
+                q(length, -hb * 0.55), q(length * 0.5, -hb * 0.95), q(0, -hb * 0.6), q(-ha * 0.1, 0),
             ], tension: 0.55)
             var transform = CGAffineTransform(translationX: a.x, y: a.y).rotated(by: atan2(dy, dx))
             return knob.copy(using: &transform) ?? knob
@@ -297,7 +300,8 @@ extension Art {
                     c.saveGState()
                     c.translateBy(x: s.to.x - d.x * s.radius * 0.95, y: s.to.y - d.y * s.radius * 0.95)
                     c.rotate(by: atan2(d.y, d.x))
-                    let nail = Draw.smooth([CGPoint(x: -s.radius * 0.7, y: s.radius * 0.72), CGPoint(x: s.radius * 0.55, y: s.radius * 0.62), CGPoint(x: s.radius * 0.8, y: 0), CGPoint(x: s.radius * 0.55, y: -s.radius * 0.62), CGPoint(x: -s.radius * 0.7, y: -s.radius * 0.72)], tension: 0.5)
+                    let q = Draw.point
+                    let nail = Draw.smooth([q(-s.radius * 0.7, s.radius * 0.72), q(s.radius * 0.55, s.radius * 0.62), q(s.radius * 0.8, 0), q(s.radius * 0.55, -s.radius * 0.62), q(-s.radius * 0.7, -s.radius * 0.72)], tension: 0.5)
                     Draw.cel(c, nail, base: UIColor(red: 0.98, green: 0.86, blue: 0.82, alpha: 1), shadow: UIColor(red: 0.85, green: 0.62, blue: 0.6, alpha: 1), rim: nil, ink: Metal.ink.withAlphaComponent(0.8), width: 2, depth: s.radius * 0.4, light: CGVector(dx: -0.8, dy: 0.5))
                     Draw.fill(c, Draw.ellipse(at: CGPoint(x: -s.radius * 0.25, y: s.radius * 0.3), rx: s.radius * 0.22, ry: s.radius * 0.14), UIColor.white.withAlphaComponent(0.6))
                     c.restoreGState()
@@ -411,26 +415,27 @@ extension Art {
     }
 
     static func drawSkull(_ c: CGContext, size: CGSize, variant: Int) {
+        let q = Draw.point
         let cx = size.width / 2
         let bone = { (path: CGPath, depth: CGFloat) in
             Draw.cel(c, path, base: Metal.bone, shadow: Metal.boneShade, core: Metal.boneDark.withAlphaComponent(0.5), rim: Metal.boneLight, width: 3.5, depth: depth)
         }
         // The lower jaw first, then the cranium over it.
-        let jaw = Draw.smooth([CGPoint(x: cx - 78, y: 130), CGPoint(x: cx + 78, y: 130), CGPoint(x: cx + 66, y: 60), CGPoint(x: cx + 30, y: 22), CGPoint(x: cx - 30, y: 22), CGPoint(x: cx - 66, y: 60)], tension: 0.45)
+        let jaw = Draw.smooth([q(cx - 78, 130), q(cx + 78, 130), q(cx + 66, 60), q(cx + 30, 22), q(cx - 30, 22), q(cx - 66, 60)], tension: 0.45)
         bone(jaw, 26)
         // Cranium: a big dome, the cheekbones flaring, narrowing to the upper jaw.
         let cranium = Draw.smooth([
-            CGPoint(x: cx - 52, y: 92), CGPoint(x: cx + 52, y: 92), CGPoint(x: cx + 72, y: 118), CGPoint(x: cx + 118, y: 150), CGPoint(x: cx + 126, y: 215),
-            CGPoint(x: cx + 110, y: 290), CGPoint(x: cx + 55, y: 332), CGPoint(x: cx - 55, y: 332), CGPoint(x: cx - 110, y: 290),
-            CGPoint(x: cx - 126, y: 215), CGPoint(x: cx - 118, y: 150), CGPoint(x: cx - 72, y: 118),
+            q(cx - 52, 92), q(cx + 52, 92), q(cx + 72, 118), q(cx + 118, 150), q(cx + 126, 215),
+            q(cx + 110, 290), q(cx + 55, 332), q(cx - 55, 332), q(cx - 110, 290),
+            q(cx - 126, 215), q(cx - 118, 150), q(cx - 72, 118),
         ], tension: 0.5)
         bone(cranium, 40)
         // Teeth: the upper row hangs from the cranium's edge, the lower stands on the jaw.
         for i in 0..<7 {
             let x = cx - 54 + CGFloat(i) * 18
-            let upper = Draw.smooth([CGPoint(x: x - 7, y: 118), CGPoint(x: x + 7, y: 118), CGPoint(x: x + 6, y: 96), CGPoint(x: x, y: 90), CGPoint(x: x - 6, y: 96)], tension: 0.3)
+                let upper = Draw.smooth([q(x - 7, 118), q(x + 7, 118), q(x + 6, 96), q(x, 90), q(x - 6, 96)], tension: 0.3)
             Draw.cel(c, upper, base: Metal.bone, shadow: Metal.boneShade, width: 2, depth: 5)
-            let lower = Draw.smooth([CGPoint(x: x - 6, y: 62), CGPoint(x: x + 6, y: 62), CGPoint(x: x + 5, y: 86), CGPoint(x: x, y: 90), CGPoint(x: x - 5, y: 86)], tension: 0.3)
+                let lower = Draw.smooth([q(x - 6, 62), q(x + 6, 62), q(x + 5, 86), q(x, 90), q(x - 5, 86)], tension: 0.3)
             Draw.cel(c, lower, base: Metal.boneShade, shadow: Metal.boneDark, width: 2, depth: 5)
         }
         // The gap between the rows.
@@ -440,7 +445,7 @@ extension Art {
         Draw.stroke(c, gap, Metal.ink, width: 3)
         // Eye sockets: deep, with the brow's shadow across the top.
         for s in [CGFloat(-1), 1] {
-            let socket = Draw.smooth([CGPoint(x: cx + s * 20, y: 190), CGPoint(x: cx + s * 60, y: 170), CGPoint(x: cx + s * 92, y: 195), CGPoint(x: cx + s * 85, y: 240), CGPoint(x: cx + s * 40, y: 245)], tension: 0.5)
+                let socket = Draw.smooth([q(cx + s * 20, 190), q(cx + s * 60, 170), q(cx + s * 92, 195), q(cx + s * 85, 240), q(cx + s * 40, 245)], tension: 0.5)
             Draw.fill(c, socket, Metal.ink)
             Draw.fill(c, socket.subtracting(Draw.translated(socket, s * 6, -14), using: .winding), UIColor(white: 0.18, alpha: 1))
             Draw.stroke(c, socket, Metal.ink, width: 3)
@@ -455,7 +460,7 @@ extension Art {
             Draw.stroke(c, temple, Metal.boneDark.withAlphaComponent(0.5), width: 2.5)
         }
         // Nasal cavity: an upside-down heart.
-        let nose = Draw.smooth([CGPoint(x: cx, y: 172), CGPoint(x: cx + 16, y: 150), CGPoint(x: cx + 14, y: 130), CGPoint(x: cx, y: 126), CGPoint(x: cx - 14, y: 130), CGPoint(x: cx - 16, y: 150)], tension: 0.5)
+        let nose = Draw.smooth([q(cx, 172), q(cx + 16, 150), q(cx + 14, 130), q(cx, 126), q(cx - 14, 130), q(cx - 16, 150)], tension: 0.5)
         Draw.fill(c, nose, Metal.ink)
         Draw.stroke(c, nose, Metal.ink, width: 3)
         let brow = CGMutablePath()
@@ -466,7 +471,7 @@ extension Art {
         Draw.cracks(c, around: CGPoint(x: cx + CGFloat(Anim.signed(variant, 91)) * 70, y: 290), count: 2 + variant % 2, length: 60, color: Metal.ink.withAlphaComponent(0.8), seed: crackSeed)
         if variant % 3 == 2 {
             // A hole knocked in the side.
-            let hole = Draw.smooth([CGPoint(x: cx + 60, y: 300), CGPoint(x: cx + 95, y: 290), CGPoint(x: cx + 92, y: 258), CGPoint(x: cx + 62, y: 262)], tension: 0.4)
+                let hole = Draw.smooth([q(cx + 60, 300), q(cx + 95, 290), q(cx + 92, 258), q(cx + 62, 262)], tension: 0.4)
             Draw.fill(c, hole, Metal.ink)
             Draw.stroke(c, hole, Metal.ink, width: 3)
         }

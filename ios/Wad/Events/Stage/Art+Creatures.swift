@@ -68,7 +68,8 @@ enum Art {
             c.saveGState()
             c.translateBy(x: e.x, y: e.y)
             c.rotate(by: s * 0.3)
-            let eye = Draw.smooth([CGPoint(x: -0.3 * u, y: 0), CGPoint(x: -0.12 * u, y: 0.15 * u), CGPoint(x: 0.14 * u, y: 0.14 * u), CGPoint(x: 0.3 * u, y: -0.02 * u), CGPoint(x: 0.1 * u, y: -0.15 * u), CGPoint(x: -0.14 * u, y: -0.13 * u)], tension: 0.5)
+            let q = Draw.point
+            let eye = Draw.smooth([q(-0.3 * u, 0), q(-0.12 * u, 0.15 * u), q(0.14 * u, 0.14 * u), q(0.3 * u, -0.02 * u), q(0.1 * u, -0.15 * u), q(-0.14 * u, -0.13 * u)], tension: 0.5)
             Draw.fill(c, eye, Metal.emberBright)
             c.saveGState()
             c.addPath(eye)
@@ -171,9 +172,10 @@ enum Art {
     static func featherPath(from root: CGPoint, to tip: CGPoint, width: CGFloat) -> CGPath {
         let dx = tip.x - root.x, dy = tip.y - root.y
         let length = max(hypot(dx, dy), 0.001)
+        let q = Draw.point
         let shape = Draw.smooth([
-            CGPoint(x: 0, y: width * 0.35), CGPoint(x: length * 0.4, y: width * 0.5), CGPoint(x: length * 0.85, y: width * 0.42), CGPoint(x: length, y: 0),
-            CGPoint(x: length * 0.85, y: -width * 0.42), CGPoint(x: length * 0.4, y: -width * 0.5), CGPoint(x: 0, y: -width * 0.35),
+            q(0, width * 0.35), q(length * 0.4, width * 0.5), q(length * 0.85, width * 0.42), q(length, 0),
+            q(length * 0.85, -width * 0.42), q(length * 0.4, -width * 0.5), q(0, -width * 0.35),
         ], tension: 0.5)
         var transform = CGAffineTransform(translationX: root.x, y: root.y).rotated(by: atan2(dy, dx))
         return shape.copy(using: &transform) ?? shape

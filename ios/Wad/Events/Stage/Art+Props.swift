@@ -18,9 +18,12 @@ extension Art {
                 let y = center.y + CGFloat(row) * 19
                 let d = hypot(x - center.x, y - center.y)
                 guard d < 84 else { continue }
-                let f = 1 - d / 95
-                let lit = (x - center.x) * -0.6 + (y - center.y) * 0.8 > 25
-                Draw.fill(c, Draw.ellipse(at: CGPoint(x: x, y: y), rx: 5.5 * (0.5 + f * 0.5), ry: 5.5 * f), lit ? UIColor(white: 0.8, alpha: 0.7) : UIColor(white: 0.45, alpha: 0.55))
+                let f: CGFloat = 1 - d / 95
+                let toward: CGFloat = (center.x - x) * 0.6 + (y - center.y) * 0.8
+                let lit = toward > 25
+                let rx: CGFloat = 2.75 + f * 2.75
+                let ry: CGFloat = 5.5 * f
+                Draw.fill(c, Draw.ellipse(at: CGPoint(x: x, y: y), rx: rx, ry: ry), lit ? UIColor(white: 0.8, alpha: 0.7) : UIColor(white: 0.45, alpha: 0.55))
             }
         }
         Draw.fill(c, Draw.ellipse(at: CGPoint(x: 66, y: 134), rx: 16, ry: 10), UIColor.white.withAlphaComponent(0.9))
@@ -168,9 +171,10 @@ extension Art {
 
     /// A big "1" drawn as a path, so nothing depends on a font.
     static func numeral(_ c: CGContext, at p: CGPoint, size s: CGFloat, color: UIColor) {
+        let q = Draw.point
         let one = Draw.polygon([
-            CGPoint(x: p.x - s * 0.1, y: p.y + s * 0.5), CGPoint(x: p.x + s * 0.12, y: p.y + s * 0.5), CGPoint(x: p.x + s * 0.12, y: p.y - s * 0.5),
-            CGPoint(x: p.x - s * 0.12, y: p.y - s * 0.5), CGPoint(x: p.x - s * 0.12, y: p.y + s * 0.25), CGPoint(x: p.x - s * 0.32, y: p.y + s * 0.2), CGPoint(x: p.x - s * 0.32, y: p.y + s * 0.34),
+            q(p.x - s * 0.1, p.y + s * 0.5), q(p.x + s * 0.12, p.y + s * 0.5), q(p.x + s * 0.12, p.y - s * 0.5),
+            q(p.x - s * 0.12, p.y - s * 0.5), q(p.x - s * 0.12, p.y + s * 0.25), q(p.x - s * 0.32, p.y + s * 0.2), q(p.x - s * 0.32, p.y + s * 0.34),
         ])
         Draw.fill(c, one, color)
     }
