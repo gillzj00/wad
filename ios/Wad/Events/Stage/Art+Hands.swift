@@ -410,8 +410,6 @@ extension Art {
         }
     }
 
-    static var skull: SKTexture { skull(0) }
-
     static func drawSkull(_ c: CGContext, size: CGSize, variant: Int) {
         let cx = size.width / 2
         let bone = { (path: CGPath, depth: CGFloat) in
