@@ -94,14 +94,12 @@ enum Art {
         split.move(to: p(0.12, -0.36))
         split.addLine(to: p(0.12, -0.52))
         Draw.stroke(c, split, Metal.ink, width: 3)
-        // The mouth: nothing of the head below the lip, so the jaw shows through
-        // when it drops; the dark inside as far down as the jaw drops; the gum line and the upper teeth.
+        // The mouth: nothing of the head below the lip, so the jaw and the dark
+        // inside (`wolfMouth`, behind the jaw) show through when it drops; the gum line and the upper teeth.
         c.saveGState()
         c.setBlendMode(.clear)
         Draw.fill(c, Draw.polygon([p(-0.8, -0.5), p(0.85, -0.5), p(0.8, -2.9), p(-0.76, -2.9)]), .black)
         c.restoreGState()
-        let inside = Draw.polygon([p(-0.8, -0.5), p(0.85, -0.5), p(0.8, -1.1), p(-0.76, -1.1)])
-        Draw.fill(c, inside, UIColor(red: 0.16, green: 0.01, blue: 0.03, alpha: 1))
         Draw.cel(c, Draw.smooth([p(-0.82, -0.46), p(0.86, -0.46), p(0.8, -0.66), p(0, -0.7), p(-0.78, -0.66)], tension: 0.3), base: Metal.gum, shadow: Metal.bloodDark, rim: UIColor(red: 0.7, green: 0.3, blue: 0.35, alpha: 1), width: 2.5, depth: 0.08 * u)
         for i in 0..<9 {
             let x = -0.68 + CGFloat(i) * 0.19
@@ -127,6 +125,19 @@ enum Art {
         lip.addQuadCurve(to: p(-0.1, -0.52), control: p(-0.6, -0.58))
         lip.addQuadCurve(to: p(1.0, -0.26), control: p(0.6, -0.58))
         Draw.stroke(c, lip, Metal.ink, width: 5)
+    } }
+
+    /// The dark inside of the mouth, as far down as the jaw drops. It sits
+    /// behind the jaw, so the lower teeth draw over it, and its middle is
+    /// `wolfMouthOffset` from the head's middle.
+    static let wolfMouthSize = CGSize(width: 190, height: 70)
+    static let wolfMouthOffset = CGPoint(x: 3, y: -58)
+
+    static var wolfMouth: SKTexture { Textures.make("wolf-mouth", size: wolfMouthSize) { c, size in
+        let u: CGFloat = 110
+        // The same points as the head's, about the texture's middle.
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: size.width / 2 + (x - 0.025) * u, y: size.height / 2 + (y + 0.8) * u) }
+        Draw.fill(c, Draw.polygon([p(-0.8, -0.5), p(0.85, -0.5), p(0.8, -1.1), p(-0.76, -1.1)]), UIColor(red: 0.16, green: 0.01, blue: 0.03, alpha: 1))
     } }
 
     /// The lower jaw, anchored at its top middle where it meets the head.

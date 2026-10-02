@@ -19,12 +19,16 @@ final class WolfScene: EventSKScene {
         addChild(embers)
         if still { embers.advanceSimulationTime(3) }
 
-        // The head and its jaw, as one node.
+        // The head, its jaw and the inside of the mouth behind both, as one node.
         let scale = w * 0.98 / Art.wolfHeadSize.width
         let wolf = SKNode()
         wolf.position = at(0.5, 0.47)
         wolf.zPosition = 10
         addChild(wolf)
+        let mouthInside = SKSpriteNode(texture: Art.wolfMouth, size: CGSize(width: Art.wolfMouthSize.width * scale, height: Art.wolfMouthSize.height * scale))
+        mouthInside.position = CGPoint(x: Art.wolfMouthOffset.x * scale, y: Art.wolfMouthOffset.y * scale)
+        mouthInside.zPosition = 0
+        wolf.addChild(mouthInside)
         let head = SKSpriteNode(texture: Art.wolfHead, size: CGSize(width: Art.wolfHeadSize.width * scale, height: Art.wolfHeadSize.height * scale))
         head.zPosition = 2
         let jaw = SKSpriteNode(texture: Art.wolfJaw, size: CGSize(width: Art.wolfJawSize.width * scale, height: Art.wolfJawSize.height * scale))
