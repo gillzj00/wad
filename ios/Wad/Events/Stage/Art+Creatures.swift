@@ -308,10 +308,28 @@ enum Art {
             let end = p(-1.0 + f * f * 0.6, 2.75 - f * 2.3)
             feather(c, from: root, to: end, width: 0.38 * u * narrow, base: base, shadow: dark, lineWidth: 3)
         }
-        // Coverts: the wing's arm, from the shoulder to the wrist, in scalloped rows.
-        let coverts = Draw.smooth([p(0.15, -0.05), p(0.55, 0.5), p(0.6, 1.3), p(0.42, 2.0), p(0.05, 2.22), p(-0.28, 1.95), p(-0.42, 1.2), p(-0.38, 0.5), p(-0.25, 0.05)], tension: 0.5)
-        Draw.cel(c, coverts, base: base, shadow: dark, core: deep.withAlphaComponent(0.6), rim: light, width: 3.5, depth: 0.3 * u)
-        scallops(c, clip: coverts, origin: p(-0.5, 2.0), columns: 5, rows: 5, dx: 0.3 * u * narrow, dy: 0.4 * u, rx: 0.15 * u * narrow, ry: 0.12 * u, color: deep, light: light)
+        // Coverts: the wing's arm, tapering from the shoulder to the wrist. Over
+        // it three rows of short feathers, one per secondary, lie over the
+        // secondaries' roots and step back toward the leading edge, each row
+        // shorter and narrower; the marginal coverts cover their roots along the edge.
+        let arm = Draw.smooth([p(0.2, -0.05), p(0.5, 0.6), p(0.52, 1.4), p(0.38, 2.05), p(0.12, 2.28), p(-0.12, 2.08), p(-0.24, 1.4), p(-0.22, 0.6), p(-0.15, 0.0)], tension: 0.5)
+        Draw.cel(c, arm, base: base, shadow: dark, core: deep.withAlphaComponent(0.6), rim: light, width: 3.5, depth: 0.3 * u)
+        let rows: [(reach: CGFloat, least: CGFloat, width: CGFloat)] = [(0.62, 0.34, 0.27), (0.5, 0.3, 0.23), (0.4, 0.26, 0.2)]
+        for (row, spec) in rows.enumerated() {
+            let shift = CGFloat(row) * 0.14
+            for i in (0..<8).reversed() {
+                let f = CGFloat(i) / 7
+                let root = p(0.1 - f * 0.22 + shift, 1.95 - f * 1.7 + shift * 0.2)
+                let tip = p(-1.0 + f * f * 0.6, 2.75 - f * 2.3)
+                let dx = tip.x - root.x, dy = tip.y - root.y
+                let length = max(hypot(dx, dy), 0.001)
+                let reach = max(length * spec.reach, spec.least * u) / length
+                let end = CGPoint(x: root.x + dx * reach, y: root.y + dy * reach)
+                feather(c, from: root, to: end, width: spec.width * u * narrow, base: base, shadow: dark)
+            }
+        }
+        let edge = Draw.smooth([p(0.2, -0.05), p(0.5, 0.6), p(0.52, 1.4), p(0.38, 2.05), p(0.12, 2.28), p(0.05, 2.0), p(0.28, 1.4), p(0.28, 0.6), p(0.02, 0.0)], tension: 0.5)
+        Draw.cel(c, edge, base: base, shadow: dark, rim: light, width: 3, depth: 0.12 * u)
     }
 
     // MARK: Albatross
