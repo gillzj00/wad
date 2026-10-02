@@ -15,6 +15,8 @@ final class CoursesModel {
     /// The courses on this phone, most recently cached first.
     private(set) var recent: [Course] = []
     private(set) var nearbyState = NearbyCoursesState.idle
+    /// How far "Near me" looks, in miles; remembered on the phone.
+    private(set) var nearbyRadiusMiles: Int
 
     init(
         lookup: CourseLookup,
@@ -25,6 +27,7 @@ final class CoursesModel {
         self.lookup = lookup
         self.location = location
         self.memory = memory
+        nearbyRadiusMiles = memory.nearbyRadiusMiles
         search = CourseSearchModel(lookup: lookup, debounce: debounce)
     }
 
@@ -45,7 +48,14 @@ final class CoursesModel {
     func findNearby() async {
         guard nearbyState != .locating else { return }
         nearbyState = .locating
-        nearbyState = await CourseDistance.find(in: lookup, with: location)
+        nearbyState = await CourseDistance.find(in: lookup, with: location, withinMiles: nearbyRadiusMiles)
+    }
+
+    /// Remembers the radius, and looks again when courses are already listed.
+    func setNearbyRadius(_ miles: Int) async {
+        nearbyRadiusMiles = miles
+        memory.remember(nearbyRadiusMiles: miles)
+        if case .found = nearbyState { await findNearby() }
     }
 
     /// A new round's draft on the course and tee, which the setup flow opens

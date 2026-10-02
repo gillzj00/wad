@@ -81,10 +81,12 @@ extension RoundDraft {
     }
 }
 
-/// The last course and tee picked on this phone, which the next round starts on.
+/// The last course and tee picked on this phone, which the next round starts
+/// on, and how far "Near me" looks.
 struct CourseMemory {
     static let courseKey = "lastCourseID"
     static let teeKey = "lastTeeID"
+    static let radiusKey = "nearbyRadiusMiles"
 
     let defaults: UserDefaults
 
@@ -98,5 +100,15 @@ struct CourseMemory {
     func remember(courseID: String, teeID: String) {
         defaults.set(courseID, forKey: Self.courseKey)
         defaults.set(teeID, forKey: Self.teeKey)
+    }
+
+    /// The "Near me" radius in miles; the default until one of the choices is picked.
+    var nearbyRadiusMiles: Int {
+        let stored = defaults.integer(forKey: Self.radiusKey)
+        return CourseDistance.radiusChoices.contains(stored) ? stored : CourseDistance.defaultRadiusMiles
+    }
+
+    func remember(nearbyRadiusMiles miles: Int) {
+        defaults.set(miles, forKey: Self.radiusKey)
     }
 }

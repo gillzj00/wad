@@ -66,7 +66,10 @@ private struct CoursesList: View {
                     }
                 }
                 nearMeButton
-                NearbyStatus(state: model.nearbyState)
+                NearbyRadiusPicker(miles: model.nearbyRadiusMiles, identifier: "courses.nearbyRadius") { miles in
+                    Task { await model.setNearbyRadius(miles) }
+                }
+                NearbyStatus(state: model.nearbyState, radiusMiles: model.nearbyRadiusMiles)
                 if case .found(let nearby) = model.nearbyState {
                     ForEach(nearby) { entry in
                         NavigationLink(value: entry.course.summary) {

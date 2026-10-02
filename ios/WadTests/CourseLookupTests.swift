@@ -234,16 +234,19 @@ struct CourseDistanceTests {
         let nearby = CourseDistance.nearby(
             [far, CourseFixtures.stillwater, unlocated, CourseFixtures.oakGlen],
             latitude: 45.0702,
-            longitude: -92.8341
+            longitude: -92.8341,
+            within: 5 * CourseDistance.metersPerMile
         )
         #expect(nearby.map(\.course.courseId) == [CourseFixtures.oakGlenID, CourseFixtures.stillwater.courseId])
         #expect(nearby[0].meters < 5)
         #expect(abs(nearby[1].meters - 1_550) < 100)
     }
 
-    @Test func distancesReadInMetersThenKilometers() {
-        #expect(CourseDistance.text(meters: 347) == "350 m")
-        #expect(CourseDistance.text(meters: 1_234) == "1.2 km")
-        #expect(CourseDistance.text(meters: 5_000) == "5.0 km")
+    @Test func distancesReadInYardsThenMiles() {
+        #expect(CourseDistance.text(meters: 320) == "350 yds")
+        #expect(CourseDistance.text(meters: 1_931) == "1.2 mi")
+        #expect(CourseDistance.text(meters: 5 * CourseDistance.metersPerMile) == "5.0 mi")
+        #expect(CourseDistance.text(miles: 1) == "1 mile")
+        #expect(CourseDistance.text(miles: 25) == "25 miles")
     }
 }
