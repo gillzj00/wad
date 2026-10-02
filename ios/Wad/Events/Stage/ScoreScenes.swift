@@ -59,31 +59,43 @@ final class EagleScene: EventSKScene {
         feathers.position = CGPoint(x: -w * 0.1, y: -w * 0.05)
         eagle.addChild(feathers)
 
+        // The hold: the wings beat high, so the whole bird, wingtips and
+        // beak, stays inside a phone's width while it fills it.
+        let hold = at(0.5, 0.47)
+        let holdScale: CGFloat = 0.9
         if still {
-            eagle.position = at(0.5, 0.48)
-            eagle.setScale(1.05)
-            eagle.zRotation = -0.1
-            near.zRotation = 1.2
-            far.zRotation = 1.0
+            eagle.position = hold
+            eagle.setScale(holdScale)
+            eagle.zRotation = -0.05
+            near.zRotation = 0.7
+            far.zRotation = 0.55
             screech(from: eagle.position + CGPoint(x: w * 0.4, y: w * 0.1))
             return
         }
 
-        // Swoop in from the left: 0 to 1.2, banking; hang in the middle; climb out.
+        // Swoop in from the left: 0 to 1.2, banking; hover in the middle; climb out.
         eagle.position = at(-0.5, 0.95)
         eagle.setScale(0.45)
         eagle.zRotation = -0.6
-        near.run(Self.flap(from: 0.4, to: 2.1, period: 0.55))
-        far.run(.sequence([.wait(forDuration: 0.04), Self.flap(from: 0.3, to: 1.9, period: 0.55)]))
+        near.run(Self.flap(from: 0.4, to: 2.1, period: 0.55), withKey: "flap")
+        far.run(.sequence([.wait(forDuration: 0.04), Self.flap(from: 0.3, to: 1.9, period: 0.55)]), withKey: "flap")
         let swoop = SKAction.group([
             Self.move(to: at(0.5, 0.45), duration: 1.2, timing: .easeOut),
             Self.scale(to: 1.0, duration: 1.2, timing: .easeOut),
             Self.rotate(to: 0.05, duration: 1.2, timing: .easeOut),
         ])
         let hang = SKAction.group([
-            Self.move(to: at(0.55, 0.5), duration: 0.9, timing: .easeInEaseOut),
-            Self.scale(to: 1.1, duration: 0.9, timing: .easeInEaseOut),
+            Self.move(to: hold, duration: 0.9, timing: .easeInEaseOut),
+            Self.scale(to: holdScale, duration: 0.9, timing: .easeInEaseOut),
+            Self.rotate(to: -0.05, duration: 0.9, timing: .easeInEaseOut),
         ])
+        // The wings come up for the hover as the swoop ends: 1.0 to 1.3.
+        after(1.0) {
+            near.removeAction(forKey: "flap")
+            far.removeAction(forKey: "flap")
+            near.run(.sequence([Self.rotate(to: 0.7, duration: 0.3, timing: .easeOut), Self.flap(from: 0.3, to: 0.7, period: 0.5)]))
+            far.run(.sequence([Self.rotate(to: 0.55, duration: 0.3, timing: .easeOut), Self.flap(from: 0.2, to: 0.55, period: 0.5)]))
+        }
         let climb = SKAction.group([
             Self.move(to: at(1.7, 1.1), duration: 0.9, timing: .easeIn),
             Self.scale(to: 1.4, duration: 0.9, timing: .easeIn),
