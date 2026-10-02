@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-02 (after #71)
+Last updated: 2026-10-02 (animations halted)
 
 ## Current phase
 
@@ -50,11 +50,13 @@ Last updated: 2026-10-02 (after #71)
 | T2 | Event animations (requested 2026-09-29, revised): full-screen, deliberately over the top, with haptics. Wolf hole won: a wolf baring its teeth plus a howl sound and vibration. Greenie: a golf ball falls from the sky like a bomb and blows the green apart. Wad taken: a skeleton hand making it rain money. Skins won: a skeletal hand being skinned. Score animations (added 2026-09-29, bowling-alley style): eagle or better: a bald eagle soars across the screen and screeches; hole in one: the loudest of all, fireworks and champagne bottles popping, long vibration; albatross (proposed, to confirm): a huge albatross dives out of a lightning storm, rips the flag out of the hole and flies off with it, with a thunderclap; a score of 8: a snowman that falls apart; birdie: a middle finger ("the bird") shown to every OTHER player, in the demo shown on the scoring phone addressed to the others. Original art and sounds only (synthesized howl, no downloaded audio); Reduce Motion gives a still image; a mute switch in settings. Plays on the scoring phone in the local demo; showing it on every player's phone needs live sync (M3.3, after auth) | ios/ | done (SpriteKit shows, synthesized sound, haptics, settings switches, Reduce Motion stills; Wolf show triggers through a hook filled by W2) | #68 |
 | T2b | Art pass on the nine animation subjects after owner feedback on #68: anatomy-based, cel-shaded, outlined art; the birdie is a skeletal finger | ios/ | done | #71 |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, 17/18 tie prompt (the group picks, the engine never does), live points, pay-the-difference settlement, Wolf show trigger | ios/ | done | #69 |
-| T2c | Generated art for the animation subjects, per `docs/art/animation-assets.md`; needs the owner to generate the PNGs or supply an image-model API key | ios/, docs/ | waiting on the owner | - |
+| T2c | Generated art for the animation subjects, per `docs/art/animation-assets.md` | ios/, docs/ | superseded: on 2026-10-02 the owner judged the code-drawn shows unacceptable and halted all animation work ("we are going to go a different route"); the route is the owner's to name. PR #74 (wolf jaw and eagle framing) was closed unmerged. | - |
+| C2 | Courses tab: course search, course detail with tees and scorecard, start a round from a course (the owner found the placeholder tab and could not search) | ios/ | in flight (branch `feat/ios-courses-tab`) | - |
 
 ## Tasks in flight
 
-- none. The iOS queue (C1, T1, T2, T2b, W2) is complete. T2c (generated art) waits on the owner.
+- C2 Courses tab (subagent, branch `feat/ios-courses-tab`).
+- Animation work is halted by the owner (2026-10-02); do not start any animation task until the owner names the new route.
 - The one-iOS-task-at-a-time rule was relaxed on 2026-10-01 at the owner's request: T1 and T2 run in parallel, conflicts are limited to the generated project (regenerated with xcodegen) and recolored views.
 
 ## Open PRs
@@ -112,7 +114,7 @@ Last updated: 2026-10-02 (after #71)
 - Course lookup (#64): on iOS 17 a denied location permission shows as "could not be found" after the 15 s timeout (the denial flags on CLLocationUpdate are iOS 18+). The provider's daily quota is about 35 requests; the app caches searches and courses for 7 days and serves stale copies when the API fails. The round does not store the course or tee ids; the draft only notes the selection.
 - Animations (#68) play on the scoring phone only; other players' phones need live sync (M3.3). The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
 - The W2 subagent force-pushed (with lease) its own PR branch after a rebase on 2026-10-01; main was untouched, but the owner's rule is no force-push anywhere. Briefs now say: merge main, never rebase a pushed branch.
-- Art pass (#71) leftovers: the wolf's lower fangs are hidden at the open-jaw hold frame (the jaw sprite sits behind the head); the eagle's hold frame catches the near wing partly off screen; the eagle coverts still read a little paddle-like on the up-flap. Small choreography tweaks, or moot once generated art lands.
+- Animation shows (#68, #71) stay in the app as merged but are frozen: the owner rejected their look on 2026-10-02 and will choose a different route. Art pass (#71) leftovers (now moot): the wolf's lower fangs are hidden at the open-jaw hold frame (the jaw sprite sits behind the head); the eagle's hold frame catches the near wing partly off screen; the eagle coverts still read a little paddle-like on the up-flap. Small choreography tweaks, or moot once generated art lands.
 - CI ui-tests flaked once on #64 (round delete test timed out on the suite's cold first launch, 10 s); a rerun passed.
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
