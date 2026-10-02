@@ -1,20 +1,45 @@
 import SwiftUI
 
-/// Top-level tab shell. Courses and Profile are placeholders until their milestones land.
+enum AppTab: Hashable {
+    case rounds, courses, profile
+}
+
+/// The tab shown, and a round created on another tab that the Rounds tab
+/// opens when it comes back on screen.
+@MainActor
+@Observable
+final class AppNavigation {
+    var tab = AppTab.rounds
+    var roundToOpen: Round?
+
+    /// Shows the round on the Rounds tab.
+    func open(_ round: Round) {
+        roundToOpen = round
+        tab = .rounds
+    }
+}
+
+/// Top-level tab shell. Profile is a placeholder until its milestone lands.
 struct RootView: View {
     @State private var events = EventCenter()
+    @State private var navigation = AppNavigation()
 
     var body: some View {
-        TabView {
+        @Bindable var navigation = navigation
+        TabView(selection: $navigation.tab) {
             RoundsView()
                 .tabItem { Label("Rounds", systemImage: "flag") }
-            PlaceholderView(title: "Courses", message: "Course search arrives in M2.")
+                .tag(AppTab.rounds)
+            CoursesView()
                 .tabItem { Label("Courses", systemImage: "map") }
+                .tag(AppTab.courses)
             PlaceholderView(title: "Profile", message: "Sign in and your handicap arrive in M1.")
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+                .tag(AppTab.profile)
         }
         .overlay { EventOverlay() }
         .environment(events)
+        .environment(navigation)
         #if DEBUG
         .task { playDebugEvents() }
         #endif
