@@ -162,9 +162,20 @@ final class CourseSearchModel {
     }
 }
 
+/// How "Near me" is doing, in the course step and on the Courses tab.
+enum NearbyCoursesState: Equatable {
+    case idle
+    case locating
+    case denied
+    case failed
+    /// Up to `CourseDistance.nearbyLimit` cached courses within reach, nearest first; empty when none is.
+    case found([CourseDistance.Nearby])
+}
+
 /// Distances between a fix and the cached courses, on the phone only.
 enum CourseDistance {
     static let nearbyMeters = 5_000.0
+    static let nearbyLimit = 3
 
     struct Nearby: Equatable, Identifiable {
         let course: Course
@@ -195,6 +206,21 @@ enum CourseDistance {
     /// "350 m" or "1.2 km".
     static func text(meters: Double) -> String {
         meters < 950 ? "\(Int((meters / 10).rounded()) * 10) m" : String(format: "%.1f km", meters / 1000)
+    }
+
+    /// One fix, then the cached courses within reach of it, nearest first.
+    /// Nothing is selected: the group taps a suggestion or ignores it.
+    @MainActor
+    static func find(in lookup: CourseLookup, with location: any LocationProvider) async -> NearbyCoursesState {
+        do {
+            let fix = try await location.currentFix()
+            let nearby = nearby(lookup.cachedCourses(), latitude: fix.latitude, longitude: fix.longitude)
+            return .found(Array(nearby.prefix(nearbyLimit)))
+        } catch LocationError.denied {
+            return .denied
+        } catch {
+            return .failed
+        }
     }
 }
 

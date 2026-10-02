@@ -14,6 +14,7 @@ enum RoundsRoute: Hashable {
 /// new round.
 struct RoundsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppNavigation.self) private var navigation: AppNavigation?
     @Query(sort: \Round.startedAt, order: .reverse) private var rounds: [Round]
 
     @State private var path: [RoundsRoute] = []
@@ -99,6 +100,12 @@ struct RoundsView: View {
                 RoundSetupView(draft: setup.draft, step: setup.step) { round in
                     path = [.detail(round)]
                 }
+            }
+            // A round started from the Courses tab.
+            .onChange(of: navigation?.roundToOpen, initial: true) { _, round in
+                guard let round else { return }
+                path = [.detail(round)]
+                navigation?.roundToOpen = nil
             }
             #if DEBUG
             .safeAreaInset(edge: .bottom) {

@@ -19,7 +19,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your location suggests the cached courses near you when you set up a round. It stays on the phone.</string>
+	<string>Your location suggests the courses on this phone near you when you look for a course or set up a round. It stays on the phone.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

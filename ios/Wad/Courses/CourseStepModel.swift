@@ -19,16 +19,7 @@ final class CourseStepModel {
         case failed(CourseLookupError)
     }
 
-    enum NearbyState: Equatable {
-        case idle
-        case locating
-        case denied
-        case failed
-        /// Up to three cached courses within reach, nearest first; empty when none is.
-        case found([CourseDistance.Nearby])
-    }
-
-    static let nearbyLimit = 3
+    typealias NearbyState = NearbyCoursesState
 
     let lookup: CourseLookup
     let search: CourseSearchModel
@@ -90,7 +81,17 @@ final class CourseStepModel {
     /// looked up. Done once; a draft with edits is left alone.
     @discardableResult
     func applyDefault(to draft: inout RoundDraft) -> Bool {
-        guard !appliedDefault, draft.isCourseUntouched else { return false }
+        guard !appliedDefault else { return false }
+        if let selection = draft.course {
+            // The draft came filled, from the Courses tab: show its course's
+            // tees and leave the draft as it is.
+            if case .ready(let course) = defaultState, course.courseId == selection.courseID {
+                appliedDefault = true
+                show(course, tee: course.tee(id: selection.teeID))
+            }
+            return false
+        }
+        guard draft.isCourseUntouched else { return false }
         switch defaultState {
         case .idle, .loading:
             return false
@@ -180,15 +181,6 @@ final class CourseStepModel {
     func findNearby() async {
         guard nearbyState != .locating else { return }
         nearbyState = .locating
-        do {
-            let fix = try await location.currentFix()
-            let courses = lookup.cachedCourses()
-            let nearby = CourseDistance.nearby(courses, latitude: fix.latitude, longitude: fix.longitude)
-            nearbyState = .found(Array(nearby.prefix(Self.nearbyLimit)))
-        } catch LocationError.denied {
-            nearbyState = .denied
-        } catch {
-            nearbyState = .failed
-        }
+        nearbyState = await CourseDistance.find(in: lookup, with: location)
     }
 }
