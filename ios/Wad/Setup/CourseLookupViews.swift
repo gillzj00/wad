@@ -13,6 +13,9 @@ struct CourseSearchSection: View {
                 searchField
                 searchRows
                 nearMeButton
+                NearbyRadiusPicker(miles: model.nearbyRadiusMiles, identifier: "setup.nearbyRadius") { miles in
+                    Task { await model.setNearbyRadius(miles) }
+                }
                 nearbyRows
             } else {
                 StatusRow(CourseLookupError.notConfigured.message, systemImage: "info.circle")
@@ -79,7 +82,7 @@ struct CourseSearchSection: View {
 
     @ViewBuilder
     private var nearbyRows: some View {
-        NearbyStatus(state: model.nearbyState)
+        NearbyStatus(state: model.nearbyState, radiusMiles: model.nearbyRadiusMiles)
         if case .found(let nearby) = model.nearbyState {
             ForEach(nearby) { entry in
                 Button {
@@ -205,6 +208,7 @@ struct CourseSearchStatus: View {
 /// How "Near me" is doing when it has no courses to show.
 struct NearbyStatus: View {
     let state: NearbyCoursesState
+    let radiusMiles: Int
 
     var body: some View {
         switch state {
@@ -216,14 +220,33 @@ struct NearbyStatus: View {
             StatusRow("Your location could not be found.", systemImage: "location.slash")
         case .found(let nearby):
             if nearby.isEmpty {
-                StatusRow("No course looked up on this phone is within \(CourseDistance.text(meters: CourseDistance.nearbyMeters)).", systemImage: "location")
+                StatusRow("No course looked up on this phone is within \(CourseDistance.text(miles: radiusMiles)).", systemImage: "location")
             }
         }
     }
 }
 
+/// How far "Near me" looks, picked from a few radii in miles.
+struct NearbyRadiusPicker: View {
+    let miles: Int
+    let identifier: String
+    let onChange: (Int) -> Void
+
+    var body: some View {
+        Picker(selection: Binding { miles } set: { onChange($0) }) {
+            ForEach(CourseDistance.radiusChoices, id: \.self) { choice in
+                Text(CourseDistance.text(miles: choice)).tag(choice)
+            }
+        } label: {
+            Label("Within", systemImage: "scope")
+        }
+        .pickerStyle(.menu)
+        .accessibilityIdentifier(identifier)
+    }
+}
+
 extension CourseDistance.Nearby {
-    /// "1.2 km away".
+    /// "1.2 mi away".
     var distanceText: String { "\(CourseDistance.text(meters: meters)) away" }
 }
 

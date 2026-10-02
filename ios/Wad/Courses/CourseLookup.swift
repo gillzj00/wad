@@ -174,7 +174,10 @@ enum NearbyCoursesState: Equatable {
 
 /// Distances between a fix and the cached courses, on the phone only.
 enum CourseDistance {
-    static let nearbyMeters = 5_000.0
+    static let metersPerMile = 1_609.344
+    /// The "Near me" radii the group can pick from, in miles.
+    static let radiusChoices = [1, 5, 10, 25, 50]
+    static let defaultRadiusMiles = 5
     static let nearbyLimit = 3
 
     struct Nearby: Equatable, Identifiable {
@@ -194,7 +197,7 @@ enum CourseDistance {
     }
 
     /// The courses within reach of the fix, nearest first. Courses without coordinates are left out.
-    static func nearby(_ courses: [Course], latitude: Double, longitude: Double, within limit: Double = nearbyMeters) -> [Nearby] {
+    static func nearby(_ courses: [Course], latitude: Double, longitude: Double, within limit: Double) -> [Nearby] {
         courses.compactMap { course -> Nearby? in
             guard let lat = course.location.latitude, let lon = course.location.longitude else { return nil }
             let distance = meters(fromLatitude: latitude, longitude: longitude, toLatitude: lat, longitude: lon)
@@ -203,18 +206,32 @@ enum CourseDistance {
         .sorted { $0.meters < $1.meters }
     }
 
-    /// "350 m" or "1.2 km".
+    /// "350 yds" under a quarter mile, otherwise "1.2 mi".
     static func text(meters: Double) -> String {
-        meters < 950 ? "\(Int((meters / 10).rounded()) * 10) m" : String(format: "%.1f km", meters / 1000)
+        let miles = meters / metersPerMile
+        if miles < 0.25 {
+            return "\(Int((miles * 1_760 / 10).rounded()) * 10) yds"
+        }
+        return String(format: "%.1f mi", miles)
     }
 
-    /// One fix, then the cached courses within reach of it, nearest first.
+    /// "1 mile" or "25 miles".
+    static func text(miles: Int) -> String {
+        miles == 1 ? "1 mile" : "\(miles) miles"
+    }
+
+    /// One fix, then the cached courses within the radius of it, nearest first.
     /// Nothing is selected: the group taps a suggestion or ignores it.
     @MainActor
-    static func find(in lookup: CourseLookup, with location: any LocationProvider) async -> NearbyCoursesState {
+    static func find(in lookup: CourseLookup, with location: any LocationProvider, withinMiles miles: Int) async -> NearbyCoursesState {
         do {
             let fix = try await location.currentFix()
-            let nearby = nearby(lookup.cachedCourses(), latitude: fix.latitude, longitude: fix.longitude)
+            let nearby = nearby(
+                lookup.cachedCourses(),
+                latitude: fix.latitude,
+                longitude: fix.longitude,
+                within: Double(miles) * metersPerMile
+            )
             return .found(Array(nearby.prefix(nearbyLimit)))
         } catch LocationError.denied {
             return .denied

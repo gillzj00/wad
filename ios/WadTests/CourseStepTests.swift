@@ -310,7 +310,7 @@ struct CourseStepModelTests {
             return
         }
         #expect(nearby.map(\.course.courseId) == [CourseFixtures.oakGlenID, CourseFixtures.stillwater.courseId, "third"])
-        #expect(nearby.allSatisfy { $0.meters <= CourseDistance.nearbyMeters })
+        #expect(nearby.allSatisfy { $0.meters <= Double(CourseDistance.defaultRadiusMiles) * CourseDistance.metersPerMile })
         #expect(model.course == nil)
         #expect(model.selectedTeeID == nil)
 

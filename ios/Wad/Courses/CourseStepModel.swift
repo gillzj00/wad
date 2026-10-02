@@ -32,6 +32,8 @@ final class CourseStepModel {
     private(set) var defaultState = DefaultState.idle
     private(set) var detailState = DetailState.idle
     private(set) var nearbyState = NearbyState.idle
+    /// How far "Near me" looks, in miles; remembered on the phone.
+    private(set) var nearbyRadiusMiles: Int
     /// Why the last tee tapped could not be used.
     private(set) var teeProblem: String?
     private var appliedDefault = false
@@ -45,6 +47,7 @@ final class CourseStepModel {
         self.lookup = lookup
         self.location = location
         self.memory = memory
+        nearbyRadiusMiles = memory.nearbyRadiusMiles
         search = CourseSearchModel(lookup: lookup, debounce: debounce)
     }
 
@@ -181,6 +184,13 @@ final class CourseStepModel {
     func findNearby() async {
         guard nearbyState != .locating else { return }
         nearbyState = .locating
-        nearbyState = await CourseDistance.find(in: lookup, with: location)
+        nearbyState = await CourseDistance.find(in: lookup, with: location, withinMiles: nearbyRadiusMiles)
+    }
+
+    /// Remembers the radius, and looks again when courses are already listed.
+    func setNearbyRadius(_ miles: Int) async {
+        nearbyRadiusMiles = miles
+        memory.remember(nearbyRadiusMiles: miles)
+        if case .found = nearbyState { await findNearby() }
     }
 }

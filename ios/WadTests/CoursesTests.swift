@@ -147,6 +147,35 @@ struct CoursesModelTests {
         #expect(denied.nearbyState == .denied)
     }
 
+    @Test func nearMeLooksAgainWithinTheRadiusPickedAndRemembersIt() async throws {
+        let cache = try CourseTestSupport.cache()
+        var far = CourseFixtures.stillwater
+        far.courseId = "far"
+        far.location.latitude = 44.9
+        for course in [far, CourseFixtures.stillwater, CourseFixtures.oakGlen] {
+            cache.store(course, at: CourseTestSupport.now)
+        }
+        let memory = CourseTestSupport.memory()
+        let fix = LocationFix(latitude: 45.0702, longitude: -92.8341)
+        let model = try CourseTestSupport.coursesModel(cache: cache, location: FakeLocationProvider(result: .success(fix)), memory: memory)
+        #expect(model.nearbyRadiusMiles == CourseDistance.defaultRadiusMiles)
+
+        await model.findNearby()
+        guard case .found(let within5) = model.nearbyState else {
+            Issue.record("\(model.nearbyState)")
+            return
+        }
+        #expect(!within5.map(\.course.courseId).contains("far"))
+
+        await model.setNearbyRadius(25)
+        guard case .found(let within25) = model.nearbyState else {
+            Issue.record("\(model.nearbyState)")
+            return
+        }
+        #expect(within25.map(\.course.courseId).last == "far")
+        #expect(try CourseTestSupport.coursesModel(memory: memory).nearbyRadiusMiles == 25)
+    }
+
     @Test func theDraftForARoundHereIsFilledFromTheCourseAndTee() throws {
         let memory = CourseTestSupport.memory()
         let model = try CourseTestSupport.coursesModel(memory: memory)
