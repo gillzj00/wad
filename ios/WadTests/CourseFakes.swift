@@ -92,4 +92,18 @@ enum CourseTestSupport {
             debounce: .milliseconds(20)
         )
     }
+
+    static func coursesModel(
+        service: FakeCourseLookupService = FakeCourseLookupService(),
+        cache: CourseCache? = nil,
+        location: any LocationProvider = FakeLocationProvider(result: .failure(.unavailable)),
+        memory: CourseMemory? = nil
+    ) throws -> CoursesModel {
+        CoursesModel(
+            lookup: try lookup(service: service, cache: cache),
+            location: location,
+            memory: memory ?? self.memory(),
+            debounce: .milliseconds(20)
+        )
+    }
 }

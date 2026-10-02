@@ -88,7 +88,7 @@ enum CourseFixtures {
                 gender: .male,
                 courseRating: 28.4,
                 slope: 88,
-                par: 29,
+                par: 28,
                 totalYards: 1_380,
                 holes: (1...9).map { CourseHole(hole: $0, par: $0 == 5 ? 4 : 3, strokeIndex: $0, yardage: 120 + $0 * 10) },
                 strokeIndexValid: true
