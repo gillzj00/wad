@@ -21,6 +21,24 @@ enum Metal {
     static let ash = asset("Ash", UIColor(red: 0.45, green: 0.42, blue: 0.42, alpha: 1))
     static let flesh = UIColor(red: 0.89, green: 0.68, blue: 0.54, alpha: 1)
     static let fleshShade = UIColor(red: 0.62, green: 0.38, blue: 0.28, alpha: 1)
+    /// The ink outline that holds every drawn form.
+    static let ink = UIColor(red: 0.07, green: 0.04, blue: 0.05, alpha: 1)
+    static let boneLight = UIColor(red: 1, green: 0.99, blue: 0.94, alpha: 1)
+    static let fleshLight = UIColor(red: 0.98, green: 0.82, blue: 0.7, alpha: 1)
+    static let fleshDark = UIColor(red: 0.45, green: 0.24, blue: 0.18, alpha: 1)
+    static let furLight = UIColor(red: 0.64, green: 0.62, blue: 0.64, alpha: 1)
+    static let fur = UIColor(red: 0.42, green: 0.4, blue: 0.43, alpha: 1)
+    static let furDark = UIColor(red: 0.21, green: 0.19, blue: 0.21, alpha: 1)
+    static let furDeep = UIColor(red: 0.11, green: 0.09, blue: 0.11, alpha: 1)
+    static let gum = UIColor(red: 0.45, green: 0.1, blue: 0.14, alpha: 1)
+    static let eagleBrown = UIColor(red: 0.36, green: 0.22, blue: 0.1, alpha: 1)
+    static let eagleDark = UIColor(red: 0.2, green: 0.11, blue: 0.05, alpha: 1)
+    static let eagleDeep = UIColor(red: 0.1, green: 0.05, blue: 0.02, alpha: 1)
+    static let eagleLight = UIColor(red: 0.55, green: 0.38, blue: 0.2, alpha: 1)
+    static let beakYellow = UIColor(red: 0.98, green: 0.75, blue: 0.15, alpha: 1)
+    static let beakShade = UIColor(red: 0.8, green: 0.5, blue: 0.08, alpha: 1)
+    static let snowShade = UIColor(red: 0.7, green: 0.77, blue: 0.92, alpha: 1)
+    static let snowDeep = UIColor(red: 0.5, green: 0.56, blue: 0.76, alpha: 1)
 }
 
 /// One show: a SpriteKit scene with a camera, a flash layer and a vignette,
@@ -258,6 +276,13 @@ enum Textures {
     /// A soft dot for sparks, embers and foam.
     static var dot: SKTexture { radialGlow(color: .white) }
 
+    /// A hard-edged flake with a dark rim, for snow and dust in the foreground.
+    static var flake: SKTexture { make("flake", size: CGSize(width: 32, height: 32), scale: 2) { context, size in
+        let disc = Draw.circle(at: CGPoint(x: 16, y: 16), r: 12)
+        Draw.fill(context, disc, UIColor(white: 0.55, alpha: 1))
+        Draw.fill(context, Draw.circle(at: CGPoint(x: 15, y: 17), r: 10), .white)
+    } }
+
     /// A streak for rain and trails.
     static var streak: SKTexture { make("streak", size: CGSize(width: 4, height: 32), scale: 2) { context, size in
         context.drawLinearGradient(
@@ -390,6 +415,59 @@ enum Draw {
             path.addLine(to: tip)
             stroke(context, path, color, width: 2.5)
         }
+    }
+
+    /// The key light of every drawing: from the top left.
+    static let keyLight = CGVector(dx: -0.6, dy: 0.8)
+
+    /// `CGPoint(x:y:)` with one overload, so long lists of points with
+    /// arithmetic in them stay cheap for the type checker.
+    static func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
+
+    static func translated(_ path: CGPath, _ dx: CGFloat, _ dy: CGFloat) -> CGPath {
+        var transform = CGAffineTransform(translationX: dx, y: dy)
+        return path.copy(using: &transform) ?? path
+    }
+
+    /// Cel shading: a flat base, a shadow crescent on the side away from the
+    /// key light (the shape minus itself moved toward the light, so the
+    /// shadow follows the form), an optional darker core along the edge, a
+    /// rim light sliver on that dark edge, and the ink outline.
+    static func cel(_ context: CGContext, _ path: CGPath, base: UIColor, shadow: UIColor, core: UIColor? = nil, rim: UIColor? = nil, ink: UIColor? = Metal.ink, width: CGFloat = 3, depth: CGFloat, light: CGVector = keyLight) {
+        let shape = path.normalized(using: .winding)
+        fill(context, shape, base)
+        let crescent = shape.subtracting(translated(shape, light.dx * depth, light.dy * depth), using: .winding)
+        fill(context, crescent, shadow)
+        if let core {
+            fill(context, shape.subtracting(translated(shape, light.dx * depth * 0.45, light.dy * depth * 0.45), using: .winding), core)
+        }
+        if let rim {
+            fill(context, shape.subtracting(translated(shape, light.dx * width * 1.1, light.dy * width * 1.1), using: .winding), rim)
+        }
+        if let ink {
+            stroke(context, shape, ink, width: width)
+        }
+    }
+
+    /// A cartoon highlight: a soft-edged flat blob toward the light.
+    static func highlight(_ context: CGContext, _ clip: CGPath, at point: CGPoint, rx: CGFloat, ry: CGFloat, color: UIColor = UIColor.white.withAlphaComponent(0.5)) {
+        context.saveGState()
+        context.addPath(clip)
+        context.clip()
+        fill(context, ellipse(at: point, rx: rx, ry: ry), color)
+        context.restoreGState()
+    }
+
+    /// A jagged ring of fur tufts round an ellipse, the tufts leaning down.
+    static func ruff(center: CGPoint, rx: CGFloat, ry: CGFloat, spikes: Int, length: CGFloat, seed: Int, from: CGFloat = 0, to: CGFloat = .pi * 2) -> CGPath {
+        var points: [CGPoint] = []
+        for i in 0...spikes {
+            let a = from + (to - from) * CGFloat(i) / CGFloat(spikes)
+            let out = i % 2 == 0 ? length * (0.6 + CGFloat(Anim.hash(i + seed, 400)) * 0.7) : 0
+            let lean = -0.25 * sin(a) * CGFloat(i % 2)
+            points.append(CGPoint(x: center.x + cos(a + lean) * (rx + out), y: center.y + sin(a + lean) * (ry + out)))
+        }
+        return polygon(points)
     }
 
     /// Fine cracks: a few jagged lines, for bone and ice.
@@ -554,6 +632,16 @@ enum Emitters {
         e.particleColorBlendFactor = 1
         e.particleAlpha = alpha
         e.particleAlphaRange = alpha * 0.4
+        return e
+    }
+
+    /// Blood drops flung out, falling point first.
+    static func drops(count: Int, speed: CGFloat, scale: CGFloat, lifetime: CGFloat) -> SKEmitterNode {
+        let e = burst(count: count, speed: speed, color: .white, texture: Art.bloodDrop, scale: scale, lifetime: lifetime, gravity: -1100)
+        e.particleColorBlendFactor = 0
+        e.particleRotationSpeed = 0
+        e.particleRotationRange = 0.6
+        e.particleScaleSpeed = 0
         return e
     }
 

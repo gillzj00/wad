@@ -35,11 +35,11 @@ final class WolfScene: EventSKScene {
         wolf.addChild(jaw)
         wolf.addChild(head)
         // Ember light in the eyes, pulsing.
-        for s in [CGFloat(-1), 1] {
+        for eye in Art.wolfEyes {
             let glow = SKSpriteNode(color: Metal.ember, size: CGSize(width: 110 * scale, height: 110 * scale))
             glow.shader = Shaders.pulse
             glow.blendMode = .add
-            glow.position = CGPoint(x: s * 60 * scale, y: 63 * scale)
+            glow.position = CGPoint(x: eye.x * scale, y: eye.y * scale)
             glow.zPosition = 3
             wolf.addChild(glow)
         }
@@ -248,8 +248,8 @@ final class WadScene: EventSKScene {
         for i in 0..<9 {
             let x = 0.08 + CGFloat(i) * 0.105 + CGFloat(Anim.signed(i, 200)) * 0.03
             let size = w * (0.2 + CGFloat(Anim.hash(i, 201)) * 0.1)
-            let skull = sprite(Art.skull, size: CGSize(width: size, height: size * 1.13), at: at(x, 0.02 + CGFloat(Anim.hash(i, 202)) * 0.06), z: CGFloat(i % 3) - 10)
-            skull.zRotation = CGFloat(Anim.signed(i, 203)) * 0.5
+            let skull = sprite(Art.skull(i % 4), size: CGSize(width: size, height: size * 1.13), at: at(x, 0.02 + CGFloat(Anim.hash(i, 202)) * 0.06), z: CGFloat(i % 3) - 10)
+            skull.zRotation = CGFloat(Anim.signed(i, 203)) * 0.4
             skull.color = .black
             skull.colorBlendFactor = i % 3 == 0 ? 0.05 : 0.4
         }
@@ -418,7 +418,7 @@ final class SkinScene: EventSKScene {
                 flap.run(.group([peel, .scaleY(to: 0.15 + 0.2 * CGFloat(i + 1), duration: 0.3)]))
                 drips.run(peel)
                 drips.particleBirthRate = 12 + CGFloat(i) * 8
-                burst(Emitters.burst(count: 50, speed: 420, color: Metal.bloodBright, scale: 0.16, lifetime: 1.2, gravity: -1100), at: CGPoint(x: wrist.x, y: line), z: 18)
+                burst(Emitters.drops(count: 30, speed: 420, scale: 0.22, lifetime: 1.2), at: CGPoint(x: wrist.x, y: line), z: 18)
                 splatter(at: CGPoint(x: wrist.x + CGFloat(Anim.signed(i, 210)) * w * 0.3, y: line + CGFloat(Anim.signed(i, 211)) * w * 0.15))
             }
         }
@@ -432,24 +432,15 @@ final class SkinScene: EventSKScene {
         }
     }
 
-    /// Blood on the wall behind the hand.
+    /// Blood on the wall behind the hand: flat drops, the big ones running.
     private func splatter(at point: CGPoint) {
-        for i in 0..<6 {
-            let r = w * (0.02 + CGFloat(Anim.hash(i, 220)) * 0.05)
-            let blob = SKShapeNode(circleOfRadius: r)
-            blob.fillColor = Metal.blood.withAlphaComponent(0.85)
-            blob.strokeColor = .clear
-            blob.position = CGPoint(x: point.x + CGFloat(Anim.signed(i, 221)) * w * 0.12, y: point.y + CGFloat(Anim.signed(i, 222)) * w * 0.12)
-            blob.zPosition = -60
-            addChild(blob)
-            let drip = SKShapeNode(rectOf: CGSize(width: r * 0.5, height: r * (2 + CGFloat(Anim.hash(i, 223)) * 4)), cornerRadius: r * 0.25)
-            drip.fillColor = blob.fillColor
-            drip.strokeColor = .clear
-            drip.position = CGPoint(x: 0, y: -r * 2)
-            blob.addChild(drip)
+        for i in 0..<7 {
+            let r = w * (0.015 + CGFloat(Anim.hash(i, 220)) * 0.04)
+            let drop = sprite(Art.bloodDrop, size: CGSize(width: r * 1.5, height: r * 2), at: CGPoint(x: point.x + CGFloat(Anim.signed(i, 221)) * w * 0.14, y: point.y + CGFloat(Anim.signed(i, 222)) * w * 0.14), z: -60)
+            drop.zRotation = CGFloat(Anim.signed(i, 224)) * 0.4
             if !still {
-                blob.setScale(0.2)
-                blob.run(Self.scale(to: 1, duration: 0.25, timing: .easeOut))
+                drop.setScale(0.2)
+                drop.run(Self.scale(to: 1, duration: 0.25, timing: .easeOut))
             }
         }
     }

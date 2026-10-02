@@ -468,8 +468,9 @@ final class SnowmanScene: EventSKScene {
         snowGround.position = at(0.5, 0)
         snowGround.zPosition = -50
         addChild(snowGround)
-        let snow = Emitters.fall(width: w, height: h, rate: 70, speed: 90, texture: Textures.dot, scale: 0.045, color: .white, alpha: 0.9)
-        snow.particleScaleRange = 0.03
+        let snow = Emitters.fall(width: w, height: h, rate: 70, speed: 90, texture: Textures.flake, scale: 0.16, color: .white, alpha: 0.95)
+        snow.particleScaleRange = 0.1
+        snow.particleColorBlendFactor = 0
         snow.xAcceleration = 10
         snow.position = at(0.5, 1.05)
         snow.zPosition = 70
@@ -620,7 +621,7 @@ final class SnowmanScene: EventSKScene {
     }
 }
 
-/// The bird: a fist comes up, the middle finger with it, and a bird lands on it.
+/// The bird: a bony fist comes up, the middle finger with it, and a bird lands on it.
 final class BirdieScene: EventSKScene {
     override func build(still: Bool) {
         addBackground(top: Metal.black, bottom: Metal.bloodDark)
@@ -647,9 +648,9 @@ final class BirdieScene: EventSKScene {
         let scale = w * 0.92 / Art.handSize.width
         let handSize = CGSize(width: Art.handSize.width * scale, height: Art.handSize.height * scale)
         let frames = [
-            Art.fleshHand(curl: 0.8, middle: 0.8, thumb: 0.45, key: "fist"),
-            Art.fleshHand(curl: 0.8, middle: 0.45, thumb: 0.45, key: "half"),
-            Art.fleshHand(curl: 0.8, middle: 0.0, thumb: 0.45, key: "bird"),
+            Art.skeletonHand(curl: 0.8, middle: 0.8, thumb: 0.45, key: "fist"),
+            Art.skeletonHand(curl: 0.8, middle: 0.45, thumb: 0.45, key: "fist-half"),
+            Art.skeletonHand(curl: 0.8, middle: 0.0, thumb: 0.45, key: "bird"),
         ]
         let hand = SKNode()
         hand.position = at(0.5, 0.0)
