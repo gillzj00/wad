@@ -14,7 +14,7 @@ enum TeeGender: String, Codable, Sendable, CaseIterable {
     }
 }
 
-struct CourseLocation: Codable, Equatable, Sendable {
+struct CourseLocation: Codable, Hashable, Sendable {
     var address: String?
     var city: String?
     var state: String?
@@ -29,7 +29,7 @@ struct CourseLocation: Codable, Equatable, Sendable {
     }
 }
 
-struct CourseSummary: Codable, Equatable, Identifiable, Sendable {
+struct CourseSummary: Codable, Hashable, Identifiable, Sendable {
     var courseId: String
     var clubName: String
     var courseName: String
