@@ -128,11 +128,7 @@ private struct CourseDetailSections: View {
         }
     }
 
-    private var addressLines: [String] {
-        let location = course.location
-        let lines = [location.address, location.cityState, location.country]
-        return lines.compactMap { $0?.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-    }
+    private var addressLines: [String] { course.location.addressLines }
 
     private var teeSection: some View {
         Section {
@@ -306,16 +302,15 @@ private struct TeeScorecardRow: View {
 
 #if DEBUG
 #Preview {
+    let container = WadSchema.previewContainer
     NavigationStack {
         CourseDetailView(
             summary: CourseFixtures.oakGlenSummary,
             model: CoursesModel(
-                lookup: CourseLookup(
-                    service: FixtureCourseLookupService(),
-                    cache: CourseCache(context: WadSchema.previewContainer.mainContext)
-                )
+                lookup: CourseLookup(service: FixtureCourseLookupService(), cache: CourseCache(context: container.mainContext))
             )
         )
     }
+    .modelContainer(container)
 }
 #endif

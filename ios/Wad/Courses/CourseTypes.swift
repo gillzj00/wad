@@ -27,6 +27,24 @@ struct CourseLocation: Codable, Hashable, Sendable {
         let parts = [city, state].compactMap { $0?.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
+
+    /// The address, then the town and the country, leaving out what the
+    /// address already says: providers often send "1599 McKusick Rd N,
+    /// Stillwater, MN 55082, USA" as the address.
+    var addressLines: [String] {
+        let address = (self.address ?? "").trimmingCharacters(in: .whitespaces)
+        var lines: [String] = []
+        if !address.isEmpty { lines.append(address) }
+        let said = address.lowercased()
+        if let city, !city.isEmpty, !said.contains(city.lowercased()) {
+            lines.append(cityState ?? city)
+        }
+        if let country = country?.trimmingCharacters(in: .whitespaces), !country.isEmpty,
+           !said.contains(country.lowercased()), !(country == "United States" && said.hasSuffix("usa")) {
+            lines.append(country)
+        }
+        return lines
+    }
 }
 
 struct CourseSummary: Codable, Hashable, Identifiable, Sendable {

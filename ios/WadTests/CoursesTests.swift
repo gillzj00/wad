@@ -50,6 +50,25 @@ struct TeeScorecardTests {
     }
 }
 
+// MARK: - The address
+
+struct CourseAddressTests {
+    @Test func theLinesLeaveOutWhatTheAddressAlreadySays() {
+        var location = CourseFixtures.oakGlenLocation
+        #expect(location.addressLines == ["1599 McKusick Rd N", "Stillwater, MN", "United States"])
+
+        location.address = "1599 McKusick Rd N, Stillwater, MN 55082, USA"
+        #expect(location.addressLines == ["1599 McKusick Rd N, Stillwater, MN 55082, USA"])
+
+        location.address = nil
+        #expect(location.addressLines == ["Stillwater, MN", "United States"])
+
+        location = CourseLocation(city: "Stillwater")
+        #expect(location.addressLines == ["Stillwater"])
+        #expect(CourseLocation().addressLines.isEmpty)
+    }
+}
+
 // MARK: - The Courses tab
 
 @MainActor
