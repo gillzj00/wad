@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-02 (animations halted)
+Last updated: 2026-10-02 (after #76)
 
 ## Current phase
 
@@ -51,11 +51,11 @@ Last updated: 2026-10-02 (animations halted)
 | T2b | Art pass on the nine animation subjects after owner feedback on #68: anatomy-based, cel-shaded, outlined art; the birdie is a skeletal finger | ios/ | done | #71 |
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, 17/18 tie prompt (the group picks, the engine never does), live points, pay-the-difference settlement, Wolf show trigger | ios/ | done | #69 |
 | T2c | Generated art for the animation subjects, per `docs/art/animation-assets.md` | ios/, docs/ | superseded: on 2026-10-02 the owner judged the code-drawn shows unacceptable and halted all animation work ("we are going to go a different route"); the route is the owner's to name. PR #74 (wolf jaw and eagle framing) was closed unmerged. | - |
-| C2 | Courses tab: course search, course detail with tees and scorecard, start a round from a course (the owner found the placeholder tab and could not search) | ios/ | in flight (branch `feat/ios-courses-tab`) | - |
+| C2 | Courses tab: course search, course detail with tees and scorecard, start a round from a course (the owner found the placeholder tab and could not search) | ios/ | done (search, Near me, Recent from the on-device cache, course detail with tee menu and scorecard, Start a round here) | #76 |
 
 ## Tasks in flight
 
-- C2 Courses tab (subagent, branch `feat/ios-courses-tab`).
+- none.
 - Animation work is halted by the owner (2026-10-02); do not start any animation task until the owner names the new route.
 - The one-iOS-task-at-a-time rule was relaxed on 2026-10-01 at the owner's request: T1 and T2 run in parallel, conflicts are limited to the generated project (regenerated with xcodegen) and recolored views.
 
