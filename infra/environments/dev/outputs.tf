@@ -8,6 +8,11 @@ output "api_base_url" {
   value       = aws_apigatewayv2_stage.default.invoke_url
 }
 
+output "live_ws_url" {
+  description = "URL of the live relay WebSocket API (wss://). The connection needs the x-wad-client header; see infra/README.md."
+  value       = aws_apigatewayv2_stage.live.invoke_url
+}
+
 output "client_token_parameter" {
   description = "SSM parameter name holding the x-wad-client token (the value is never output)."
   value       = aws_ssm_parameter.client_token.name
