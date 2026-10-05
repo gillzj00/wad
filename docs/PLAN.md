@@ -42,6 +42,7 @@ An iPhone app you take onto the golf course to keep score for your group and run
 | Engines on device | Bundle the TypeScript engines and run them in JavaScriptCore; no Swift port | [0011](adr/0011-engines-on-device-javascriptcore.md) |
 | Wolf rules | Four players, 2/3/4/1 points, net best ball, last place is the Wolf on 17 and 18, "pay the difference" payout | [0012](adr/0012-wolf-rules.md) |
 | Courses API before auth | Deploy course lookup now behind a shared client token and throttling; interim until Cognito | [0013](adr/0013-courses-api-before-auth.md) |
+| Live relay before auth | A WebSocket relay between phones, rooms keyed by a code the phone picks, behind the shared client token, messages opaque to the server; interim until round sync | [0014](adr/0014-live-relay-before-auth.md) |
 
 ## 4. Architecture summary
 

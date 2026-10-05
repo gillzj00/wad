@@ -32,7 +32,7 @@ Status legend: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 - [x] **M3.1 Round lifecycle API**: create round (+ join code), join, add guest player, get round. Handler code done; deploying waits on auth (M1.1).
 - [x] **M3.2 Scoring API**: `PUT /rounds/{id}/scores` with per-game flags; recompute endpoint. Handler code done; deploying waits on auth (M1.1).
-- [ ] **M3.3 WebSocket sync**: `$connect`/`$disconnect`/actions, connection registry, fan-out (DynamoDB Streams). AC: two clients see each other's scores live.
+- [~] **M3.3 WebSocket sync**: `$connect`/`$disconnect`/actions, connection registry, fan-out (DynamoDB Streams). AC: two clients see each other's scores live. First slice: the live relay of [ADR-0014](../adr/0014-live-relay-before-auth.md) (`backend/src/handlers/live.ts`, `infra/environments/dev/live_api.tf`), rooms keyed by a code the phone picks, behind the shared client token, before auth; the authoritative sync replaces it once M1 lands.
 - [ ] **M3.4 iOS round flow**: create/join, hole-by-hole scoring UI incl. Wad/Greenies flags, live group view.
 - [ ] **M3.5 iOS offline queue**: mutations persist locally and replay on reconnect; full-round reconcile on reconnect.
 
