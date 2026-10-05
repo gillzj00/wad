@@ -71,6 +71,12 @@ struct ScoreEditSheet: View {
         }
         .accessibilityIdentifier("scoreEdit.sheet")
         .presentationDetents([.medium])
+        .onChange(of: events.current) { _, current in
+            // The show plays on the screen behind; the score is saved by then.
+            if current != nil {
+                dismiss()
+            }
+        }
     }
 
     /// Saves a change and plays what it newly triggered: the games are scored
