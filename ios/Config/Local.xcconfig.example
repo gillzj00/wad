@@ -16,3 +16,11 @@ WAD_API_BASE_URL = https:/$()/xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
 // The x-wad-client token, from SSM (never logged, never committed):
 //   aws ssm get-parameter --name /wad/dev/client-token --with-decryption --query Parameter.Value --output text
 WAD_API_CLIENT_TOKEN = xxxxxxxx
+
+// Live sharing of a round's events with the phones that follow its code
+// (ios/README.md, "Live"). Leave blank to build without it: the app then
+// says live sharing is not configured. The connection sends the same
+// x-wad-client token as course lookup. The WebSocket URL comes from the
+// Terraform output, again with "$()" in place of "//":
+//   terraform -chdir=infra/environments/dev output -raw live_ws_url
+WAD_LIVE_URL = wss:/$()/xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev

@@ -22,9 +22,10 @@ targets:
       - Wad
     # Only what the INFOPLIST_KEY_ build settings cannot say: the launch
     # screen's background color, the status bar (light on the dark surfaces
-    # of both appearances), the location usage string and the courses
-    # API settings, which come from the git-ignored Config/Local.xcconfig and
-    # are empty without it (the app then says lookup is not configured).
+    # of both appearances), the location usage string and the courses API
+    # and live relay settings, which come from the git-ignored
+    # Config/Local.xcconfig and are empty without it (the app then says
+    # lookup and live sharing are not configured).
     # The rest of the Info.plist is generated.
     info:
       path: Wad/Info.plist
@@ -38,6 +39,7 @@ targets:
         NSLocationWhenInUseUsageDescription: Your location suggests the courses on this phone near you when you look for a course or set up a round. It stays on the phone.
         WAD_API_BASE_URL: $(WAD_API_BASE_URL)
         WAD_API_CLIENT_TOKEN: $(WAD_API_CLIENT_TOKEN)
+        WAD_LIVE_URL: $(WAD_LIVE_URL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gillzj00.wad
