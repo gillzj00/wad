@@ -2,9 +2,11 @@ import SwiftUI
 
 /// Compact scorecard: one grid per nine, players by holes, with the out, in
 /// and total strokes entered so far. Ruled like a paper scorecard, and a score
-/// is marked against par the way it is on one (`ScoreNotation`).
+/// is marked against par the way it is on one (`ScoreNotation`). With
+/// `onEditScore` each score is a button; the sums never are.
 struct ScorecardView: View {
     let scorecard: Scorecard
+    var onEditScore: ((_ playerID: String, _ hole: Int) -> Void)? = nil
 
     @ScaledMetric(relativeTo: .caption) private var markSize: CGFloat = 21
     @ScaledMetric(relativeTo: .caption) private var labelWidth: CGFloat = 50
@@ -52,23 +54,62 @@ struct ScorecardView: View {
 
             ForEach(scorecard.rows) { row in
                 Theme.Palette.rule.frame(height: 1)
-                HStack(spacing: 0) {
-                    label(row.name)
-                        .fontWeight(.semibold)
-                    ForEach(Array(holes), id: \.self) { hole in
-                        cell(row.gross[hole].map(String.init) ?? "-", notation: notation(row, hole: hole))
-                    }
-                    summary(row[keyPath: strokes].map(String.init) ?? "-")
-                    summary(showsTotal ? (row.total.map(String.init) ?? "-") : "")
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("scorecard.\(title).\(row.name)")
+                playerRow(row, holes: holes, title: title, strokes: strokes, showsTotal: showsTotal)
+                    .accessibilityIdentifier("scorecard.\(title).\(row.name)")
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.Radius.chip, style: .continuous)
                 .strokeBorder(Theme.Palette.rule, lineWidth: 1)
+        }
+    }
+
+    /// Read-only, the row is one element that reads its scores. With scores to
+    /// edit it contains them as buttons, and reads the same as a whole.
+    @ViewBuilder
+    private func playerRow(
+        _ row: Scorecard.Row,
+        holes: ClosedRange<Int>,
+        title: String,
+        strokes: KeyPath<Scorecard.Row, Int?>,
+        showsTotal: Bool
+    ) -> some View {
+        let content = HStack(spacing: 0) {
+            label(row.name)
+                .fontWeight(.semibold)
+            ForEach(Array(holes), id: \.self) { hole in
+                score(row, hole: hole)
+            }
+            summary(row[keyPath: strokes].map(String.init) ?? "-", title: title)
+            summary(showsTotal ? (row.total.map(String.init) ?? "-") : "", title: "Total")
+        }
+        if onEditScore == nil {
+            content
+                .accessibilityElement(children: .combine)
+        } else {
+            content
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(row.readout(on: holes, showsTotal: showsTotal))
+        }
+    }
+
+    @ViewBuilder
+    private func score(_ row: Scorecard.Row, hole: Int) -> some View {
+        let text = row.gross[hole].map(String.init) ?? "-"
+        if let onEditScore, scorecard.isEditable(playerID: row.playerID, hole: hole) {
+            Button {
+                onEditScore(row.playerID, hole)
+            } label: {
+                cell(text, notation: notation(row, hole: hole))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Score of \(row.name) on hole \(hole)")
+            .accessibilityValue(row.gross[hole].map(String.init) ?? "Not set")
+            .accessibilityIdentifier("scorecard.cell.\(row.name).\(hole)")
+        } else {
+            cell(text, notation: notation(row, hole: hole))
         }
     }
 
@@ -101,9 +142,11 @@ struct ScorecardView: View {
     }
 
     /// Out, in and total: what the row adds up to.
-    private func summary(_ text: String) -> some View {
+    private func summary(_ text: String, title: String) -> some View {
         cell(text)
             .fontWeight(.bold)
             .background(Theme.Palette.crimson.opacity(0.3))
+            .accessibilityLabel(text.isEmpty ? "" : "\(title) \(text)")
+            .accessibilityHidden(text.isEmpty)
     }
 }
