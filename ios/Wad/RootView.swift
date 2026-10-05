@@ -4,18 +4,25 @@ enum AppTab: Hashable {
     case rounds, courses, profile
 }
 
-/// The tab shown, and a round created on another tab that the Rounds tab
-/// opens when it comes back on screen.
+/// The tab shown, a round created on another tab that the Rounds tab opens
+/// when it comes back on screen, and a screen for the Rounds tab to push from
+/// a screen that has no hold on its path.
 @MainActor
 @Observable
 final class AppNavigation {
     var tab = AppTab.rounds
     var roundToOpen: Round?
+    var pendingRoute: RoundsRoute?
 
     /// Shows the round on the Rounds tab.
     func open(_ round: Round) {
         roundToOpen = round
         tab = .rounds
+    }
+
+    /// Pushes the screen on the Rounds tab.
+    func push(_ route: RoundsRoute) {
+        pendingRoute = route
     }
 }
 

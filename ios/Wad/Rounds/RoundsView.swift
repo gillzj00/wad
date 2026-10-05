@@ -118,6 +118,12 @@ struct RoundsView: View {
                 path = [.detail(round)]
                 navigation?.roundToOpen = nil
             }
+            // The settlement, from the scoring screen's pop-up.
+            .onChange(of: navigation?.pendingRoute) { _, route in
+                guard let route else { return }
+                path.append(route)
+                navigation?.pendingRoute = nil
+            }
             #if DEBUG
             .safeAreaInset(edge: .bottom) {
                 if ProcessInfo.processInfo.arguments.contains(LaunchArgument.debugStoreCounts) {
