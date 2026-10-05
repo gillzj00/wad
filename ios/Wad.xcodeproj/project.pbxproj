@@ -91,6 +91,7 @@
 		B952AEE187004F397D1274EC /* VenmoHandleEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF4BDC00105CB02B119E77C /* VenmoHandleEditor.swift */; };
 		BAB7FF7A4BBFC3D034744691 /* EventQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DDA93C4D7483CA3BAE0849 /* EventQueueTests.swift */; };
 		BBAD81CF58FA0A6D72204D11 /* CourseLookupClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6226252CA4567B45F89BCF /* CourseLookupClient.swift */; };
+		BC51E2076ACF614C3F1DED8F /* ScoreEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7CC01F27D1A547AFB7CF9D /* ScoreEditSheet.swift */; };
 		BDDE34B5B1FAE0C5279FC601 /* EngineBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F735D2CB281B593B4739FFC /* EngineBridgeTests.swift */; };
 		BFA47CE91ED96D733258E701 /* EventHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79DAB84E45AFB9828998E49B /* EventHaptics.swift */; };
 		C216948CF792106665C99575 /* RoundDeleteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C05F0716A72349D2C6C4F7 /* RoundDeleteUITests.swift */; };
@@ -243,6 +244,7 @@
 		E6EE5F7E5F58E15F1719B988 /* WolfGamesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfGamesSection.swift; sourceTree = "<group>"; };
 		E7E70689AA445DEBEF9A5F59 /* EventSKScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSKScene.swift; sourceTree = "<group>"; };
 		EA71740445547E3EF50B7A0B /* CourseStepTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseStepTests.swift; sourceTree = "<group>"; };
+		EA7CC01F27D1A547AFB7CF9D /* ScoreEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreEditSheet.swift; sourceTree = "<group>"; };
 		EC95002725110A9C7A0DF07D /* SceneHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneHelpers.swift; sourceTree = "<group>"; };
 		EE51D46F5765B9E0E4177512 /* ScoreNotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreNotation.swift; sourceTree = "<group>"; };
 		F12AB045A3A72F9FBE737654 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -266,6 +268,7 @@
 				5F7E62E8812C4DD83391664E /* RoundStatus.swift */,
 				30520B92F6050E5DBE08F9AB /* Scorecard.swift */,
 				74DCCB64A1078BE92554F993 /* ScorecardView.swift */,
+				EA7CC01F27D1A547AFB7CF9D /* ScoreEditSheet.swift */,
 				26319026AF5D8274B08A0004 /* ScoringText.swift */,
 			);
 			path = Scoring;
@@ -740,6 +743,7 @@
 				81F2A809719D15DED3491390 /* RoundSummary.swift in Sources */,
 				6D5238486E97759177DDBC5C /* RoundsView.swift in Sources */,
 				951989C177EEE95C5073EA7F /* SceneHelpers.swift in Sources */,
+				BC51E2076ACF614C3F1DED8F /* ScoreEditSheet.swift in Sources */,
 				C6B6B43414FDA2AD41E68E02 /* ScoreNotation.swift in Sources */,
 				71462B2E1B0475C3F02FF549 /* ScoreScenes.swift in Sources */,
 				A89DA6A02F87D0A107ECC947 /* Scorecard.swift in Sources */,

@@ -262,4 +262,26 @@ struct RoundStatusTests {
         #expect(alex.back == nil)
         #expect(alex.total == 10)
     }
+
+    @Test func scorecardReadsEachRowAsItIsPrinted() throws {
+        try scorer.setGross(4, playerID: "zach", hole: 10)
+        let scorecard = Scorecard(round: round)
+
+        let zach = scorecard.rows[0]
+        #expect(zach.readout(on: Round.frontNine, showsTotal: false) == "Zach, 5, 5, 3, -, -, -, -, -, -, 13")
+        #expect(zach.readout(on: Round.backNine, showsTotal: true) == "Zach, 4, -, -, -, -, -, -, -, -, 4, 17")
+        let alex = scorecard.rows[2]
+        #expect(alex.readout(on: Round.backNine, showsTotal: true) == "Alex, -, -, -, -, -, -, -, -, -, -, 10")
+    }
+
+    @Test func scorecardEditsAPlayersScoreOnAHoleOfTheRound() {
+        let scorecard = Scorecard(round: round)
+
+        #expect(scorecard.isEditable(playerID: "zach", hole: 1))
+        #expect(scorecard.isEditable(playerID: "alex", hole: 3))
+        #expect(scorecard.isEditable(playerID: "sam", hole: 18))
+        #expect(!scorecard.isEditable(playerID: "zach", hole: 0))
+        #expect(!scorecard.isEditable(playerID: "zach", hole: 19))
+        #expect(!scorecard.isEditable(playerID: "jo", hole: 1))
+    }
 }
