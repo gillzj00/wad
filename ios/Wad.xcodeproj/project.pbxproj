@@ -21,9 +21,11 @@
 		14D7403468F76CF2D776AFC2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F12AB045A3A72F9FBE737654 /* Assets.xcassets */; };
 		164E1BD5B07EA7878F6DA3CF /* VenmoHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA7F37CDD4CF2BC199B4D1C0 /* VenmoHandle.swift */; };
 		1702CDE17BB47B154463EB72 /* CourseStepModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF4F8FC1A5FD40E128707D99 /* CourseStepModel.swift */; };
+		191A36CE885BE2E673200FCC /* RoundCompletionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E411541133B20B1AF52633 /* RoundCompletionPrompt.swift */; };
 		1CC6507EEEAC51FF5872E296 /* Round.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D13E2BAAC34959F4DE5E64 /* Round.swift */; };
 		1E3AB757E560A37F4D7E2996 /* VenmoLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBEE989B137FBC0B4C0ED77F /* VenmoLink.swift */; };
 		25059043DDDF9DE46BF1C725 /* ScoringText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26319026AF5D8274B08A0004 /* ScoringText.swift */; };
+		25637B1BB303F10A88289547 /* RoundCompletionPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90F82CA49E2B024F36931B0 /* RoundCompletionPromptTests.swift */; };
 		289F9E143B900DBBD45BCF57 /* RoundScorer+Wolf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620BC3C02FF4B4ABADA8EA79 /* RoundScorer+Wolf.swift */; };
 		2936E08BE7E39E787F316453 /* EventSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC8A2E4B0AF4401F2AD68F1 /* EventSettingsView.swift */; };
 		2F481E59DD52C65C3D697417 /* RoundFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528D789C9D8A692704AC67C2 /* RoundFixtures.swift */; };
@@ -229,6 +231,7 @@
 		CFDF6B0261F3395203ECD8C3 /* RoundStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundStatusTests.swift; sourceTree = "<group>"; };
 		D14B08944B02A2670BC26AE3 /* EventSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSoundPlayer.swift; sourceTree = "<group>"; };
 		D48A7D7AAB406132941AEEA3 /* WolfRoundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfRoundTests.swift; sourceTree = "<group>"; };
+		D6E411541133B20B1AF52633 /* RoundCompletionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundCompletionPrompt.swift; sourceTree = "<group>"; };
 		D92649F51DB96AFFA884F061 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DB593380B604DE507EC4B13B /* CoursesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoursesView.swift; sourceTree = "<group>"; };
 		DBEE989B137FBC0B4C0ED77F /* VenmoLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoLink.swift; sourceTree = "<group>"; };
@@ -246,6 +249,7 @@
 		F467142E42E3D1B341A8A89D /* Art+Creatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Art+Creatures.swift"; sourceTree = "<group>"; };
 		F7281CFDDD7BD6C8B03DFC2C /* CourseSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseSelection.swift; sourceTree = "<group>"; };
 		F87F046930E8678C6BB01870 /* RoundStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundStoreTests.swift; sourceTree = "<group>"; };
+		F90F82CA49E2B024F36931B0 /* RoundCompletionPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundCompletionPromptTests.swift; sourceTree = "<group>"; };
 		FAD8E090D2AF4347F601C771 /* EventCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventCenter.swift; sourceTree = "<group>"; };
 		FBC78A9B92F18E959432DAF0 /* WolfDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfDraftTests.swift; sourceTree = "<group>"; };
 		FEC8D744C7C1D0055F8143D9 /* WolfText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfText.swift; sourceTree = "<group>"; };
@@ -257,6 +261,7 @@
 			isa = PBXGroup;
 			children = (
 				C4F09760D77B321EFB56F66D /* HoleScoringView.swift */,
+				D6E411541133B20B1AF52633 /* RoundCompletionPrompt.swift */,
 				DC5DC97A91548EBAA368015E /* RoundScorer.swift */,
 				5F7E62E8812C4DD83391664E /* RoundStatus.swift */,
 				30520B92F6050E5DBE08F9AB /* Scorecard.swift */,
@@ -347,6 +352,7 @@
 				B0520B663BEE266B9C048474 /* GameSnapshotRoundTests.swift */,
 				475E17658506CC1C45DC229B /* PaletteContrastTests.swift */,
 				C5FB6ED545DD1295664F678A /* PaymentTests.swift */,
+				F90F82CA49E2B024F36931B0 /* RoundCompletionPromptTests.swift */,
 				BAE26489214D11F38B99B353 /* RoundDraftTests.swift */,
 				78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */,
 				528D789C9D8A692704AC67C2 /* RoundFixtures.swift */,
@@ -653,6 +659,7 @@
 				45AA08DC6A27A41955028092 /* GameSnapshotRoundTests.swift in Sources */,
 				437C412F663A653B6D58BD11 /* PaletteContrastTests.swift in Sources */,
 				F9CFF8FB188C1EF97D90BA8E /* PaymentTests.swift in Sources */,
+				25637B1BB303F10A88289547 /* RoundCompletionPromptTests.swift in Sources */,
 				62128B2E3BAE0757C69DC9CA /* RoundDraftTests.swift in Sources */,
 				97B5C12FF701DE50A2B33FED /* RoundEngineMappingTests.swift in Sources */,
 				2F481E59DD52C65C3D697417 /* RoundFixtures.swift in Sources */,
@@ -721,6 +728,7 @@
 				683D5AE172A5EABB174F2B2F /* Round+Engine.swift in Sources */,
 				D8480444BEFCDA525B807361 /* Round+Wolf.swift in Sources */,
 				1CC6507EEEAC51FF5872E296 /* Round.swift in Sources */,
+				191A36CE885BE2E673200FCC /* RoundCompletionPrompt.swift in Sources */,
 				DCFC3FB517862868E66EE9E7 /* RoundDetailView.swift in Sources */,
 				65447551F66FD263FE41AC9C /* RoundDraft.swift in Sources */,
 				289F9E143B900DBBD45BCF57 /* RoundScorer+Wolf.swift in Sources */,
