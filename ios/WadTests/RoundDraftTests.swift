@@ -214,6 +214,27 @@ struct RoundDraftTests {
         }
     }
 
+    @Test func aNewDraftCarriesSkinsOver() {
+        #expect(RoundDraft().skinsCarryover == true)
+        #expect(RoundDraft.sample.skinsCarryover == true)
+        #expect(RoundFixtures.unratedDraft().skinsCarryover == true)
+    }
+
+    @Test @MainActor func skinsCarryoverReachesTheRound() throws {
+        let bridge = try EngineBridge()
+        var draft = RoundFixtures.threePlayerDraft()
+        let carries = try draft.makeRound(using: bridge)
+        #expect(carries.skinsCarryover == true)
+        #expect(carries.skinsInput.carryover == true)
+
+        draft.skinsCarryover = false
+        let round = try draft.makeRound(using: bridge)
+        #expect(round.skinsCarryover == false)
+        #expect(round.skinsInput.carryover == false)
+        #expect(round.settings == .defaults)
+        #expect(draft.gameIssues().isEmpty)
+    }
+
     @Test func aNewDraftStartsEveryHoleAtPar() {
         #expect(RoundDraft().startsEveryHoleAtPar == true)
         #expect(RoundFixtures.unratedDraft().startsEveryHoleAtPar == false)
