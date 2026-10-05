@@ -7,9 +7,12 @@ struct HoleScoringView: View {
     let round: Round
 
     @Environment(EventCenter.self) private var events
+    @Environment(AppNavigation.self) private var navigation: AppNavigation?
 
     @State private var holeNumber: Int
     @State private var failure: String?
+    @State private var showsCompletionPrompt = false
+    @State private var summaryRequested = false
 
     /// Opens on `startHole`, or on the first hole that is not complete. A
     /// round that started every hole at par has no such hole; it opens on hole 1.
@@ -69,12 +72,18 @@ struct HoleScoringView: View {
         } message: {
             Text(failure ?? "")
         }
+        .sheet(isPresented: $showsCompletionPrompt, onDismiss: openSummaryIfRequested) {
+            RoundCompletionSheet { summaryRequested = true }
+        }
     }
 
     /// Saves a change and plays what it newly triggered: the games are scored
     /// before and after, and only an event that was not there before plays.
+    /// Pops up the way to the round summary when the change completes the
+    /// round, or is made on the last hole of a round that is complete.
     private func perform(_ change: () throws -> Void) {
         let before = events.snapshot(of: round)
+        let wasComplete = round.firstIncompleteHole == nil
         do {
             try change()
         } catch {
@@ -82,6 +91,22 @@ struct HoleScoringView: View {
             return
         }
         events.record(round, before: before)
+        if RoundCompletionPrompt.shows(
+            wasComplete: wasComplete,
+            isComplete: round.firstIncompleteHole == nil,
+            changedHole: holeNumber,
+            lastHole: lastHole
+        ) {
+            showsCompletionPrompt = true
+        }
+    }
+
+    /// The pop-up is dismissed before the settlement is pushed, by the
+    /// Rounds tab, which holds the navigation path.
+    private func openSummaryIfRequested() {
+        guard summaryRequested else { return }
+        summaryRequested = false
+        navigation?.push(.settlement(round))
     }
 
     // MARK: Sections
