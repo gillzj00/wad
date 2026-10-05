@@ -38,6 +38,17 @@ struct Scorecard: Equatable, Sendable {
         var out: Int? { strokes(on: Round.frontNine) }
         var back: Int? { strokes(on: Round.backNine) }
         var total: Int? { strokes(on: Round.frontNine.lowerBound...Round.backNine.upperBound) }
+
+        /// The row read out: the name, each hole's score or "-", the strokes
+        /// on the nine and, with `showsTotal`, the total.
+        func readout(on holes: ClosedRange<Int>, showsTotal: Bool) -> String {
+            var parts = [name] + holes.map { gross[$0].map(String.init) ?? "-" }
+            parts.append(strokes(on: holes).map(String.init) ?? "-")
+            if showsTotal {
+                parts.append(total.map(String.init) ?? "-")
+            }
+            return parts.joined(separator: ", ")
+        }
     }
 
     /// Par by hole number.
@@ -63,5 +74,11 @@ struct Scorecard: Equatable, Sendable {
 
     func par(on holes: ClosedRange<Int>) -> Int {
         holes.compactMap { pars[$0] }.reduce(0, +)
+    }
+
+    /// A score that can be changed from the scorecard: a player of the round
+    /// on a hole of the round. The out, in and total columns add up and are not.
+    func isEditable(playerID: String, hole: Int) -> Bool {
+        pars[hole] != nil && rows.contains { $0.playerID == playerID }
     }
 }
