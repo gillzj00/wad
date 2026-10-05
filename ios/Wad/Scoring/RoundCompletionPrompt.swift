@@ -3,10 +3,14 @@ import SwiftUI
 /// When the scoring screen pops up the way to the round summary: after the
 /// change that gives every player a score on every hole, and after a change
 /// on the last hole of a round that is already complete, since a round that
-/// started every hole at par is complete before it is played.
+/// started every hole at par is complete before it is played. Once dismissed
+/// on a hole it stays away while that hole is on screen, except for a change
+/// that completes the round.
 enum RoundCompletionPrompt {
-    static func shows(wasComplete: Bool, isComplete: Bool, changedHole: Int, lastHole: Int) -> Bool {
-        isComplete && (!wasComplete || changedHole == lastHole)
+    static func shows(wasComplete: Bool, isComplete: Bool, changedHole: Int, lastHole: Int, wasDismissed: Bool) -> Bool {
+        guard isComplete else { return false }
+        if !wasComplete { return true }
+        return changedHole == lastHole && !wasDismissed
     }
 }
 
