@@ -150,7 +150,9 @@ struct HoleScoringView: View {
     private func skins(_ hole: RoundHole, status: RoundStatus?) -> some View {
         if let result = status?.skinsHole(hole.number) {
             Section {
-                StatusLineView(line: ScoringText.skins(result, lastHole: lastHole, name: name))
+                StatusLineView(
+                    line: ScoringText.skins(result, lastHole: lastHole, carryover: round.skinsCarryover, name: name)
+                )
                     .accessibilityIdentifier("status.skins")
             } header: {
                 SectionHeader("Skins", systemImage: "dollarsign.circle")
