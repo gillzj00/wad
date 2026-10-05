@@ -134,3 +134,33 @@ enum EventDetector {
         return after.events.filter { !seen.contains($0.identity) }
     }
 }
+
+/// A gross score a change set or cleared (`gross` nil), for the phones
+/// following the round live.
+struct ScoreChange: Hashable, Sendable {
+    var playerID: String
+    var playerName: String
+    var hole: Int
+    var par: Int
+    var gross: Int?
+}
+
+/// Which scores differ between two snapshots, in the order of the state after.
+enum ScoreDetector {
+    static func changes(before: GameSnapshot, after: GameSnapshot) -> [ScoreChange] {
+        func key(_ score: GameSnapshot.Score) -> String { "\(score.playerID)/\(score.hole)" }
+        func name(_ playerID: String) -> String {
+            after.players.first { $0.id == playerID }?.name ?? "Unknown player"
+        }
+        let previous = Dictionary(before.scores.map { (key($0), $0) }, uniquingKeysWith: { first, _ in first })
+        let current = Dictionary(after.scores.map { (key($0), $0) }, uniquingKeysWith: { first, _ in first })
+        var changes: [ScoreChange] = after.scores.compactMap { score in
+            guard previous[key(score)]?.gross != score.gross else { return nil }
+            return ScoreChange(playerID: score.playerID, playerName: name(score.playerID), hole: score.hole, par: score.par, gross: score.gross)
+        }
+        for score in before.scores where current[key(score)] == nil {
+            changes.append(ScoreChange(playerID: score.playerID, playerName: name(score.playerID), hole: score.hole, par: score.par, gross: nil))
+        }
+        return changes
+    }
+}
