@@ -5,9 +5,9 @@ import Testing
 
 /// The models as they were before Venmo handles and paid markers were added
 /// (commit 601ef1d): no `RoundPlayer.venmoHandle`, no `PaidMarker`, and no
-/// `Round.startsEveryHoleAtPar`, which came later. The entity
-/// names are the class names, so a store written with these is a store of the
-/// previous version of the app.
+/// `Round.startsEveryHoleAtPar` or `Round.skinsCarryover`, which came later.
+/// The entity names are the class names, so a store written with these is a
+/// store of the previous version of the app.
 enum PreviousSchema {
     static let models: [any PersistentModel.Type] = [Round.self, RoundHole.self, RoundPlayer.self, HoleScore.self]
 
@@ -173,6 +173,9 @@ struct StoreMigrationTests {
         #expect(round.orderedPlayers.map(\.venmoHandle) == [nil, nil, nil])
         #expect(round.paidMarkers.isEmpty)
         #expect(round.startsEveryHoleAtPar == false)
+        // Skins always carried over before the setting existed.
+        #expect(round.skinsCarryover == true)
+        #expect(round.skinsInput.carryover == true)
 
         // The round settles as before and takes what is new.
         let bridge = try EngineBridge()
