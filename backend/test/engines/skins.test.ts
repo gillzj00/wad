@@ -99,4 +99,67 @@ describe("scoreSkins", () => {
     const { deltas } = scoreSkins({ players: four, holes: course18, scores, baseCents: 500 });
     expect(Object.values(deltas).reduce((x, y) => x + y, 0)).toBe(0);
   });
+
+  describe("without carryover", () => {
+    it("pays nothing for a push, and the next hole is worth the base again", () => {
+      // Holes 1 and 2 push; a wins hole 3 for the base only; b wins hole 4.
+      const scores = scoresFor(four, firstFour, [
+        [1, "c", 5],
+        [1, "d", 5],
+        [3, "a", 2],
+        [4, "b", 3],
+      ]);
+      const { holes, deltas, complete, carryOutCents } = scoreSkins({ players: four, holes: firstFour, scores, baseCents: 500, carryover: false });
+
+      expect(holes.map((h) => [h.hole, h.status, h.carriedInCents, h.atStakeCents, h.winnerUserId])).toEqual([
+        [1, "pushed", 0, 500, null],
+        [2, "pushed", 0, 500, null],
+        [3, "won", 0, 500, "a"],
+        [4, "won", 0, 500, "b"],
+      ]);
+      expect(deltas).toEqual({ a: 1000, b: 1000, c: -1000, d: -1000 });
+      expect(complete).toBe(true);
+      expect(carryOutCents).toBe(0);
+    });
+
+    it("leaves nothing unresolved when the round ends on a push", () => {
+      // Everyone shoots gross par with no ticks: every hole pushes.
+      const { holes, deltas, complete, carryOutCents } = scoreSkins({
+        players: four,
+        holes: course18,
+        scores: scoresFor(four, course18),
+        baseCents: 500,
+        carryover: false,
+      });
+
+      expect(holes.every((h) => h.status === "pushed" && h.carriedInCents === 0 && h.atStakeCents === 500)).toBe(true);
+      expect(deltas).toEqual({ a: 0, b: 0, c: 0, d: 0 });
+      expect(complete).toBe(true);
+      expect(carryOutCents).toBe(0);
+    });
+
+    it("still marks a hole missing a score, and every hole after it, as pending", () => {
+      const scores = scoresFor(four, firstFour, [[1, "c", 5], [1, "d", 5]]).filter((s) => !(s.hole === 2 && s.userId === "d"));
+      const { holes, complete, carryOutCents } = scoreSkins({ players: four, holes: firstFour, scores, baseCents: 500, carryover: false });
+
+      expect(holes[0]).toMatchObject({ hole: 1, status: "pushed", carriedInCents: 0, atStakeCents: 500 });
+      expect(holes[1]).toMatchObject({ hole: 2, status: "pending", carriedInCents: 0, atStakeCents: 500, net: null });
+      expect(holes[2]).toMatchObject({ hole: 3, status: "pending", carriedInCents: null, atStakeCents: null });
+      expect(complete).toBe(false);
+      expect(carryOutCents).toBe(0);
+    });
+  });
+
+  it("carries over by default, the same as carryover: true", () => {
+    const scores = scoresFor(four, firstFour, [
+      [1, "c", 5],
+      [1, "d", 5],
+      [3, "a", 2],
+    ]);
+    const input = { players: four, holes: firstFour, scores, baseCents: 500 };
+    const byDefault = scoreSkins(input);
+    expect(byDefault).toEqual(scoreSkins({ ...input, carryover: true }));
+    expect(byDefault.holes[2]).toMatchObject({ status: "won", carriedInCents: 1000, atStakeCents: 1500, winnerUserId: "a" });
+    expect(byDefault.deltas).toEqual({ a: 4500, b: -1500, c: -1500, d: -1500 });
+  });
 });
