@@ -130,7 +130,7 @@ Last updated: 2026-10-08 (after #83)
 - With "Start every hole at par" on (the default, by owner decision 2026-09-29), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round. The default flips to off in P4.5 (in flight).
 - Score entry (reported by the owner 2026-10-08, fixed by P4.5 in flight): with the par default on, every hole is complete from the start, so entering scores one player at a time with + and - played the skin show after every step that changed who had the lowest net.
 - Live relay end-to-end on two devices is untested until #82 is applied; the message contract is in `docs/api.md` ("Live relay (dev, interim)") and `docs/adr/0014-live-relay-before-auth.md`.
-- Leftover worktrees under `.claude/worktrees/agent-*` from the previous session.
+- Worktrees for merged PRs were removed on 2026-10-08; `.claude/worktrees/` keeps only the ones for open PRs.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
