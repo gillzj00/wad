@@ -95,6 +95,9 @@ enum Engine {
         var holes: [HoleInfo]
         var scores: [Score]
         var baseCents: Cents
+        /// Whether a pushed hole's value carries to the next hole. Nil is the
+        /// engine's default, true.
+        var carryover: Bool?
     }
 
     enum SkinStatus: String, Codable, Sendable {

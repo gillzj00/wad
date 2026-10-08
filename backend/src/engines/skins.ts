@@ -4,7 +4,8 @@ import { collectFromEach, zeroDeltas } from "./money.js";
 
 /**
  * - won: a sole lowest net score; the winner collects atStake from each other player
- * - pushed: tie for lowest net; atStake carries to the next hole
+ * - pushed: tie for lowest net; atStake carries to the next hole, or is worth
+ *   nothing to anyone when the round plays without carryover
  * - pending: this hole, or an earlier one, is missing a score
  */
 export type SkinStatus = "won" | "pushed" | "pending";
@@ -40,10 +41,16 @@ export interface SkinsInput {
   holes: HoleInfo[];
   scores: Score[];
   baseCents: Cents;
+  /**
+   * Whether a pushed hole's value carries to the next hole (the default). With
+   * false a push pays nothing, the next hole is worth the base again, and
+   * `carryOutCents` is always 0.
+   */
+  carryover?: boolean;
 }
 
 export function scoreSkins(input: SkinsInput): SkinsResult {
-  const { players, holes, scores, baseCents } = input;
+  const { players, holes, scores, baseCents, carryover = true } = input;
   const ids = players.map((p) => p.userId);
   const ticks = allocateTicks(players, holes);
   const gross = new Map(scores.map((s) => [`${s.hole}:${s.userId}`, s.gross]));
@@ -82,7 +89,7 @@ export function scoreSkins(input: SkinsInput): SkinsResult {
       carry = 0;
     } else {
       results.push({ hole: h.hole, status: "pushed", carriedInCents: carry, atStakeCents: atStake, winnerUserId: null, net });
-      carry = atStake;
+      carry = carryover ? atStake : 0;
     }
   }
 

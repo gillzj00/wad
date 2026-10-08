@@ -302,6 +302,31 @@ describe("game state", () => {
     expect(round.state.skins!.holes[4]).toMatchObject({ hole: 5, status: "won", winnerUserId: "u_1", net: { u_1: 4, u_2: 5 } });
   });
 
+  it("plays skins without carryover when the round says so", async () => {
+    const { scoreHole } = await setup({ games: { skins: { carryover: false } } });
+    await scoreHole(1, [4, 4, 5, 5]);
+    await scoreHole(2, [4, 4, 4, 4]);
+    const round = await scoreHole(3, [3, 4, 4, 4]);
+    expect(round.state.skins!.holes.slice(0, 3)).toEqual([
+      { hole: 1, status: "pushed", carriedInCents: 0, atStakeCents: 500, winnerUserId: null, net: { u_1: 4, u_2: 4, u_3: 5, u_4: 5 } },
+      { hole: 2, status: "pushed", carriedInCents: 0, atStakeCents: 500, winnerUserId: null, net: { u_1: 4, u_2: 4, u_3: 4, u_4: 4 } },
+      { hole: 3, status: "won", carriedInCents: 0, atStakeCents: 500, winnerUserId: "u_1", net: { u_1: 3, u_2: 4, u_3: 4, u_4: 4 } },
+    ]);
+    expect(round.state.skins!.deltas).toEqual({ u_1: 1500, u_2: -500, u_3: -500, u_4: -500 });
+    expect(round.state.skins!.carryOutCents).toBe(0);
+  });
+
+  it("carries skins over for a round created before the setting existed", async () => {
+    const { items, scoreHole } = await setup({ games: { skins: {} } });
+    const meta = items.get(`ROUND#${ROUND}|META`)!;
+    delete (meta.games as { skins: { carryover?: boolean } }).skins.carryover;
+    await scoreHole(1, [4, 4, 4, 4]);
+    const round = await scoreHole(2, [4, 4, 4, 4]);
+    expect(round.games).toEqual({ skins: { baseCents: 500 } });
+    expect(round.state.skins!.holes[1]).toMatchObject({ hole: 2, status: "pushed", carriedInCents: 500, atStakeCents: 1000 });
+    expect(round.state.skins!.carryOutCents).toBe(1000);
+  });
+
   it("follows the wad example: $7, $9, $11, then $13", async () => {
     const { service, scoreHole } = await setup();
     await service.putHoleEvents("u_1", ROUND, "2", { wadMakers: ["u_1"] });

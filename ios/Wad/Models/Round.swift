@@ -25,6 +25,11 @@ final class Round {
     /// exists read false.
     var startsEveryHoleAtPar: Bool = false
 
+    /// A pushed skins hole adds its value to the next hole. Off, a push pays
+    /// nothing and the next hole is worth the base again. Rounds from before
+    /// this setting exists read true, the only way skins was played.
+    var skinsCarryover: Bool = true
+
     /// Wolf's value per point; nil when Wolf is not played. Rounds from before
     /// Wolf read nil. See `Round+Wolf.swift`.
     var wolfPointCents: Int?
@@ -55,7 +60,8 @@ final class Round {
         courseRating: Double? = nil,
         slope: Int? = nil,
         settings: GameSettings = .defaults,
-        startsEveryHoleAtPar: Bool = false
+        startsEveryHoleAtPar: Bool = false,
+        skinsCarryover: Bool = true
     ) {
         self.id = id
         self.courseName = courseName
@@ -67,6 +73,7 @@ final class Round {
         self.skinsBaseCents = settings.skinsBaseCents
         self.greeniesAmountCents = settings.greeniesAmountCents
         self.startsEveryHoleAtPar = startsEveryHoleAtPar
+        self.skinsCarryover = skinsCarryover
     }
 
     var orderedHoles: [RoundHole] {

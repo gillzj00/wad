@@ -47,7 +47,10 @@ export function computeState(record: RoundRecord): RoundState {
 
   if (games.skins) {
     const withHandicaps = playersWithHandicaps(record);
-    state.skins = withHandicaps ? scoreSkins({ players: withHandicaps, holes: tee.holes, scores, baseCents: games.skins.baseCents }) : null;
+    // Rounds created before the setting existed have no `carryover`: they carry over.
+    state.skins = withHandicaps
+      ? scoreSkins({ players: withHandicaps, holes: tee.holes, scores, baseCents: games.skins.baseCents, carryover: games.skins.carryover ?? true })
+      : null;
   }
   if (games.wad) {
     state.wad = scoreWad({ players, holes: tee.holes, scores, holeEvents, startCents: games.wad.startCents, stepCents: games.wad.stepCents });

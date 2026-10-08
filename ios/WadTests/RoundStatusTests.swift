@@ -120,19 +120,45 @@ struct RoundStatusTests {
     @Test func wordsTheSkinsStatus() throws {
         let status = try RoundStatus(round: round, bridge: bridge)
 
-        #expect(ScoringText.skins(try #require(status.skinsHole(1)), lastHole: 18, name: name) == StatusLine(
+        #expect(ScoringText.skins(try #require(status.skinsHole(1)), lastHole: 18, carryover: true, name: name) == StatusLine(
             title: "Pushed",
             detail: "Nothing carried in. $5.00 carries to hole 2."
         ))
-        #expect(ScoringText.skins(try #require(status.skinsHole(2)), lastHole: 18, name: name) == StatusLine(
+        #expect(ScoringText.skins(try #require(status.skinsHole(2)), lastHole: 18, carryover: true, name: name) == StatusLine(
             title: "Zach wins $10.00 from each other player",
             detail: "$10.00 at stake. $5.00 carried in."
         ))
-        #expect(ScoringText.skins(try #require(status.skinsHole(3)), lastHole: 18, name: name) == StatusLine(
+        #expect(ScoringText.skins(try #require(status.skinsHole(3)), lastHole: 18, carryover: true, name: name) == StatusLine(
             title: "$5.00 at stake",
             detail: "Nothing carried in. Waiting for every player's score."
         ))
-        #expect(ScoringText.skins(try #require(status.skinsHole(4)), lastHole: 18, name: name) == StatusLine(
+        #expect(ScoringText.skins(try #require(status.skinsHole(4)), lastHole: 18, carryover: true, name: name) == StatusLine(
+            title: "Waiting for earlier holes",
+            detail: "The amount at stake is known once every earlier hole is scored."
+        ))
+    }
+
+    /// With carryover off the same holes: the push on 1 pays nothing, and Zach
+    /// wins hole 2 for the base only.
+    @Test func wordsTheSkinsStatusWithoutCarryover() throws {
+        round.skinsCarryover = false
+        let status = try RoundStatus(round: round, bridge: bridge)
+
+        #expect(status.skins.holes[1].atStakeCents == 500)
+        #expect(status.skins.deltas == ["zach": 1000, "sam": -500, "alex": -500])
+        #expect(ScoringText.skins(try #require(status.skinsHole(1)), lastHole: 18, carryover: false, name: name) == StatusLine(
+            title: "Pushed",
+            detail: "Carryover is off: nothing is paid. Hole 2 is worth $5.00 again."
+        ))
+        #expect(ScoringText.skins(try #require(status.skinsHole(2)), lastHole: 18, carryover: false, name: name) == StatusLine(
+            title: "Zach wins $5.00 from each other player",
+            detail: "$5.00 at stake."
+        ))
+        #expect(ScoringText.skins(try #require(status.skinsHole(3)), lastHole: 18, carryover: false, name: name) == StatusLine(
+            title: "$5.00 at stake",
+            detail: "Waiting for every player's score."
+        ))
+        #expect(ScoringText.skins(try #require(status.skinsHole(4)), lastHole: 18, carryover: false, name: name) == StatusLine(
             title: "Waiting for earlier holes",
             detail: "The amount at stake is known once every earlier hole is scored."
         ))
@@ -152,10 +178,36 @@ struct RoundStatusTests {
         #expect(status.skins.carryOutCents == last.atStakeCents)
         #expect(status.skins.deltas.values.reduce(0, +) == 0)
 
-        let line = ScoringText.skins(last, lastHole: 18, name: name)
+        let line = ScoringText.skins(last, lastHole: 18, carryover: true, name: name)
         #expect(line.title == "Pushed")
         let atStake = ScoringText.dollars(try #require(last.atStakeCents))
         #expect(line.detail?.hasSuffix("Last hole: \(atStake) is unresolved and is not paid out.") == true)
+    }
+
+    /// Without carryover a push on the last hole leaves nothing unresolved.
+    @Test func aPushOnTheLastHoleWithoutCarryoverIsResolved() throws {
+        round.skinsCarryover = false
+        for hole in 1...18 { try scorer.setParForUnscored(hole: hole) }
+        try scorer.setGross(4, playerID: "alex", hole: 18)
+        try scorer.setGross(4, playerID: "sam", hole: 18)
+        try scorer.setGross(5, playerID: "zach", hole: 18)
+
+        let status = try RoundStatus(round: round, bridge: bridge)
+        let last = try #require(status.skinsHole(18))
+        #expect(last.status == .pushed)
+        #expect(last.carriedInCents == 0)
+        #expect(last.atStakeCents == 500)
+        #expect(status.skins.complete)
+        #expect(status.skins.carryOutCents == 0)
+        #expect(ScoringText.skins(last, lastHole: 18, carryover: false, name: name) == StatusLine(
+            title: "Pushed",
+            detail: "Carryover is off: nothing is paid."
+        ))
+
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+        #expect(settlement.skinsCarryover == false)
+        #expect(settlement.unresolvedSkinsCarryoverCents == nil)
+        #expect(settlement.isFinal)
     }
 
     @Test func wordsTheWadAndGreenieStatus() throws {

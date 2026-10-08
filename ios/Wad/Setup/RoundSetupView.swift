@@ -452,10 +452,16 @@ struct GamesStepView: View {
 
         Section {
             AmountRow(title: "Per skin", identifier: "setup.amount.skins", text: $draft.skinsBaseText)
+            Toggle("Carry pushed holes over", isOn: $draft.skinsCarryover)
+                .accessibilityIdentifier("setup.skinsCarryover")
         } header: {
             SectionHeader("Skins", systemImage: "dollarsign.circle")
         } footer: {
-            SectionFooter("Net skins. A pushed hole carries its value to the next hole.")
+            SectionFooter(
+                "Net skins: the lowest net score alone wins the amount from each other player. "
+                    + "With carryover on, a pushed hole adds its value to the next hole; "
+                    + "off, a push pays nothing and the next hole is worth the base again."
+            )
         }
 
         Section {

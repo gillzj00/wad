@@ -113,7 +113,8 @@ struct RoundEngineMappingTests {
             players: round.enginePlayers,
             holes: round.engineHoles,
             scores: [Engine.Score(userId: "zach", hole: 3, gross: 3)],
-            baseCents: 100
+            baseCents: 100,
+            carryover: true
         ))
         #expect(round.wadInput == Engine.WadInput(
             players: ["zach", "sam"],
@@ -138,7 +139,34 @@ struct RoundEngineMappingTests {
         #expect(round.wadInput.startCents == 700)
         #expect(round.wadInput.stepCents == 200)
         #expect(round.skinsInput.baseCents == 500)
+        #expect(round.skinsInput.carryover == true)
         #expect(round.greeniesInput.amountCents == 500)
+    }
+
+    @Test func skinsInputCarriesTheRoundsCarryoverSetting() throws {
+        let round = try makeRound(RoundFixtures.unratedDraft())
+        #expect(round.skinsCarryover == true)
+        #expect(round.skinsInput.carryover == true)
+        round.skinsCarryover = false
+        #expect(round.skinsInput.carryover == false)
+        #expect(round.skinsInput.baseCents == 500)
+    }
+
+    /// Left out, the bridge sends no `carryover` and the engine carries over.
+    @Test func skinsInputWithoutCarryoverSettingCarriesOver() throws {
+        let round = try makeRound(RoundFixtures.unratedDraft())
+        for hole in 1...2 {
+            round.setGross(4, playerID: "zach", hole: hole)
+            round.setGross(4, playerID: "sam", hole: hole)
+        }
+        var input = round.skinsInput
+        input.carryover = nil
+        // Hole 1 is a tick for Zach (stroke index 7 is within 8 ticks): he wins it. Hole 2 pushes, hole 3 carries.
+        let result = try bridge.scoreSkins(input)
+        #expect(result.holes[0].status == .won)
+        #expect(result.holes[1].status == .pushed)
+        #expect(result.holes[2].carriedInCents == 500)
+        #expect(result.holes[2].atStakeCents == 1000)
     }
 
     /// The domain model's examples, scored from a stored round through the real bundle.

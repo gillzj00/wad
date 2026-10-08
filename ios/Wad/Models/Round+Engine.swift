@@ -46,7 +46,13 @@ extension Round {
     }
 
     var skinsInput: Engine.SkinsInput {
-        Engine.SkinsInput(players: enginePlayers, holes: engineHoles, scores: engineScores, baseCents: skinsBaseCents)
+        Engine.SkinsInput(
+            players: enginePlayers,
+            holes: engineHoles,
+            scores: engineScores,
+            baseCents: skinsBaseCents,
+            carryover: skinsCarryover
+        )
     }
 
     var wadInput: Engine.WadInput {

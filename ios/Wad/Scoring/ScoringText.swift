@@ -22,33 +22,49 @@ enum ScoringText {
         }
     }
 
-    static func skins(_ result: Engine.SkinHoleResult, lastHole: Int, name: (String) -> String) -> StatusLine {
+    /// `carryover` is the round's skins setting. Off, a push pays nothing and
+    /// nothing is ever carried in, so the wording says nothing about carrying.
+    static func skins(
+        _ result: Engine.SkinHoleResult, lastHole: Int, carryover: Bool, name: (String) -> String
+    ) -> StatusLine {
         guard let carriedIn = result.carriedInCents, let atStake = result.atStakeCents else {
             return StatusLine(
                 title: "Waiting for earlier holes",
                 detail: "The amount at stake is known once every earlier hole is scored."
             )
         }
-        let carried = carriedIn > 0 ? "\(dollars(carriedIn)) carried in." : "Nothing carried in."
+        let carried: String? = carryover ? (carriedIn > 0 ? "\(dollars(carriedIn)) carried in." : "Nothing carried in.") : nil
 
         switch result.status {
         case .pending:
             return StatusLine(
                 title: "\(dollars(atStake)) at stake",
-                detail: "\(carried) Waiting for every player's score."
+                detail: sentences(carried, "Waiting for every player's score.")
             )
         case .won:
             let winner = result.winnerUserId.map(name) ?? "-"
             return StatusLine(
                 title: "\(winner) wins \(dollars(atStake)) from each other player",
-                detail: "\(dollars(atStake)) at stake. \(carried)"
+                detail: sentences("\(dollars(atStake)) at stake.", carried)
             )
         case .pushed:
-            let next = result.hole >= lastHole
-                ? "Last hole: \(dollars(atStake)) is unresolved and is not paid out."
-                : "\(dollars(atStake)) carries to hole \(result.hole + 1)."
-            return StatusLine(title: "Pushed", detail: "\(carried) \(next)")
+            let isLast = result.hole >= lastHole
+            let next: String? = if !carryover {
+                isLast ? nil : "Hole \(result.hole + 1) is worth \(dollars(atStake)) again."
+            } else if isLast {
+                "Last hole: \(dollars(atStake)) is unresolved and is not paid out."
+            } else {
+                "\(dollars(atStake)) carries to hole \(result.hole + 1)."
+            }
+            return StatusLine(
+                title: "Pushed",
+                detail: sentences(carryover ? carried : "Carryover is off: nothing is paid.", next)
+            )
         }
+    }
+
+    private static func sentences(_ parts: String?...) -> String {
+        parts.compactMap { $0 }.joined(separator: " ")
     }
 
     static func wad(

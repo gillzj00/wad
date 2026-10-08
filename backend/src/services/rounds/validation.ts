@@ -3,7 +3,7 @@ import { invalid } from "./errors.js";
 
 /** Defaults from docs/domain-model.md, in cents. */
 export const GAME_DEFAULTS = {
-  skins: { baseCents: 500 },
+  skins: { baseCents: 500, carryover: true },
   wad: { startCents: 700, stepCents: 200 },
   greenies: { amountCents: 500 },
   wolf: { pointCents: 100 },
@@ -52,14 +52,26 @@ function cents(game: Fields, gameName: string, field: string, fallback: Cents): 
   return value;
 }
 
+function boolean(game: Fields, gameName: string, field: string, fallback: boolean): boolean {
+  const value = game[field];
+  if (value === undefined) return fallback;
+  if (typeof value !== "boolean") throw invalid(`invalid_${field}`, `games.${gameName}.${field} must be true or false`);
+  return value;
+}
+
 function parseGames(value: unknown): GamesConfig {
   const games: GamesConfig = {};
   for (const [name, settings] of Object.entries(object(value, "games"))) {
     const path = `games.${name}`;
     switch (name) {
-      case "skins":
-        games.skins = { baseCents: cents(object(settings, path), name, "baseCents", GAME_DEFAULTS.skins.baseCents) };
+      case "skins": {
+        const skins = object(settings, path);
+        games.skins = {
+          baseCents: cents(skins, name, "baseCents", GAME_DEFAULTS.skins.baseCents),
+          carryover: boolean(skins, name, "carryover", GAME_DEFAULTS.skins.carryover),
+        };
         break;
+      }
       case "wad": {
         const wad = object(settings, path);
         games.wad = {
