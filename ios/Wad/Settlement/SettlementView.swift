@@ -248,7 +248,9 @@ struct SettlementView: View {
             ForEach(settlement.skins.holes, id: \.hole) { hole in
                 HoleLineRow(
                     hole: hole.hole,
-                    line: ScoringText.skins(hole, lastHole: settlement.lastHole, name: settlement.name)
+                    line: ScoringText.skins(
+                        hole, lastHole: settlement.lastHole, carryover: settlement.skinsCarryover, name: settlement.name
+                    )
                 )
                 .accessibilityIdentifier("settlement.skins.\(hole.hole)")
             }

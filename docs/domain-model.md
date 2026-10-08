@@ -68,6 +68,8 @@ Hole-by-hole net competition for a base amount per skin (default **$5**).
 
 Skins is **one game over the whole round**: carryovers continue through the turn (a push on 9 carries to 10). What happens to a carryover still unresolved after the final hole is an [Open Question](#open-questions).
 
+**Carryover is a per-round setting**, on by default. With it off, a pushed hole is worth nothing to anyone: no money changes hands and the next hole is worth the base value again, so no carryover is ever left unresolved. The winning rule is the same either way.
+
 The engine exposes, per hole: base value, carried-in value, total at stake, winner (nullable if pushed), and the resulting per-player deltas.
 
 ---

@@ -108,6 +108,9 @@ struct RoundDraft: Equatable, Sendable {
     var wadStartText = Money.dollars(fromCents: GameSettings.defaults.wadStartCents)
     var wadStepText = Money.dollars(fromCents: GameSettings.defaults.wadStepCents)
     var skinsBaseText = Money.dollars(fromCents: GameSettings.defaults.skinsBaseCents)
+    /// A pushed skins hole adds its value to the next hole. Off, a push pays
+    /// nothing and the next hole is worth the base again.
+    var skinsCarryover = true
     var greeniesAmountText = Money.dollars(fromCents: GameSettings.defaults.greeniesAmountCents)
     /// Off unless the group turns it on; needs exactly four players.
     var wolf = WolfDraft()
@@ -275,7 +278,8 @@ struct RoundDraft: Equatable, Sendable {
             courseRating: tee?.courseRating,
             slope: tee?.slope,
             settings: settings,
-            startsEveryHoleAtPar: startsEveryHoleAtPar
+            startsEveryHoleAtPar: startsEveryHoleAtPar,
+            skinsCarryover: skinsCarryover
         )
         round.holes = holes.map { RoundHole(number: $0.number, par: $0.par, strokeIndex: $0.strokeIndex ?? 0) }
         round.players = try players.enumerated().map { offset, player in

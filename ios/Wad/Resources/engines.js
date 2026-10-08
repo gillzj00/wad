@@ -110,7 +110,7 @@ var WadEngines = (() => {
 
   // src/engines/skins.ts
   function scoreSkins(input) {
-    const { players, holes, scores, baseCents } = input;
+    const { players, holes, scores, baseCents, carryover = true } = input;
     const ids = players.map((p) => p.userId);
     const ticks = allocateTicks(players, holes);
     const gross = new Map(scores.map((s) => [`${s.hole}:${s.userId}`, s.gross]));
@@ -143,7 +143,7 @@ var WadEngines = (() => {
         carry = 0;
       } else {
         results.push({ hole: h.hole, status: "pushed", carriedInCents: carry, atStakeCents: atStake, winnerUserId: null, net });
-        carry = atStake;
+        carry = carryover ? atStake : 0;
       }
     }
     return { holes: results, deltas, complete: !blocked, carryOutCents: carry };

@@ -121,7 +121,7 @@ describe("creating a round with wolf", () => {
   it("defaults to 100 cents a point and takes the amount given", async () => {
     expect((await setup({ games: { wolf: {} } })).items.get(`ROUND#${ROUND}|META`)).toMatchObject({ games: { wolf: { pointCents: 100 } } });
     const { service } = await setup({ games: { wolf: { pointCents: 25 }, skins: {} } });
-    expect((await service.getRound("u_1", ROUND)).games).toEqual({ wolf: { pointCents: 25 }, skins: { baseCents: 500 } });
+    expect((await service.getRound("u_1", ROUND)).games).toEqual({ wolf: { pointCents: 25 }, skins: { baseCents: 500, carryover: true } });
     expect((await (await setup({ games: { wolf: { pointCents: 0 } } })).service.getRound("u_1", ROUND)).games).toEqual({ wolf: { pointCents: 0 } });
   });
 

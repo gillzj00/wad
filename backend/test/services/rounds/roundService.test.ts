@@ -66,7 +66,7 @@ describe("RoundService.createRound", () => {
       joinCode: "ABCD2F",
       createdBy: "u_1",
       createdAt: NOW.toISOString(),
-      games: { skins: { baseCents: 500 }, wad: { startCents: 700, stepCents: 200 }, greenies: { amountCents: 500 } },
+      games: { skins: { baseCents: 500, carryover: true }, wad: { startCents: 700, stepCents: 200 }, greenies: { amountCents: 500 } },
       players: [
         {
           userId: "u_1",
@@ -98,11 +98,35 @@ describe("RoundService.createRound", () => {
       greenies: { amountCents: 0 },
     });
     expect((await service.createRound("u_1", body({ games: { skins: {}, wad: { stepCents: 100 }, greenies: {} } }))).games).toEqual({
-      skins: { baseCents: 500 },
+      skins: { baseCents: 500, carryover: true },
       wad: { startCents: 700, stepCents: 100 },
       greenies: { amountCents: 500 },
     });
     expect((await service.createRound("u_1", body({ games: {} }))).games).toEqual({});
+  });
+
+  it("stores whether skins carries over, on unless turned off", async () => {
+    const { service, items } = setup();
+    expect((await service.createRound("u_1", body({ games: { skins: { carryover: false } } }))).games).toEqual({
+      skins: { baseCents: 500, carryover: false },
+    });
+    expect(items.get("ROUND#r_id1|META")).toMatchObject({ games: { skins: { baseCents: 500, carryover: false } } });
+    expect((await service.createRound("u_1", body({ games: { skins: { baseCents: 1000, carryover: true } } }))).games).toEqual({
+      skins: { baseCents: 1000, carryover: true },
+    });
+  });
+
+  it.each([
+    ["a string", "false"],
+    ["null", null],
+    ["a number", 0],
+  ])("rejects skins carryover that is %s", async (_name, carryover) => {
+    const { service, sent } = setup();
+    expect(await failure(service.createRound("u_1", body({ games: { skins: { carryover } } })))).toEqual({
+      kind: "validation",
+      code: "invalid_carryover",
+    });
+    expect(sent).toEqual([]);
   });
 
   it.each([

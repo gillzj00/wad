@@ -45,9 +45,10 @@ Interim, until the Cognito authorizer exists ([ADR-0013](adr/0013-courses-api-be
 - Throttling: burst 5, sustained 2 requests per second across all clients (`429` from API Gateway when exceeded), to protect the provider's daily quota of about 35 requests.
 
 ### Rounds
-- `POST /rounds` -> create `{ courseId, teeId, date, holes: 18, games: { skins?: { baseCents }, wad?: { startCents, stepCents }, greenies?: { amountCents }, wolf?: { pointCents } } }`; a game is enabled by including it. `201 { round, joinCode }`; the caller is the first player.
+- `POST /rounds` -> create `{ courseId, teeId, date, holes: 18, games: { skins?: { baseCents, carryover }, wad?: { startCents, stepCents }, greenies?: { amountCents }, wolf?: { pointCents } } }`; a game is enabled by including it. `201 { round, joinCode }`; the caller is the first player.
   - `date` is the day of play, `YYYY-MM-DD`.
   - Amounts are non-negative integer cents (`400 invalid_amount`). An amount left out of an included game takes its default: skins 500, wad 700 start and 200 step, greenies 500, wolf 100 a point. `games` is required and may be `{}`; an unknown game is `400 unknown_game`.
+  - `skins.carryover` is a boolean (`400 invalid_carryover`), `true` when left out: a pushed hole's value carries to the next hole. With `false` a push pays nothing and the next hole is worth `baseCents` again. The stored config of a round created before this setting existed has no `carryover`, which means `true`.
   - `holes: 9` is rejected with `400 nine_hole_rounds_unsupported` until the 9-hole handicap rule is decided (domain model, Open Question 3).
   - Wolf needs exactly four players. A round is created with one player, so creating a round with `wolf` is always accepted; while the round does not have exactly four players, `state.wolf` is `null` and the settlement has the issue `wolf_unavailable` (see Game state and Settlement).
   - The course must already be cached (`404 course_not_found`) and have the tee (`404 tee_not_found`). The tee needs 18 holes with valid stroke indexes (`400 tee_not_usable`). The round keeps its own copy of the tee, so later course corrections do not change a round.
@@ -91,7 +92,7 @@ Interim, until the Cognito authorizer exists ([ADR-0013](adr/0013-courses-api-be
 
 `state` is what the engines in `backend/src/engines` return, unchanged (`RoundState` in `backend/src/shared/rounds.ts`). A game that is not enabled is left out.
 
-- `skins`: `{ holes, deltas, complete, carryOutCents }`, or `null` until every player has a course handicap. Each hole has `status` (`won`, `pushed` or `pending`), `carriedInCents`, `atStakeCents`, `winnerUserId` and `net`. A hole is `pending` while it, or an earlier hole, is missing a score. When `complete` is true and `carryOutCents` is not zero, the last hole was pushed: that carryover is unresolved and is **not paid** (domain model, Open Question 1).
+- `skins`: `{ holes, deltas, complete, carryOutCents }`, or `null` until every player has a course handicap. Each hole has `status` (`won`, `pushed` or `pending`), `carriedInCents`, `atStakeCents`, `winnerUserId` and `net`. A hole is `pending` while it, or an earlier hole, is missing a score. When `complete` is true and `carryOutCents` is not zero, the last hole was pushed: that carryover is unresolved and is **not paid** (domain model, Open Question 1). With `games.skins.carryover` false, `carriedInCents` is always 0, `atStakeCents` is always `baseCents` and `carryOutCents` is always 0, so nothing is ever unresolved.
 - `wad`: `{ instances, deltas, ignored }` with one instance per nine (`segment` `front` or `back`): `holderUserId`, `valueCents`, `makes` and `complete`. The holder is paid in `deltas` once every player has a score on the nine's last hole.
 - `greenies`: `{ holes, deltas }` with one entry per par 3: `winnerUserId` and `status` (`none`, `awarded`, `pending` or `invalid`). Only `awarded` is paid.
 - `wolf`: `{ teeOrder, holes, points, deltas, complete }` (`WolfResult` in `backend/src/engines/wolf.ts`), or `null` while Wolf is unavailable: the round does not have exactly four players, or a player has no course handicap.
@@ -131,7 +132,7 @@ The settlement is derived on every read from the game state: `positions` and `tr
   - `wolf_invalid`: the hole's Wolf record is invalid and scores no points; the message names the reason. Correct or clear the record, or the score that made it invalid.
   - `wolf_pending`: every player has a score on the hole and Wolf still cannot score it: the choice is not recorded (`userId` is the Wolf), or it is hole 17 or 18 waiting for an earlier hole (`userId` is `null`). A hole that is missing a score is in `incompleteHoles` instead.
 - `games` holds each enabled game's `deltas`, `wolf` included; the example above is a round without wolf. `positions` has every player, positive is owed to them, and sums to zero.
-- `skinsCarryover` is the skins `carryOutCents`, or `null` when skins is not enabled or unavailable. With `unresolved: true` the last hole was pushed: the amount is shown and is **never part of a position or transfer** (domain model, Open Question 1).
+- `skinsCarryover` is the skins `carryOutCents`, or `null` when skins is not enabled or unavailable. With `unresolved: true` the last hole was pushed: the amount is shown and is **never part of a position or transfer** (domain model, Open Question 1). In a round with `games.skins.carryover` false it is always `{ "amountCents": 0, "unresolved": false }`.
 - `toVenmoHandle` is the payee's `venmoHandle` from their profile, or `null` (no handle, or a guest). The client builds the Venmo deep link; the server builds no links and moves no money.
 - `transferId` is derived from the round, payer, payee and amount. A score correction or a handicap override that changes a transfer gives it a new id, so a paid marker never moves to a different transfer or amount. A marker that matches no current transfer is listed in `stalePayments` (`{ transferId, from, to, amountCents, paidAt, paidBy }`) so the client can show that a payment was recorded before the correction.
 - Marking paid or unpaid:
@@ -154,7 +155,7 @@ The `Round` type in `backend/src/shared/rounds.ts`. A hole with a Wolf record al
   "joinCode": "ABCD2F",
   "createdBy": "u_1",
   "createdAt": "2026-10-03T14:00:00.000Z",
-  "games": { "skins": { "baseCents": 500 }, "wad": { "startCents": 700, "stepCents": 200 }, "greenies": { "amountCents": 500 } },
+  "games": { "skins": { "baseCents": 500, "carryover": true }, "wad": { "startCents": 700, "stepCents": 200 }, "greenies": { "amountCents": 500 } },
   "players": [
     { "userId": "u_1", "displayName": "Zach", "handicapIndex": 13.1, "courseHandicap": 15, "courseHandicapOverride": null, "ticksByHole": { "1": 1, "3": 1 }, "guest": false, "joinedAt": "2026-10-03T14:00:00.000Z" }
   ],

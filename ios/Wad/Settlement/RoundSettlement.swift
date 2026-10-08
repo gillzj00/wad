@@ -37,6 +37,8 @@ struct RoundSettlement: Equatable, Sendable {
     /// In the engine's order: largest creditor and debtor first.
     var payments: [Payment]
     var skins: Engine.SkinsResult
+    /// The round's skins setting; off, a pushed hole pays nothing.
+    var skinsCarryover: Bool
     var wadInstances: [Engine.WadInstanceResult]
     var greenieHoles: [Engine.GreenieHoleResult]
     var greeniesAmountCents: Int
@@ -79,6 +81,7 @@ struct RoundSettlement: Equatable, Sendable {
             )
         }
         skins = status.skins
+        skinsCarryover = round.skinsCarryover
         wadInstances = status.wad.instances
         greenieHoles = status.greenies.holes
         greeniesAmountCents = round.greeniesAmountCents
