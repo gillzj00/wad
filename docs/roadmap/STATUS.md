@@ -6,7 +6,7 @@ Last updated: 2026-10-08 (after #83)
 
 ## Current phase
 
-**Phase 1 demo is complete and ready to install** (merged in #16, #18, #20, #22). Waiting for @gillzj00 to connect the phone; then run `ios/scripts/install-device.sh`. Delete any older install of Wad from the phone first (schema changed, no migration).
+**Phase 1 demo is complete and installed** (merged in #16, #18, #20, #22). It was installed on the owner's iPhone on 2026-09-30 from main at #61. Reinstall with `ios/scripts/install-device.sh` when a newer build is wanted (Personal Team builds expire after 7 days). If the schema changed since the installed build, delete the older install of Wad first (no migration).
 
 **Phase 2 — backend:** the four listed items are merged (#24, #26, #28, #30); the documented handicap override route followed (#32). Remaining milestones (M1, M2.2/M2.4 deploy, M3.3, M3.4/M3.5, M5.2, M6) depend on auth, deploys or iOS sign-in and wait on Apple Developer Program enrollment or a decision from @gillzj00. Original scope: M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
 
@@ -54,6 +54,7 @@ Last updated: 2026-10-08 (after #83)
 | W2 | Wolf in the demo app: setup, tee order, per-hole choice, 17/18 tie prompt (the group picks, the engine never does), live points, pay-the-difference settlement, Wolf show trigger | ios/ | done | #69 |
 | T2c | Generated art for the animation subjects, per `docs/art/animation-assets.md` | ios/, docs/ | superseded: on 2026-10-02 the owner judged the code-drawn shows unacceptable and halted all animation work ("we are going to go a different route"); the route is the owner's to name. PR #74 (wolf jaw and eagle framing) was closed unmerged. | - |
 | C2 | Courses tab: course search, course detail with tees and scorecard, start a round from a course (the owner found the placeholder tab and could not search) | ios/ | done (search, Near me, Recent from the on-device cache, course detail with tee menu and scorecard, Start a round here) | #76 |
+| C3 | Adjustable "Near me" radius in miles in the Courses tab | ios/ | done 2026-10-02 | #78 |
 
 ## Phase 4 task list
 
@@ -69,7 +70,7 @@ Last updated: 2026-10-08 (after #83)
 ## Tasks in flight
 
 - P4.5 | Score entry fix (owner, 2026-10-08): shows play only when every player has a score on the hole, in both the before and after snapshot; "Start every hole at par" defaults off; the scoring phone skips its own shows while sharing live (followers still get them) | ios/ | in flight | -
-- Animation work is halted by the owner (2026-10-02); do not start any animation task until the owner names the new route.
+- Animation work is closed: the owner halted it 2026-10-02 and said 2026-10-05 to stop worrying about graphics; the existing shows stay and are reused by the live relay.
 - The one-iOS-task-at-a-time rule was relaxed on 2026-10-01 at the owner's request: T1 and T2 run in parallel, conflicts are limited to the generated project (regenerated with xcodegen) and recolored views.
 
 ## Open PRs
@@ -91,7 +92,7 @@ Last updated: 2026-10-08 (after #83)
 - Open Question 1: the unresolved skins carryover is displayed and never paid out.
 - Handicaps (revised after @gillzj00 asked on 2026-09-29): manual course entry takes an optional course rating and slope. When given, a player enters their handicap index and the app computes the course handicap through the engine's `courseHandicap`, with a per-round override. Without rating/slope the course handicap is entered directly. The course API is not used in Phase 1 (local-only; the key stays in SSM and `GET /courses` is not deployed until auth).
 - ADR-0011 accepted and merged (#16).
-- `Wad.xcodeproj` is regenerated with xcodegen, never hand-merged. Parallel `ios/` tasks are allowed when their files barely overlap (owner, 2026-10-01); the later PR rebases onto the earlier one.
+- `Wad.xcodeproj` is regenerated with xcodegen, never hand-merged. Parallel `ios/` tasks are allowed when their files barely overlap (owner, 2026-10-01); the later PR merges `origin/main` in (never rebase).
 - Course lookup in the app (#64): the base URL and `x-wad-client` token reach the app only through the git-ignored `ios/Config/Local.xcconfig` (Info.plist keys); a build without them works by hand. The default tee is the first usable men's tee in the API's order (Blue at Oak Glen); the last course and tee picked on the phone become the next default. Nearest-course suggestion ranks only courses cached on the phone, never preselects, and no coordinate leaves the device.
 
 - Animations (owner, 2026-10-05): "quit worrying too much about the graphics"; the existing shows stay as they are and are reused by the live relay. No further art work.
@@ -108,12 +109,11 @@ Last updated: 2026-10-08 (after #83)
 - "Start every hole at par" (2026-10-08): the fix in flight defaults it off and keeps the toggle. Say if the option should be removed entirely.
 - The scoring phone while sharing live (2026-10-08): the fix in flight never plays shows on it while sharing. Say if a "Play shows on this phone" switch is wanted instead.
 - Candidate next features offered 2026-10-05, no answer yet: local-only Profile tab (name, handicap index, Venmo handle to prefill setup); scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
-- Approve (or dismiss) the pending `dev` environment deployment for the Terraform run on main triggered by #57 (https://github.com/gillzj00/wad/actions/runs/36874649636); it plans no infrastructure changes. The bootstrap apply from #57 is done (owner, 2026-10-01).
 - Default tee for course lookup (#64): the first usable men's tee in the API's order. Say if a specific tee by name is wanted instead.
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
-- Event animations on every player's phone (asked 2026-09-29): in the one-device demo they play on the scoring phone only. Showing them on everyone's phone needs the WebSocket sync (M3.3), which waits on auth and Apple enrollment. Confirm that is acceptable for now.
+- Event animations on every player's phone (asked 2026-09-29): answered by #83, followers get the shows, pending the relay API (#82) being applied.
 - Wolf, tie for last place before hole 17 or 18 (asked 2026-09-29): who is the Wolf? Until answered, the app asks the group to pick the Wolf among the tied players and the engine never picks.
 - Which other new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
@@ -134,13 +134,13 @@ Last updated: 2026-10-08 (after #83)
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
-- Demo verification (as of #39: 83 unit tests and 6 UI tests, including setup validation and round delete with a relaunch). Earlier: 83 unit tests and 3 UI tests (full 18-hole round by taps through to settlement, and a seeded round with an unresolved carryover) pass locally on iOS 26 and in CI on iOS 18. A device-architecture build of main compiles unsigned. Signing and install on the phone are unverified until it is connected.
+- Demo verification: 309 unit tests and 3 UI smoke tests on main as of #83. Earlier: 83 unit tests and 6 UI tests as of #39, then 83 unit tests and 3 UI tests (full 18-hole round to settlement, seeded round with an unresolved carryover) on iOS 26 locally and iOS 18 in CI. A device-architecture build of main compiled unsigned; the app has been installed on the phone since 2026-09-30.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
 - Theme (#66): nav bar title attributes stay on the UIKit proxy (a custom UINavigationBarAppearance hid the large title on iOS 26), so on iOS 18 the light-mode nav bar background is the system material rather than charcoal; light-mode alerts remain system dialogs; the chain overlay on the scoring bars overlaps the list edge by about 4pt. Checked at accessibility-extra-large Dynamic Type on the settlement screen; iOS 17 untested.
 - Course lookup (#64): on iOS 17 a denied location permission shows as "could not be found" after the 15 s timeout (the denial flags on CLLocationUpdate are iOS 18+). The provider's daily quota is about 35 requests; the app caches searches and courses for 7 days and serves stale copies when the API fails. The round does not store the course or tee ids; the draft only notes the selection.
-- Animations (#68) play on the scoring phone only; other players' phones need live sync (M3.3). The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
+- Animations (#68) play on the scoring phone, and since #83 also on phones following the round live once the relay API (#82) is deployed. The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
 - The W2 subagent force-pushed (with lease) its own PR branch after a rebase on 2026-10-01; main was untouched, but the owner's rule is no force-push anywhere. Briefs now say: merge main, never rebase a pushed branch.
 - Animation shows (#68, #71) stay in the app as merged but are frozen: the owner rejected their look on 2026-10-02 and will choose a different route. Art pass (#71) leftovers (now moot): the wolf's lower fangs are hidden at the open-jaw hold frame (the jaw sprite sits behind the head); the eagle's hold frame catches the near wing partly off screen; the eagle coverts still read a little paddle-like on the up-flap. Small choreography tweaks, or moot once generated art lands.
 - CI ui-tests flaked once on #64 (round delete test timed out on the suite's cold first launch, 10 s); a rerun passed.
