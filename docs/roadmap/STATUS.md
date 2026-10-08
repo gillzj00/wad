@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-08 (after #82 deployed)
+Last updated: 2026-10-08 (after #89)
 
 ## Current phase
 
@@ -42,7 +42,7 @@ Last updated: 2026-10-08 (after #82 deployed)
 | P3.4 | Venmo deep links, paid tracking and round history in the demo app (local only); install-device.sh no longer picks an unavailable phone | ios/ | done | #41 |
 | P3.5 | Golf-themed visual design for the app (visual only; classic golf palette, light and dark, app icon) | ios/ | done | #43 |
 | W1 | Wolf: rules in domain model + ADR-0012, engine, engine bundle, backend state and settlement | docs/, backend/ | done | #49 |
-| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default | ios/ | done | #59 |
+| S1 | Score entry: every hole defaults to a saved par for every player, behind a setup toggle that is on by default | ios/ | done; defaulted off in #85 and removed in #89 (owner, 2026-10-08) | #59 |
 | I1 | PRIORITY: deploy the courses API (Lambda + HTTP API, throttled, `x-wad-client` token guard, no auth yet); owner chose option B on 2026-09-29 | infra/, backend/, .github/ | merged with @gillzj00's approval (plan 14/0/0); apply ran from main | #54 |
 | H1 | Repo hardening: audit, history rewrite (tfplan purged), public switch with branch protection, `dev` environment reviewer, fork-PR approval, secret scanning; workflows hardened and SHA-pinned, apply gated on `dev` | .github/, infra/, root docs, GitHub settings | done (bootstrap trust-policy apply pending, see questions) | #57 |
 | H2 | iOS CI split into unit-tests and ui-tests jobs; UI suite pruned to 3 smoke tests (owner: UI tests cost too much) | .github/, ios/scripts | done | #62 |
@@ -66,6 +66,7 @@ Last updated: 2026-10-08 (after #82 deployed)
 | P4.4a | Live relay API (ADR-0014): WebSocket API Gateway stage `live`, rooms keyed by a 6-character code, messages opaque to the server, shared `x-wad-client` token, 6-hour TTL | infra/, backend/, docs/ | done 2026-10-08: merged with the owner's approval (plan 17 add / 1 change / 0 destroy, under $1/month), applied from main, `WAD_LIVE_URL` set in the owner's `Local.xcconfig` | #82 |
 | P4.4b | iOS live client (`ios/Wad/Live/`): "Share live" on the round detail shows a 6-character code (`Round.liveCode`); "Follow a round" on the Rounds tab plays the scoring phone's game events through the same shows and keeps a feed; `EventCenter.relay`/`relayScores` hooks; needs `WAD_LIVE_URL` in `ios/Config/Local.xcconfig`, nothing connects without it; 309 unit tests on main | ios/ | done 2026-10-08 | #83 |
 | P4.5 | Score entry fix (owner, 2026-10-08): shows play only when every player has a score on the hole, in both the before and after snapshot; "Start every hole at par" defaults off; the scoring phone skips its own shows while sharing live (followers still get them) | ios/ | done 2026-10-08 (319 unit tests, 3 UI smoke tests) | #85 |
+| P4.6 | Remove the "Start every hole at par" option (owner decision 2026-10-08): toggle, draft property, par fill and the `Round` attribute are gone (lightweight migration drops it); a complete round opens on its last hole | ios/ | done 2026-10-08 (316 unit tests, 3 UI smoke tests) | #89 |
 
 ## Tasks in flight
 
@@ -105,8 +106,7 @@ Last updated: 2026-10-08 (after #82 deployed)
 
 ## Questions waiting on @gillzj00
 
-- "Start every hole at par" (2026-10-08): #85 defaults it off and keeps the toggle. Say if the option should be removed entirely.
-- The scoring phone while sharing live (2026-10-08): #85 never plays shows on it while sharing. Say if a "Play shows on this phone" switch is wanted instead.
+- Owner decisions 2026-10-08: no "Play shows on this phone" switch (the scoring phone never plays shows while sharing, as in #85); "Start every hole at par" removed entirely (#89).
 - Candidate next features offered 2026-10-05, no answer yet: local-only Profile tab (name, handicap index, Venmo handle to prefill setup); scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
 - Default tee for course lookup (#64): the first usable men's tee in the API's order. Say if a specific tee by name is wanted instead.
 
@@ -126,14 +126,14 @@ Last updated: 2026-10-08 (after #82 deployed)
 
 - Courses API deployed and working 2026-09-30: the first deploy crashed at cold start (ESM bundle without `require`, fixed in #61); after the redeploy, requests without `x-wad-client` return 401 and an authenticated search for "oak glen" returns the provider's results, including Oak Glen Golf Course (Stillwater, MN; 18-hole course id `gca-y8jqwys2`, Executive Nine `gca-0zg07p94`). Base URL from the Terraform output `api_base_url`; token in SSM `/wad/dev/client-token`.
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
-- With "Start every hole at par" on (the default from 2026-09-29 until #85), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round. The default is off since #85.
+- "Start every hole at par" (2026-09-29 to 2026-10-08): while it was on, a new round read 18 of 18 and its settlement was Final from the start. Defaulted off in #85, removed in #89.
 - Score entry (reported by the owner 2026-10-08, fixed in #85): with the par default on, every hole is complete from the start, so entering scores one player at a time with + and - played the skin show after every step that changed who had the lowest net.
 - Live relay (#82, deployed 2026-10-08): a shell smoke test with two WebSocket clients passed (subscribe, publish fans out to the other member with `delivered: 1`, pong, `invalid_message` on a bad room code, connection refused without the token). The two-simulator test through the app is blocked until the owner grants Claude access to the simulators in the desktop app ("Let Claude use it"); the app is built, installed and running on two simulators. The message contract is in `docs/api.md` ("Live relay (dev, interim)") and `docs/adr/0014-live-relay-before-auth.md`.
 - Worktrees for merged PRs were removed on 2026-10-08; `.claude/worktrees/` keeps only the ones for open PRs.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
-- Demo verification: 319 unit tests and 3 UI smoke tests on main as of #85. Earlier: 83 unit tests and 6 UI tests as of #39, then 83 unit tests and 3 UI tests (full 18-hole round to settlement, seeded round with an unresolved carryover) on iOS 26 locally and iOS 18 in CI. A device-architecture build of main compiled unsigned; the app has been installed on the phone since 2026-09-30.
+- Demo verification: 316 unit tests and 3 UI smoke tests on main as of #89. Earlier: 83 unit tests and 6 UI tests as of #39, then 83 unit tests and 3 UI tests (full 18-hole round to settlement, seeded round with an unresolved carryover) on iOS 26 locally and iOS 18 in CI. A device-architecture build of main compiled unsigned; the app has been installed on the phone since 2026-09-30.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
