@@ -56,7 +56,8 @@ export interface WolfEvent {
 }
 
 export interface GamesConfig {
-  skins?: { baseCents: Cents };
+  /** `carryover` left out means true: a pushed hole's value carries to the next hole. */
+  skins?: { baseCents: Cents; carryover?: boolean };
   wad?: { startCents: Cents; stepCents: Cents };
   greenies?: { amountCents: Cents };
   /** Needs exactly four players. */

@@ -22,6 +22,7 @@ struct RoundsView: View {
     @State private var summaries = RoundSummaryCache()
     @State private var roundToDelete: Round?
     @State private var showsSettings = false
+    @State private var showsFollow = false
     #if DEBUG
     @State private var appliedDebugLaunchArguments = false
     #endif
@@ -42,6 +43,9 @@ struct RoundsView: View {
                     ) {
                         Button("New round") { setup = SetupPresentation() }
                             .buttonStyle(.primary)
+                        Button("Follow a round") { showsFollow = true }
+                            .buttonStyle(.secondary)
+                            .accessibilityIdentifier("live.follow.empty")
                     }
                 } else {
                     List {
@@ -78,12 +82,19 @@ struct RoundsView: View {
                     Button("Settings", systemImage: "gearshape") { showsSettings = true }
                         .accessibilityIdentifier("rounds.settings")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Follow a round", systemImage: "dot.radiowaves.left.and.right") { showsFollow = true }
+                        .accessibilityIdentifier("live.follow")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("New round", systemImage: "plus") { setup = SetupPresentation() }
                 }
             }
             .sheet(isPresented: $showsSettings) {
                 EventSettingsView()
+            }
+            .sheet(isPresented: $showsFollow) {
+                LiveFollowView()
             }
             .alert(
                 "Delete this round?",
@@ -106,6 +117,12 @@ struct RoundsView: View {
                 guard let round else { return }
                 path = [.detail(round)]
                 navigation?.roundToOpen = nil
+            }
+            // The settlement, from the scoring screen's pop-up.
+            .onChange(of: navigation?.pendingRoute) { _, route in
+                guard let route else { return }
+                path.append(route)
+                navigation?.pendingRoute = nil
             }
             #if DEBUG
             .safeAreaInset(edge: .bottom) {

@@ -62,6 +62,11 @@ struct GameSnapshotRoundTests {
         try scorer.addWadMaker(playerID: "sam", hole: 2)
         try scorer.setGross(3, playerID: "alex", hole: 3)
         try scorer.setGreenieWinner("alex", hole: 3)
+        // The events wait for every player's score on holes 2 and 3; pars and
+        // a tie on 3, so no skin.
+        for player in ["zach", "sam", "alex"] { try scorer.setGross(5, playerID: player, hole: 2) }
+        try scorer.setGross(3, playerID: "zach", hole: 3)
+        try scorer.setGross(4, playerID: "sam", hole: 3)
         let after = try snapshot()
         #expect(after.wadMakes == [GameSnapshot.WadMake(hole: 2, playerID: "sam", valueCents: 700)])
         #expect(after.greenieWins == [GameSnapshot.GreenieWin(hole: 3, winnerID: "alex")])
@@ -126,8 +131,27 @@ struct GameSnapshotRoundTests {
 
     @Test func withoutAnEngineOnlyTheScoresAreKnown() throws {
         try scorer.setGross(2, playerID: "zach", hole: 1)
+        try scorer.setGross(4, playerID: "sam", hole: 1)
+        try scorer.setGross(4, playerID: "alex", hole: 1)
         let snapshot = GameSnapshot(round: round, status: nil)
-        #expect(snapshot.scores.count == 1)
+        #expect(snapshot.scores.count == 3)
         #expect(snapshot.events.map(\.kind) == [.eagle])
+    }
+
+    /// Hole 1 is complete: Sam's birdie wins the skin (Zach's tick makes his 5
+    /// a net 4). Hole 2 is not: Zach's eagle waits for Alex's score.
+    @Test func aPartlyScoredHolesEventsAreLeftOut() throws {
+        try scorer.setGross(5, playerID: "zach", hole: 1)
+        try scorer.setGross(3, playerID: "sam", hole: 1)
+        try scorer.setGross(4, playerID: "alex", hole: 1)
+        try scorer.setGross(3, playerID: "zach", hole: 2)
+        try scorer.setGross(5, playerID: "sam", hole: 2)
+        let snapshot = try snapshot()
+        #expect(snapshot.scores.count == 5)
+        #expect(snapshot.events.map(\.kind) == [.skinWon, .birdie])
+        #expect(snapshot.events.allSatisfy { $0.hole == 1 && $0.playerIDs == ["sam"] })
+
+        try scorer.setGross(5, playerID: "alex", hole: 2)
+        #expect(try self.snapshot().events.filter { $0.hole == 2 }.map(\.kind).contains(.eagle))
     }
 }

@@ -7,6 +7,7 @@ struct RoundDetailView: View {
     let round: Round
 
     @State private var handleEdit: VenmoHandleEdit?
+    @State private var scoreEdit: ScoreEdit?
 
     /// Total ticks per player id, from the engine. Nil if the engine failed.
     private var totalTicks: [String: Int]? {
@@ -54,12 +55,14 @@ struct RoundDetailView: View {
                 }
 
                 Section {
-                    ScorecardView(scorecard: scorecard)
-                        .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+                    ScorecardView(scorecard: scorecard) { playerID, hole in
+                        scoreEdit = ScoreEdit(playerID: playerID, hole: hole)
+                    }
+                    .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
                 } header: {
                     SectionHeader("Scorecard", systemImage: "tablecells")
                 } footer: {
-                    SectionFooter("A circle is a birdie and two an eagle or better. A square is a bogey and two a double bogey or worse.")
+                    SectionFooter("A circle is a birdie and two an eagle or better. A square is a bogey and two a double bogey or worse. Tap a score to change it.")
                 }
 
                 Section {
@@ -119,6 +122,7 @@ struct RoundDetailView: View {
                     LabeledContent("Wad start", value: "$" + Money.dollars(fromCents: round.wadStartCents))
                     LabeledContent("Wad step", value: "$" + Money.dollars(fromCents: round.wadStepCents))
                     LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
+                    LabeledContent("Skins carryover", value: round.skinsCarryover ? "On" : "Off")
                     LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
                     if let pointCents = round.wolfPointCents {
                         LabeledContent("Wolf, per point", value: "$" + Money.dollars(fromCents: pointCents))
@@ -134,6 +138,8 @@ struct RoundDetailView: View {
                 } header: {
                     SectionHeader("Games", systemImage: "dollarsign.circle")
                 }
+
+                LiveShareSection(round: round)
             }
             .themedRows()
         }
@@ -143,6 +149,9 @@ struct RoundDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $handleEdit) { edit in
             VenmoHandleEditor(round: round, edit: edit)
+        }
+        .sheet(item: $scoreEdit) { edit in
+            ScoreEditSheet(round: round, edit: edit)
         }
     }
 

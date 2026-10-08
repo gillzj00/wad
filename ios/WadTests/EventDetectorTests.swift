@@ -11,14 +11,32 @@ struct EventDetectorTests {
         GameSnapshot.Player(id: "alex", name: "Alex"),
     ]
 
+    /// Events play only on a hole every player has scored. `fillingHoles`
+    /// completes every hole the snapshot mentions with par for the players
+    /// without a score there (par is the hole's other scores', or 4), so a
+    /// test about one score or one game sees its event.
     func snapshot(
+        players: [GameSnapshot.Player]? = nil,
         scores: [GameSnapshot.Score] = [],
         skinWins: [GameSnapshot.SkinWin] = [],
         wadMakes: [GameSnapshot.WadMake] = [],
         greenieWins: [GameSnapshot.GreenieWin] = [],
-        wolfWins: [GameSnapshot.WolfWin] = []
+        wolfWins: [GameSnapshot.WolfWin] = [],
+        fillingHoles: Bool = true
     ) -> GameSnapshot {
-        GameSnapshot(
+        let players = players ?? self.players
+        var scores = scores
+        if fillingHoles {
+            let holes = Set(scores.map(\.hole) + skinWins.map(\.hole) + wadMakes.map(\.hole)
+                + greenieWins.map(\.hole) + wolfWins.map(\.hole))
+            for hole in holes.sorted() {
+                let par = scores.first { $0.hole == hole }?.par ?? 4
+                for player in players where !scores.contains(where: { $0.hole == hole && $0.playerID == player.id }) {
+                    scores.append(score(player.id, hole: hole, par: par, gross: par))
+                }
+            }
+        }
+        return GameSnapshot(
             players: players,
             scores: scores,
             skinWins: skinWins,
@@ -163,6 +181,120 @@ struct EventDetectorTests {
         #expect(kinds(before: four, after: three) == [.birdie])
         #expect(kinds(before: three, after: two) == [.eagle])
         #expect(kinds(before: two, after: three) == [.birdie])
+    }
+
+    // MARK: Complete holes
+
+    @Test func aTwoPlayerHolePlaysOnceBothScoresAreIn() {
+        let two = Array(players.prefix(2))
+        let greenie = GameSnapshot.GreenieWin(hole: 3, winnerID: "zach")
+        let skin = GameSnapshot.SkinWin(hole: 3, winnerID: "zach", atStakeCents: 500)
+        let empty = snapshot(players: two, fillingHoles: false)
+        let zachIn = snapshot(
+            players: two,
+            scores: [score("zach", hole: 3, par: 3, gross: 2)],
+            skinWins: [skin],
+            greenieWins: [greenie],
+            fillingHoles: false
+        )
+        #expect(kinds(before: empty, after: zachIn).isEmpty)
+
+        let bothIn = snapshot(
+            players: two,
+            scores: [score("zach", hole: 3, par: 3, gross: 2), score("sam", hole: 3, par: 3, gross: 3)],
+            skinWins: [skin],
+            greenieWins: [greenie],
+            fillingHoles: false
+        )
+        let events = EventDetector.events(before: zachIn, after: bothIn)
+        #expect(events.map(\.kind) == [.greenie, .skinWon, .birdie])
+        #expect(events.allSatisfy { $0.hole == 3 && $0.playerIDs == ["zach"] })
+    }
+
+    /// Four players scored one at a time, the way the scoring screen does it:
+    /// the skin moves from Sam to Zach on the way, and nothing plays until Jo's
+    /// score completes the hole. Then the hole's events play together, in order.
+    @Test func aFourPlayerHolePlaysNothingUntilTheLastScoreLands() {
+        let four = players + [GameSnapshot.Player(id: "jo", name: "Jo")]
+        let greenie = GameSnapshot.GreenieWin(hole: 3, winnerID: "zach")
+        let wad = GameSnapshot.WadMake(hole: 3, playerID: "zach", valueCents: 700)
+        func step(_ scores: [GameSnapshot.Score], skinWinner: String?) -> GameSnapshot {
+            snapshot(
+                players: four,
+                scores: scores,
+                skinWins: skinWinner.map { [GameSnapshot.SkinWin(hole: 3, winnerID: $0, atStakeCents: 500)] } ?? [],
+                wadMakes: [wad],
+                greenieWins: [greenie],
+                fillingHoles: false
+            )
+        }
+        let scores = [
+            score("sam", hole: 3, par: 3, gross: 3),
+            score("zach", hole: 3, par: 3, gross: 2),
+            score("alex", hole: 3, par: 3, gross: 4),
+            score("jo", hole: 3, par: 3, gross: 4),
+        ]
+        let steps = [
+            step([], skinWinner: nil),
+            step(Array(scores.prefix(1)), skinWinner: "sam"),
+            step(Array(scores.prefix(2)), skinWinner: "zach"),
+            step(Array(scores.prefix(3)), skinWinner: "zach"),
+        ]
+        for (before, after) in zip(steps, steps.dropFirst()) {
+            #expect(kinds(before: before, after: after).isEmpty)
+        }
+
+        let complete = step(scores, skinWinner: "zach")
+        let events = EventDetector.events(before: steps[3], after: complete)
+        #expect(events.map(\.kind) == [.greenie, .wadTaken, .skinWon, .birdie])
+        #expect(events.allSatisfy { $0.hole == 3 && $0.playerIDs == ["zach"] })
+    }
+
+    @Test func aCorrectionOnACompleteHolePlaysOnlyWhatIsNew() {
+        let before = snapshot(
+            scores: [score("zach", hole: 1, par: 4, gross: 3), score("sam", hole: 1, par: 4, gross: 4), score("alex", hole: 1, par: 4, gross: 4)],
+            skinWins: [GameSnapshot.SkinWin(hole: 1, winnerID: "zach", atStakeCents: 500)],
+            fillingHoles: false
+        )
+        let after = snapshot(
+            scores: [score("zach", hole: 1, par: 4, gross: 3), score("sam", hole: 1, par: 4, gross: 3), score("alex", hole: 1, par: 4, gross: 4)],
+            fillingHoles: false
+        )
+        let events = EventDetector.events(before: before, after: after)
+        #expect(events.map(\.kind) == [.birdie])
+        #expect(events.first?.playerIDs == ["sam"])
+    }
+
+    @Test func anIncompleteHoleWithAGreenieWinnerPlaysNothing() {
+        let after = snapshot(
+            scores: [score("zach", hole: 3, par: 3, gross: 2), score("sam", hole: 3, par: 3, gross: 3)],
+            greenieWins: [GameSnapshot.GreenieWin(hole: 3, winnerID: "zach")],
+            fillingHoles: false
+        )
+        #expect(after.events.isEmpty)
+        #expect(kinds(before: snapshot(fillingHoles: false), after: after).isEmpty)
+    }
+
+    /// Clearing a score makes the hole incomplete again, so entering it again
+    /// plays the hole's events again.
+    @Test func clearingAScoreOnACompleteHolePlaysNothingAndReEnteringItReplays() {
+        let scores = [score("zach", hole: 1, par: 4, gross: 3), score("sam", hole: 1, par: 4, gross: 4), score("alex", hole: 1, par: 4, gross: 4)]
+        let skin = GameSnapshot.SkinWin(hole: 1, winnerID: "zach", atStakeCents: 500)
+        let complete = snapshot(scores: scores, skinWins: [skin], fillingHoles: false)
+        let cleared = snapshot(scores: Array(scores.prefix(2)), skinWins: [skin], fillingHoles: false)
+        #expect(kinds(before: complete, after: cleared).isEmpty)
+        #expect(kinds(before: cleared, after: complete) == [.skinWon, .birdie])
+    }
+
+    @Test func aCompleteHolePlaysWhileAnotherIsPartlyScored() {
+        let after = snapshot(
+            scores: [
+                score("zach", hole: 1, par: 4, gross: 3), score("sam", hole: 1, par: 4, gross: 4), score("alex", hole: 1, par: 4, gross: 4),
+                score("zach", hole: 2, par: 5, gross: 3),
+            ],
+            fillingHoles: false
+        )
+        #expect(after.events.map { "\($0.kind)@\($0.hole)" } == ["birdie@1"])
     }
 
     // MARK: Priority

@@ -7,9 +7,13 @@ struct HoleScoringView: View {
     let round: Round
 
     @Environment(EventCenter.self) private var events
+    @Environment(AppNavigation.self) private var navigation: AppNavigation?
 
     @State private var holeNumber: Int
     @State private var failure: String?
+    @State private var showsCompletionPrompt = false
+    @State private var completionPromptDismissed = false
+    @State private var summaryRequested = false
 
     /// Opens on `startHole`, or on the first hole that is not complete. A
     /// round that started every hole at par has no such hole; it opens on hole 1.
@@ -69,12 +73,20 @@ struct HoleScoringView: View {
         } message: {
             Text(failure ?? "")
         }
+        .sheet(isPresented: $showsCompletionPrompt, onDismiss: completionPromptWasDismissed) {
+            RoundCompletionSheet { summaryRequested = true }
+        }
+        .onChange(of: holeNumber) { completionPromptDismissed = false }
     }
 
     /// Saves a change and plays what it newly triggered: the games are scored
     /// before and after, and only an event that was not there before plays.
+    /// Pops up the way to the round summary when the change completes the
+    /// round, or is made on the last hole of a round that is complete, once
+    /// per visit to the hole.
     private func perform(_ change: () throws -> Void) {
         let before = events.snapshot(of: round)
+        let wasComplete = round.firstIncompleteHole == nil
         do {
             try change()
         } catch {
@@ -82,6 +94,24 @@ struct HoleScoringView: View {
             return
         }
         events.record(round, before: before)
+        if RoundCompletionPrompt.shows(
+            wasComplete: wasComplete,
+            isComplete: round.firstIncompleteHole == nil,
+            changedHole: holeNumber,
+            lastHole: lastHole,
+            wasDismissed: completionPromptDismissed
+        ) {
+            showsCompletionPrompt = true
+        }
+    }
+
+    /// By a button or a swipe. The settlement is pushed once the pop-up is
+    /// gone, by the Rounds tab, which holds the navigation path.
+    private func completionPromptWasDismissed() {
+        completionPromptDismissed = true
+        guard summaryRequested else { return }
+        summaryRequested = false
+        navigation?.push(.settlement(round))
     }
 
     // MARK: Sections
@@ -150,7 +180,9 @@ struct HoleScoringView: View {
     private func skins(_ hole: RoundHole, status: RoundStatus?) -> some View {
         if let result = status?.skinsHole(hole.number) {
             Section {
-                StatusLineView(line: ScoringText.skins(result, lastHole: lastHole, name: name))
+                StatusLineView(
+                    line: ScoringText.skins(result, lastHole: lastHole, carryover: round.skinsCarryover, name: name)
+                )
                     .accessibilityIdentifier("status.skins")
             } header: {
                 SectionHeader("Skins", systemImage: "dollarsign.circle")

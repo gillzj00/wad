@@ -108,13 +108,19 @@ struct RoundDraft: Equatable, Sendable {
     var wadStartText = Money.dollars(fromCents: GameSettings.defaults.wadStartCents)
     var wadStepText = Money.dollars(fromCents: GameSettings.defaults.wadStepCents)
     var skinsBaseText = Money.dollars(fromCents: GameSettings.defaults.skinsBaseCents)
+    /// A pushed skins hole adds its value to the next hole. Off, a push pays
+    /// nothing and the next hole is worth the base again.
+    var skinsCarryover = true
     var greeniesAmountText = Money.dollars(fromCents: GameSettings.defaults.greeniesAmountCents)
     /// Off unless the group turns it on; needs exactly four players.
     var wolf = WolfDraft()
 
     /// Save par for every player on every hole when the round is created, so
-    /// that scoring is changing the holes that went differently.
-    var startsEveryHoleAtPar = true
+    /// that scoring is changing the holes that went differently. Off unless
+    /// the group turns it on: the scorecard starts blank, and a hole's shows
+    /// play once every player's score is in. On, every hole is complete from
+    /// the start and each score change can play a show.
+    var startsEveryHoleAtPar = false
 
     // MARK: Course
 
@@ -275,7 +281,8 @@ struct RoundDraft: Equatable, Sendable {
             courseRating: tee?.courseRating,
             slope: tee?.slope,
             settings: settings,
-            startsEveryHoleAtPar: startsEveryHoleAtPar
+            startsEveryHoleAtPar: startsEveryHoleAtPar,
+            skinsCarryover: skinsCarryover
         )
         round.holes = holes.map { RoundHole(number: $0.number, par: $0.par, strokeIndex: $0.strokeIndex ?? 0) }
         round.players = try players.enumerated().map { offset, player in

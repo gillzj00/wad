@@ -214,9 +214,53 @@ struct RoundDraftTests {
         }
     }
 
-    @Test func aNewDraftStartsEveryHoleAtPar() {
-        #expect(RoundDraft().startsEveryHoleAtPar == true)
+    @Test func aNewDraftCarriesSkinsOver() {
+        #expect(RoundDraft().skinsCarryover == true)
+        #expect(RoundDraft.sample.skinsCarryover == true)
+        #expect(RoundFixtures.unratedDraft().skinsCarryover == true)
+    }
+
+    @Test @MainActor func skinsCarryoverReachesTheRound() throws {
+        let bridge = try EngineBridge()
+        var draft = RoundFixtures.threePlayerDraft()
+        let carries = try draft.makeRound(using: bridge)
+        #expect(carries.skinsCarryover == true)
+        #expect(carries.skinsInput.carryover == true)
+
+        draft.skinsCarryover = false
+        let round = try draft.makeRound(using: bridge)
+        #expect(round.skinsCarryover == false)
+        #expect(round.skinsInput.carryover == false)
+        #expect(round.settings == .defaults)
+        #expect(draft.gameIssues().isEmpty)
+    }
+
+    @Test func aNewDraftStartsEveryHoleUnscored() {
+        #expect(RoundDraft().startsEveryHoleAtPar == false)
         #expect(RoundFixtures.unratedDraft().startsEveryHoleAtPar == false)
+    }
+
+    /// A draft left at its default creates a round with a blank scorecard.
+    @Test @MainActor func aDefaultDraftCreatesARoundWithNoScore() throws {
+        var draft = RoundDraft()
+        draft.courseName = "Pebble Beach"
+        draft.holes = (0..<18).map {
+            RoundDraft.Hole(number: $0 + 1, par: RoundFixtures.pars[$0], strokeIndexText: String(RoundFixtures.strokeIndexes[$0]))
+        }
+        draft.players = [
+            RoundDraft.Player(id: "zach", name: "Zach", courseHandicapText: "15"),
+            RoundDraft.Player(id: "sam", name: "Sam", courseHandicapText: "7"),
+        ]
+        let round = try draft.makeRound(using: try EngineBridge())
+
+        #expect(round.startsEveryHoleAtPar == false)
+        #expect(round.scores.isEmpty)
+        for hole in round.orderedHoles {
+            for player in round.orderedPlayers {
+                #expect(round.gross(playerID: player.playerID, hole: hole.number) == nil)
+            }
+        }
+        #expect(round.firstIncompleteHole == 1)
     }
 
     /// With the setting on, the round is created with par saved for every

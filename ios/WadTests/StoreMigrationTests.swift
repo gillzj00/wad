@@ -5,9 +5,9 @@ import Testing
 
 /// The models as they were before Venmo handles and paid markers were added
 /// (commit 601ef1d): no `RoundPlayer.venmoHandle`, no `PaidMarker`, and no
-/// `Round.startsEveryHoleAtPar`, which came later. The entity
-/// names are the class names, so a store written with these is a store of the
-/// previous version of the app.
+/// `Round.startsEveryHoleAtPar` or `Round.skinsCarryover`, which came later.
+/// The entity names are the class names, so a store written with these is a
+/// store of the previous version of the app.
 enum PreviousSchema {
     static let models: [any PersistentModel.Type] = [Round.self, RoundHole.self, RoundPlayer.self, HoleScore.self]
 
@@ -173,6 +173,10 @@ struct StoreMigrationTests {
         #expect(round.orderedPlayers.map(\.venmoHandle) == [nil, nil, nil])
         #expect(round.paidMarkers.isEmpty)
         #expect(round.startsEveryHoleAtPar == false)
+        #expect(round.liveCode == nil)
+        // Skins always carried over before the setting existed.
+        #expect(round.skinsCarryover == true)
+        #expect(round.skinsInput.carryover == true)
 
         // The round settles as before and takes what is new.
         let bridge = try EngineBridge()
@@ -210,6 +214,7 @@ struct StoreMigrationTests {
         // The migrated store takes the new fields.
         round.wolfPointCents = 100
         round.wolfTeeOrderIDs = ["sam", "zach", "alex"]
+        round.liveCode = "ABC123"
         round.hole(17)?.wolfChoice = "partner"
         round.hole(17)?.wolfPartnerID = "sam"
         round.hole(17)?.wolfPlayerID = "zach"
@@ -217,6 +222,7 @@ struct StoreMigrationTests {
 
         let reread = try #require(try ModelContext(container).fetch(FetchDescriptor<Round>()).first)
         #expect(reread.wolfPointCents == 100)
+        #expect(reread.liveCode == "ABC123")
         #expect(reread.wolfTeeOrder == ["sam", "zach", "alex"])
         #expect(reread.hole(17)?.wolfEvent == Engine.WolfEvent(choice: .partner, partnerUserId: "sam", wolfUserId: "zach"))
         #expect(reread.hole(16)?.wolfEvent == nil)

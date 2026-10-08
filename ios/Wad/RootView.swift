@@ -4,25 +4,40 @@ enum AppTab: Hashable {
     case rounds, courses, profile
 }
 
-/// The tab shown, and a round created on another tab that the Rounds tab
-/// opens when it comes back on screen.
+/// The tab shown, a round created on another tab that the Rounds tab opens
+/// when it comes back on screen, and a screen for the Rounds tab to push from
+/// a screen that has no hold on its path.
 @MainActor
 @Observable
 final class AppNavigation {
     var tab = AppTab.rounds
     var roundToOpen: Round?
+    var pendingRoute: RoundsRoute?
 
     /// Shows the round on the Rounds tab.
     func open(_ round: Round) {
         roundToOpen = round
         tab = .rounds
     }
+
+    /// Pushes the screen on the Rounds tab.
+    func push(_ route: RoundsRoute) {
+        pendingRoute = route
+    }
 }
 
 /// Top-level tab shell. Profile is a placeholder until its milestone lands.
 struct RootView: View {
-    @State private var events = EventCenter()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var events: EventCenter
+    @State private var live: LiveCenter
     @State private var navigation = AppNavigation()
+
+    init() {
+        let events = EventCenter()
+        _events = State(initialValue: events)
+        _live = State(initialValue: LiveCenter(events: events))
+    }
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -39,7 +54,14 @@ struct RootView: View {
         }
         .overlay { EventOverlay() }
         .environment(events)
+        .environment(live)
         .environment(navigation)
+        // A connection suspended in the background is made again on return.
+        .onChange(of: scenePhase) { previous, phase in
+            if phase == .active, previous == .background {
+                live.didReturnToForeground()
+            }
+        }
         #if DEBUG
         .task { playDebugEvents() }
         #endif
@@ -70,6 +92,12 @@ struct RootView: View {
             case .wadTaken: sample.wadMakes.append(GameSnapshot.WadMake(hole: 4, playerID: "sam", valueCents: 900))
             case .skinWon: sample.skinWins.append(GameSnapshot.SkinWin(hole: 4, winnerID: "alex", atStakeCents: 1500))
             case .wolfHoleWon: sample.wolfWins.append(GameSnapshot.WolfWin(hole: 6, winnerIDs: ["zach", "sam"]))
+            }
+        }
+        // Events play only on a hole every player has scored: the others make par.
+        for (hole, par) in [1: 4, 2: 5, 3: 3, 4: 4, 5: 4, 6: 4, 7: 5].sorted(by: { $0.key < $1.key }) {
+            for player in sample.players where !sample.scores.contains(where: { $0.hole == hole && $0.playerID == player.id }) {
+                sample.scores.append(GameSnapshot.Score(playerID: player.id, hole: hole, par: par, gross: par))
             }
         }
         events.enqueue(sample.events.filter { kinds.contains($0.kind) })

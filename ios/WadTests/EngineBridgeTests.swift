@@ -112,6 +112,67 @@ struct EngineBridgeTests {
         #expect(result.deltas.values.reduce(0, +) == 0)
     }
 
+    @Test func skinsWithoutCarryoverPaysNothingForAPush() throws {
+        // Holes 1 and 2 push, A wins hole 3: with carryover off it is worth the base only.
+        let scores = Self.scores(hole: 1, ["A": 4, "B": 4, "C": 5, "D": 5])
+            + Self.scores(hole: 2, ["A": 5, "B": 6, "C": 5, "D": 6])
+            + Self.scores(hole: 3, ["A": 3, "B": 4, "C": 4, "D": 4])
+        let result = try bridge.scoreSkins(Engine.SkinsInput(
+            players: Self.players(Self.four),
+            holes: Self.course18,
+            scores: scores,
+            baseCents: 500,
+            carryover: false
+        ))
+
+        let holes = result.holes
+        #expect(holes[0].status == .pushed)
+        #expect(holes[0].carriedInCents == 0)
+        #expect(holes[0].atStakeCents == 500)
+        #expect(holes[1].status == .pushed)
+        #expect(holes[1].carriedInCents == 0)
+        #expect(holes[1].atStakeCents == 500)
+        #expect(holes[2].status == .won)
+        #expect(holes[2].winnerUserId == "A")
+        #expect(holes[2].carriedInCents == 0)
+        #expect(holes[2].atStakeCents == 500)
+        #expect(result.deltas == ["A": 1500, "B": -500, "C": -500, "D": -500])
+        #expect(result.carryOutCents == 0)
+
+        // The same scores with carryover on: the domain example, $15 for hole 3.
+        let carried = try bridge.scoreSkins(Engine.SkinsInput(
+            players: Self.players(Self.four),
+            holes: Self.course18,
+            scores: scores,
+            baseCents: 500,
+            carryover: true
+        ))
+        #expect(carried.holes[2].atStakeCents == 1500)
+        #expect(carried.deltas == ["A": 4500, "B": -1500, "C": -1500, "D": -1500])
+    }
+
+    @Test func skinsPushOnTheLastHoleWithoutCarryoverIsResolved() throws {
+        // A wins holes 1-16 outright; 17 and 18 are pushed and worth nothing.
+        let scores = Self.course18.flatMap { hole in
+            Self.scores(hole: hole.hole, ["A": hole.hole <= 16 ? 3 : 4, "B": 4, "C": 4, "D": 4])
+        }
+        let result = try bridge.scoreSkins(Engine.SkinsInput(
+            players: Self.players(Self.four),
+            holes: Self.course18,
+            scores: scores,
+            baseCents: 500,
+            carryover: false
+        ))
+
+        let last = try #require(result.holes.last)
+        #expect(last.status == .pushed)
+        #expect(last.carriedInCents == 0)
+        #expect(last.atStakeCents == 500)
+        #expect(result.complete)
+        #expect(result.carryOutCents == 0)
+        #expect(result.deltas == ["A": 24000, "B": -8000, "C": -8000, "D": -8000])
+    }
+
     @Test func greeniesExampleWinnerCollectsFromEach() throws {
         let result = try bridge.scoreGreenies(Engine.GreeniesInput(
             players: ["A", "B", "C"],
