@@ -43,7 +43,8 @@ final class LiveCenter {
     }
 
     /// Shares the round scored on this phone: every event it newly records
-    /// and every score change go to the phones following the code.
+    /// and every score change go to the phones following the code. The shows
+    /// play there, not here, until `stop`.
     func share(code: String) {
         guard isConfigured, LiveCode.isValid(code) else { return }
         stop()

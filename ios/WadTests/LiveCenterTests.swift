@@ -83,45 +83,53 @@ struct LiveCenterTests {
         #expect(!center.isSharing(nil))
         let connection = try await subscribed(center)
 
-        // A birdie by Zach on hole 1 (par 4).
-        try perform { try scorer.setGross(3, playerID: "zach", hole: 1) }
+        // Pars by Sam and Alex on hole 1 (par 4): scores, no event yet.
+        try perform { try scorer.setGross(4, playerID: "sam", hole: 1) }
+        try perform { try scorer.setGross(4, playerID: "alex", hole: 1) }
         #expect(await eventually { publishes(connection).count == 2 })
-        #expect(publishes(connection).first == .score(LiveScorePayload(playerID: "zach", playerName: "Zach", hole: 1, par: 4, gross: 3)))
-        let birdie = publishes(connection).compactMap { payload -> LiveGameEventPayload? in
+
+        // Zach's birdie completes the hole: his score, then the skin and the birdie.
+        try perform { try scorer.setGross(3, playerID: "zach", hole: 1) }
+        #expect(await eventually { publishes(connection).count == 5 })
+        #expect(publishes(connection)[2] == .score(LiveScorePayload(playerID: "zach", playerName: "Zach", hole: 1, par: 4, gross: 3)))
+        let relayed = publishes(connection).compactMap { payload -> LiveGameEventPayload? in
             if case .gameEvent(let event) = payload { return event }
             return nil
         }
-        #expect(birdie.map(\.kind) == ["birdie"])
-        #expect(birdie.first?.hole == 1)
-        #expect(birdie.first?.playerNames == ["Zach"])
-        #expect(birdie.first?.otherNames == ["Sam", "Alex"])
-        // The show plays here as well.
-        #expect(events.current?.kind == .birdie)
+        #expect(relayed.map(\.kind) == ["skinWon", "birdie"])
+        #expect(relayed.last?.hole == 1)
+        #expect(relayed.last?.playerNames == ["Zach"])
+        #expect(relayed.last?.otherNames == ["Sam", "Alex"])
+        // The shows are for the followers: nothing plays on the scoring phone.
+        #expect(events.current == nil)
 
         // Saving the same score again records nothing new.
         try perform { try scorer.setGross(3, playerID: "zach", hole: 1) }
         await settle()
-        #expect(publishes(connection).count == 2)
+        #expect(publishes(connection).count == 5)
 
-        // A par is a score without an event; a cleared score is sent as null.
+        // A changed par is a score without an event; a cleared score is sent as null.
         try perform { try scorer.setGross(5, playerID: "sam", hole: 1) }
         try perform { try scorer.setGross(nil, playerID: "sam", hole: 1) }
-        #expect(await eventually { publishes(connection).count == 4 })
+        #expect(await eventually { publishes(connection).count == 7 })
         #expect(publishes(connection).suffix(2) == [
             .score(LiveScorePayload(playerID: "sam", playerName: "Sam", hole: 1, par: 4, gross: 5)),
             .score(LiveScorePayload(playerID: "sam", playerName: "Sam", hole: 1, par: 4, gross: nil)),
         ])
+        #expect(events.current == nil)
 
-        // Stopping takes the hooks away: a later change is not relayed.
+        // Stopping takes the hooks away: a later change is not relayed, and
+        // the shows play here again. Sam's score completes hole 1 once more.
         center.stop()
         #expect(center.role == nil)
         #expect(center.state == .idle)
         #expect(connection.isClosed)
-        try perform { try scorer.setGross(2, playerID: "alex", hole: 1) }
+        try perform { try scorer.setGross(4, playerID: "sam", hole: 1) }
         await settle()
-        #expect(publishes(connection).count == 4)
+        #expect(publishes(connection).count == 7)
         #expect(events.relay == nil)
         #expect(events.relayScores == nil)
+        #expect(events.current?.kind == .skinWon)
     }
 
     @Test func sharingRelaysWithTheShowsSwitchedOff() async throws {
@@ -130,11 +138,13 @@ struct LiveCenterTests {
         center.share(code: code)
         let connection = try await subscribed(center)
 
+        try scorer.setGross(4, playerID: "sam", hole: 1)
+        try scorer.setGross(4, playerID: "alex", hole: 1)
         let before = events.snapshot(of: round)
         #expect(before != nil)
         try scorer.setGross(3, playerID: "zach", hole: 1)
         events.record(round, before: before)
-        #expect(await eventually { publishes(connection).count == 2 })
+        #expect(await eventually { publishes(connection).count == 3 })
         // Nothing plays here.
         #expect(events.current == nil)
 
@@ -222,6 +232,52 @@ struct LiveCenterTests {
         await settle()
         #expect(center.role == nil)
         #expect(transport.requests.isEmpty)
+    }
+}
+
+/// While the round is shared live the shows are for the followers: the
+/// scoring phone relays them and plays nothing. Not sharing, it plays them.
+@MainActor
+struct EventCenterTests {
+    let container: ModelContainer
+    let round: Round
+    let scorer: RoundScorer
+    let events: EventCenter
+
+    init() throws {
+        container = try ModelContainer(for: Round.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        round = try RoundFixtures.threePlayerDraft().makeRound(using: try EngineBridge())
+        container.mainContext.insert(round)
+        try container.mainContext.save()
+        scorer = RoundScorer(round: round)
+        events = EventCenter(settings: LiveCenterTests.settings(animations: true))
+    }
+
+    /// Pars by Sam and Alex on hole 1, then Zach's birdie completes it: Zach
+    /// (a tick on hole 1) wins the skin.
+    func scoreHole1() throws {
+        try scorer.setGross(4, playerID: "sam", hole: 1)
+        try scorer.setGross(4, playerID: "alex", hole: 1)
+        let before = events.snapshot(of: round)
+        try scorer.setGross(3, playerID: "zach", hole: 1)
+        events.record(round, before: before)
+    }
+
+    @Test func sharingRelaysTheEventsAndPlaysNothingHere() throws {
+        var relayed: [GameEvent] = []
+        var relayedScores: [ScoreChange] = []
+        events.relay = { relayed += $0 }
+        events.relayScores = { relayedScores += $0 }
+        try scoreHole1()
+        #expect(relayed.map(\.kind) == [.skinWon, .birdie])
+        #expect(relayedScores == [ScoreChange(playerID: "zach", playerName: "Zach", hole: 1, par: 4, gross: 3)])
+        #expect(events.queue.current == nil)
+    }
+
+    @Test func notSharingPlaysTheEventsHere() throws {
+        #expect(events.relay == nil)
+        try scoreHole1()
+        #expect(events.queue.current?.kind == .skinWon)
     }
 }
 

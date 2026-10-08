@@ -14,8 +14,10 @@ final class EventCenter {
     @ObservationIgnored private let haptics = EventHaptics()
 
     /// Set by `LiveCenter` while the round is shared live: called with the
-    /// events a change newly triggered, before they are queued here. Events
-    /// that arrive from the network go through `enqueue`, never through here.
+    /// events a change newly triggered, which are then not queued here. The
+    /// shows taunt the opponents on the phones following the round, not the
+    /// scorer. Events that arrive from the network go through `enqueue`,
+    /// never through here.
     @ObservationIgnored var relay: (([GameEvent]) -> Void)?
     /// With `relay`: the scores the change set or cleared.
     @ObservationIgnored var relayScores: (([ScoreChange]) -> Void)?
@@ -48,7 +50,8 @@ final class EventCenter {
         return GameSnapshot(round: round)
     }
 
-    /// After the change: relays and plays what newly appeared since `before`.
+    /// After the change: what newly appeared since `before` is relayed while
+    /// sharing live, with the scores, and played here only when not sharing.
     func record(_ round: Round, before: GameSnapshot?) {
         guard let before, detects else { return }
         let after = GameSnapshot(round: round)
@@ -56,8 +59,7 @@ final class EventCenter {
         if let relay {
             relayScores?(ScoreDetector.changes(before: before, after: after))
             relay(events)
-        }
-        if isEnabled {
+        } else if isEnabled {
             enqueue(events)
         }
     }

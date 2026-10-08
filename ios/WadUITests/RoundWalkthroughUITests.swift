@@ -24,15 +24,11 @@ final class RoundWalkthroughUITests: XCTestCase {
         setUpCourse()
         setUpPlayers()
 
-        // Games: the default amounts. The holes start unscored, to score them here.
+        // Games: the default amounts. The holes start unscored by default, to score them here.
         XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
         let startsAtPar = app.switches["setup.startsAtPar"].firstMatch
         scrollTo(startsAtPar)
-        XCTAssertEqual(startsAtPar.value as? String, "1")
-        // A SwiftUI toggle is a switch with the switch itself inside; the outer one does not always react to a tap.
-        let inner = startsAtPar.switches.firstMatch
-        (inner.exists ? inner : startsAtPar).tap()
-        XCTAssertTrue(waitUntil { startsAtPar.value as? String == "0" }, startsAtPar.debugDescription)
+        XCTAssertEqual(startsAtPar.value as? String, "0")
         attachScreenshot("04-setup-games")
         app.buttons["Create"].tap()
 
@@ -258,15 +254,6 @@ final class RoundWalkthroughUITests: XCTestCase {
         guard next.exists else { return true }
         let strip = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'scoring.jump.'")).firstMatch
         return element.frame.maxY <= next.frame.minY - 8 && element.frame.minY >= strip.frame.maxY + 8
-    }
-
-    private func waitUntil(timeout: TimeInterval = 5, _ condition: @escaping () -> Bool) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return true }
-            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
-        }
-        return condition()
     }
 
     private func attachScreenshot(_ name: String) {

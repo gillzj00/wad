@@ -116,8 +116,11 @@ struct RoundDraft: Equatable, Sendable {
     var wolf = WolfDraft()
 
     /// Save par for every player on every hole when the round is created, so
-    /// that scoring is changing the holes that went differently.
-    var startsEveryHoleAtPar = true
+    /// that scoring is changing the holes that went differently. Off unless
+    /// the group turns it on: the scorecard starts blank, and a hole's shows
+    /// play once every player's score is in. On, every hole is complete from
+    /// the start and each score change can play a show.
+    var startsEveryHoleAtPar = false
 
     // MARK: Course
 

@@ -94,6 +94,12 @@ struct RootView: View {
             case .wolfHoleWon: sample.wolfWins.append(GameSnapshot.WolfWin(hole: 6, winnerIDs: ["zach", "sam"]))
             }
         }
+        // Events play only on a hole every player has scored: the others make par.
+        for (hole, par) in [1: 4, 2: 5, 3: 3, 4: 4, 5: 4, 6: 4, 7: 5].sorted(by: { $0.key < $1.key }) {
+            for player in sample.players where !sample.scores.contains(where: { $0.hole == hole && $0.playerID == player.id }) {
+                sample.scores.append(GameSnapshot.Score(playerID: player.id, hole: hole, par: par, gross: par))
+            }
+        }
         events.enqueue(sample.events.filter { kinds.contains($0.kind) })
     }
     #endif
