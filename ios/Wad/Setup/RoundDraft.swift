@@ -115,13 +115,6 @@ struct RoundDraft: Equatable, Sendable {
     /// Off unless the group turns it on; needs exactly four players.
     var wolf = WolfDraft()
 
-    /// Save par for every player on every hole when the round is created, so
-    /// that scoring is changing the holes that went differently. Off unless
-    /// the group turns it on: the scorecard starts blank, and a hole's shows
-    /// play once every player's score is in. On, every hole is complete from
-    /// the start and each score change can play a show.
-    var startsEveryHoleAtPar = false
-
     // MARK: Course
 
     var trimmedCourseName: String { courseName.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -281,7 +274,6 @@ struct RoundDraft: Equatable, Sendable {
             courseRating: tee?.courseRating,
             slope: tee?.slope,
             settings: settings,
-            startsEveryHoleAtPar: startsEveryHoleAtPar,
             skinsCarryover: skinsCarryover
         )
         round.holes = holes.map { RoundHole(number: $0.number, par: $0.par, strokeIndex: $0.strokeIndex ?? 0) }
@@ -299,13 +291,6 @@ struct RoundDraft: Equatable, Sendable {
             )
         }
         wolf.apply(to: round, players: players)
-        if startsEveryHoleAtPar {
-            for hole in round.holes {
-                for player in round.players {
-                    round.setGross(hole.par, playerID: player.playerID, hole: hole.number)
-                }
-            }
-        }
         return round
     }
 }
@@ -318,7 +303,6 @@ extension RoundDraft {
         let pars = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
         let strokeIndexes = [7, 11, 17, 3, 1, 15, 9, 5, 13, 8, 18, 2, 10, 6, 12, 16, 4, 14]
         var draft = RoundDraft()
-        draft.startsEveryHoleAtPar = false
         draft.courseName = "Sample Links"
         draft.ratingText = "72.5"
         draft.slopeText = "131"

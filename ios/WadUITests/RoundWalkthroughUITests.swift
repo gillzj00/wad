@@ -24,11 +24,8 @@ final class RoundWalkthroughUITests: XCTestCase {
         setUpCourse()
         setUpPlayers()
 
-        // Games: the default amounts. The holes start unscored by default, to score them here.
+        // Games: the default amounts. The holes start unscored, to score them here.
         XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
-        let startsAtPar = app.switches["setup.startsAtPar"].firstMatch
-        scrollTo(startsAtPar)
-        XCTAssertEqual(startsAtPar.value as? String, "0")
         attachScreenshot("04-setup-games")
         app.buttons["Create"].tap()
 

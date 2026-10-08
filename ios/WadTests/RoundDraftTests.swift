@@ -235,13 +235,8 @@ struct RoundDraftTests {
         #expect(draft.gameIssues().isEmpty)
     }
 
-    @Test func aNewDraftStartsEveryHoleUnscored() {
-        #expect(RoundDraft().startsEveryHoleAtPar == false)
-        #expect(RoundFixtures.unratedDraft().startsEveryHoleAtPar == false)
-    }
-
-    /// A draft left at its default creates a round with a blank scorecard.
-    @Test @MainActor func aDefaultDraftCreatesARoundWithNoScore() throws {
+    /// A new round from a draft has a blank scorecard.
+    @Test @MainActor func aDraftCreatesARoundWithNoScore() throws {
         var draft = RoundDraft()
         draft.courseName = "Pebble Beach"
         draft.holes = (0..<18).map {
@@ -253,68 +248,14 @@ struct RoundDraftTests {
         ]
         let round = try draft.makeRound(using: try EngineBridge())
 
-        #expect(round.startsEveryHoleAtPar == false)
         #expect(round.scores.isEmpty)
         for hole in round.orderedHoles {
             for player in round.orderedPlayers {
                 #expect(round.gross(playerID: player.playerID, hole: hole.number) == nil)
             }
         }
-        #expect(round.firstIncompleteHole == 1)
-    }
-
-    /// With the setting on, the round is created with par saved for every
-    /// player on every hole: par 3s, 4s and 5s alike.
-    @Test @MainActor func startingAtParSavesParForEveryPlayerOnEveryHole() throws {
-        let bridge = try EngineBridge()
-        var draft = RoundFixtures.threePlayerDraft()
-        draft.startsEveryHoleAtPar = true
-        let round = try draft.makeRound(using: bridge)
-
-        #expect(round.startsEveryHoleAtPar == true)
-        #expect(round.scores.count == 18 * 3)
-        for hole in round.orderedHoles {
-            for player in round.orderedPlayers {
-                #expect(round.gross(playerID: player.playerID, hole: hole.number) == hole.par)
-            }
-        }
-        #expect(round.gross(playerID: "zach", hole: 1) == 4)
-        #expect(round.gross(playerID: "sam", hole: 2) == 5)
-        #expect(round.gross(playerID: "alex", hole: 3) == 3)
-        #expect(Set(RoundFixtures.pars) == [3, 4, 5])
-
-        // Every hole is complete from the start, and the scorecard adds up to par.
-        #expect(round.completedHoles == Array(1...18))
-        #expect(round.firstIncompleteHole == nil)
-        let scorecard = Scorecard(round: round)
-        #expect(scorecard.completedHoleCount == 18)
-        #expect(scorecard.rows.map(\.total) == [72, 72, 72])
-
-        // The scores are ordinary ones: one can be changed or cleared.
-        let container = try ModelContainer(for: Round.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        container.mainContext.insert(round)
-        let scorer = RoundScorer(round: round)
-        try scorer.stepGross(by: 1, playerID: "zach", hole: 1)
-        try scorer.setGross(nil, playerID: "sam", hole: 1)
-        #expect(round.gross(playerID: "zach", hole: 1) == 5)
-        #expect(round.gross(playerID: "sam", hole: 1) == nil)
-        #expect(round.firstIncompleteHole == 1)
-        let stored = try #require(try ModelContext(container).fetch(FetchDescriptor<Round>()).first)
-        #expect(stored.startsEveryHoleAtPar == true)
-        #expect(stored.scores.count == 18 * 3 - 1)
-    }
-
-    @Test @MainActor func notStartingAtParSavesNoScore() throws {
-        let bridge = try EngineBridge()
-        var draft = RoundFixtures.threePlayerDraft()
-        draft.startsEveryHoleAtPar = false
-        let round = try draft.makeRound(using: bridge)
-
-        #expect(round.startsEveryHoleAtPar == false)
-        #expect(round.scores.isEmpty)
         #expect(round.completedHoles.isEmpty)
         #expect(round.firstIncompleteHole == 1)
-        #expect(RoundDraft.sample.startsEveryHoleAtPar == false)
     }
 
     @Test func everyIssueHasAMessage() {

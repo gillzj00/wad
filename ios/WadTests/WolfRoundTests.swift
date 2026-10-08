@@ -95,10 +95,9 @@ struct WolfRoundTests {
         #expect(throws: WolfScoringError.teeOrderLocked) { try scorer.setWolfTeeOrder(["zach", "sam", "alex", "jo"]) }
     }
 
-    @Test func aRoundThatStartsAtParIsLockedFromTheStart() throws {
-        var draft = Self.wolfDraft()
-        draft.startsEveryHoleAtPar = true
-        let round = try makeRound(draft)
+    @Test func aFullyScoredRoundIsLocked() throws {
+        let round = try makeRound()
+        RoundFixtures.scoreEveryHoleAtPar(round)
         #expect(round.isWolfTeeOrderLocked)
     }
 

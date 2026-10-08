@@ -16,12 +16,10 @@ struct HoleScoringView: View {
     @State private var summaryRequested = false
 
     /// Opens on `startHole`, or on the first hole that is not complete. A
-    /// round that started every hole at par has no such hole; it opens on hole 1.
+    /// complete round opens on its last hole.
     init(round: Round, startHole: Int? = nil) {
         self.round = round
-        let resume = round.startsEveryHoleAtPar
-            ? round.orderedHoles.first?.number
-            : round.firstIncompleteHole ?? round.orderedHoles.last?.number
+        let resume = round.firstIncompleteHole ?? round.orderedHoles.last?.number
         _holeNumber = State(initialValue: startHole ?? resume ?? 1)
     }
 
