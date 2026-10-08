@@ -37,6 +37,11 @@ final class Round {
     /// which fills in players that are missing from it.
     var wolfTeeOrderIDs: [String] = []
 
+    /// The code the round was last shared live under (`LiveCode`), so that
+    /// sharing it again gives the followers the same code. Nil until shared;
+    /// rounds from before live sharing read nil.
+    var liveCode: String?
+
     /// Unordered in the store; use `orderedHoles`.
     @Relationship(deleteRule: .cascade, inverse: \RoundHole.round)
     var holes: [RoundHole] = []

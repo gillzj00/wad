@@ -138,6 +138,8 @@ struct RoundDetailView: View {
                 } header: {
                     SectionHeader("Games", systemImage: "dollarsign.circle")
                 }
+
+                LiveShareSection(round: round)
             }
             .themedRows()
         }

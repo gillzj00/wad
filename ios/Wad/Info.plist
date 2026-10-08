@@ -33,5 +33,7 @@
 	<string>$(WAD_API_BASE_URL)</string>
 	<key>WAD_API_CLIENT_TOKEN</key>
 	<string>$(WAD_API_CLIENT_TOKEN)</string>
+	<key>WAD_LIVE_URL</key>
+	<string>$(WAD_LIVE_URL)</string>
 </dict>
 </plist>

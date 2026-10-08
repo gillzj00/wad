@@ -22,6 +22,7 @@ struct RoundsView: View {
     @State private var summaries = RoundSummaryCache()
     @State private var roundToDelete: Round?
     @State private var showsSettings = false
+    @State private var showsFollow = false
     #if DEBUG
     @State private var appliedDebugLaunchArguments = false
     #endif
@@ -42,6 +43,9 @@ struct RoundsView: View {
                     ) {
                         Button("New round") { setup = SetupPresentation() }
                             .buttonStyle(.primary)
+                        Button("Follow a round") { showsFollow = true }
+                            .buttonStyle(.secondary)
+                            .accessibilityIdentifier("live.follow.empty")
                     }
                 } else {
                     List {
@@ -78,12 +82,19 @@ struct RoundsView: View {
                     Button("Settings", systemImage: "gearshape") { showsSettings = true }
                         .accessibilityIdentifier("rounds.settings")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Follow a round", systemImage: "dot.radiowaves.left.and.right") { showsFollow = true }
+                        .accessibilityIdentifier("live.follow")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("New round", systemImage: "plus") { setup = SetupPresentation() }
                 }
             }
             .sheet(isPresented: $showsSettings) {
                 EventSettingsView()
+            }
+            .sheet(isPresented: $showsFollow) {
+                LiveFollowView()
             }
             .alert(
                 "Delete this round?",

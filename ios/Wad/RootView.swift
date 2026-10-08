@@ -28,8 +28,16 @@ final class AppNavigation {
 
 /// Top-level tab shell. Profile is a placeholder until its milestone lands.
 struct RootView: View {
-    @State private var events = EventCenter()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var events: EventCenter
+    @State private var live: LiveCenter
     @State private var navigation = AppNavigation()
+
+    init() {
+        let events = EventCenter()
+        _events = State(initialValue: events)
+        _live = State(initialValue: LiveCenter(events: events))
+    }
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -46,7 +54,14 @@ struct RootView: View {
         }
         .overlay { EventOverlay() }
         .environment(events)
+        .environment(live)
         .environment(navigation)
+        // A connection suspended in the background is made again on return.
+        .onChange(of: scenePhase) { previous, phase in
+            if phase == .active, previous == .background {
+                live.didReturnToForeground()
+            }
+        }
         #if DEBUG
         .task { playDebugEvents() }
         #endif
