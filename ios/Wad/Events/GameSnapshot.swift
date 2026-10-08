@@ -52,8 +52,19 @@ struct GameSnapshot: Equatable, Sendable {
     var greenieAmountCents: Int?
     var wolfWins: [WolfWin] = []
 
-    /// Every event present in this snapshot, in priority order.
+    /// The holes every player has a score on.
+    var completeHoles: Set<Int> {
+        let everyone = Set(players.map(\.id))
+        guard !everyone.isEmpty else { return [] }
+        let scored = Dictionary(grouping: scores, by: \.hole).mapValues { Set($0.map(\.playerID)) }
+        return Set(scored.compactMap { hole, ids in everyone.isSubset(of: ids) ? hole : nil })
+    }
+
+    /// Every event present in this snapshot on a complete hole, in priority
+    /// order. A partly scored hole has none, so its shows wait for the last
+    /// score and then play together, whatever the engines say on the way.
     var events: [GameEvent] {
+        let complete = completeHoles
         var events: [GameEvent] = []
         for score in scores {
             guard let kind = GameEventKind.scoreEvent(gross: score.gross, par: score.par) else { continue }
@@ -100,7 +111,7 @@ struct GameSnapshot: Equatable, Sendable {
                 playerNames: win.winnerIDs.map(name)
             ))
         }
-        return EventOrder.sorted(events, players: players)
+        return EventOrder.sorted(events.filter { complete.contains($0.hole) }, players: players)
     }
 
     private func name(_ playerID: String) -> String {
@@ -127,7 +138,9 @@ enum EventOrder {
 /// Which events to play after a change: the ones that are in the state after
 /// it and were not in the state before. Re-saving the same score, or a
 /// correction that takes an event away, plays nothing; a correction elsewhere
-/// that only changes what an event is worth does not replay it.
+/// that only changes what an event is worth does not replay it. Clearing a
+/// score leaves the hole incomplete without events, so scoring it again
+/// plays the hole's events again.
 enum EventDetector {
     static func events(before: GameSnapshot, after: GameSnapshot) -> [GameEvent] {
         let seen = Set(before.events.map(\.identity))
