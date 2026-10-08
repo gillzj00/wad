@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-08 (after #85)
+Last updated: 2026-10-08 (after #82 deployed)
 
 ## Current phase
 
@@ -10,7 +10,7 @@ Last updated: 2026-10-08 (after #85)
 
 **Phase 2 — backend:** the four listed items are merged (#24, #26, #28, #30); the documented handicap override route followed (#32). Remaining milestones (M1, M2.2/M2.4 deploy, M3.3, M3.4/M3.5, M5.2, M6) depend on auth, deploys or iOS sign-in and wait on Apple Developer Program enrollment or a decision from @gillzj00. Original scope: M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
 
-**Phase 4 — scoring polish and live relay** started 2026-10-05: four PRs are merged (#79, #80, #81, #83). The relay API (#82) waits for @gillzj00's approval.
+**Phase 4 — scoring polish and live relay** started 2026-10-05: six PRs are merged (#79, #80, #81, #83, #85, #82). The relay API is deployed and the two-phone test is next.
 
 ## Phase 1 task list
 
@@ -63,7 +63,7 @@ Last updated: 2026-10-08 (after #85)
 | P4.1 | Round complete pop-up on the scoring screen: a sheet offers "Round summary" (the settlement) or "Keep scoring" when a change completes the round, or is made on the last hole of an already complete round; once dismissed it stays away until another hole is visited (`RoundCompletionPrompt`, `AppNavigation.pendingRoute`) | ios/ | done 2026-10-05 | #79 |
 | P4.2 | Skins carryover toggle: engine `SkinsInput.carryover` (default true), API `games.skins.carryover` (`400 invalid_carryover`), `Round.skinsCarryover`, setup toggle "Carry pushed holes over", detail row, scoring wording; domain model and API docs updated; on-device engine bundle regenerated | backend/, ios/, docs/ | done 2026-10-05 | #80 |
 | P4.3 | Scorecard editing: tap a player's score on the round detail scorecard to edit it in `ScoreEditSheet`; Hole, Par, Out, In and Total are not editable; the sheet closes when a show starts | ios/ | done 2026-10-05 | #81 |
-| P4.4a | Live relay API (ADR-0014): WebSocket API Gateway stage `live`, rooms keyed by a 6-character code, messages opaque to the server, shared `x-wad-client` token, 6-hour TTL | infra/, backend/, docs/ | open, waits for the owner's approval in chat (plan 17 add / 1 change / 0 destroy, under $1/month) | #82 |
+| P4.4a | Live relay API (ADR-0014): WebSocket API Gateway stage `live`, rooms keyed by a 6-character code, messages opaque to the server, shared `x-wad-client` token, 6-hour TTL | infra/, backend/, docs/ | done 2026-10-08: merged with the owner's approval (plan 17 add / 1 change / 0 destroy, under $1/month), applied from main, `WAD_LIVE_URL` set in the owner's `Local.xcconfig` | #82 |
 | P4.4b | iOS live client (`ios/Wad/Live/`): "Share live" on the round detail shows a 6-character code (`Round.liveCode`); "Follow a round" on the Rounds tab plays the scoring phone's game events through the same shows and keeps a feed; `EventCenter.relay`/`relayScores` hooks; needs `WAD_LIVE_URL` in `ios/Config/Local.xcconfig`, nothing connects without it; 309 unit tests on main | ios/ | done 2026-10-08 | #83 |
 | P4.5 | Score entry fix (owner, 2026-10-08): shows play only when every player has a score on the hole, in both the before and after snapshot; "Start every hole at par" defaults off; the scoring phone skips its own shows while sharing live (followers still get them) | ios/ | done 2026-10-08 (319 unit tests, 3 UI smoke tests) | #85 |
 
@@ -75,7 +75,7 @@ Last updated: 2026-10-08 (after #85)
 
 ## Open PRs
 
-- #82 Live relay API (infra, backend, docs; ADR-0014). Waits for the owner's approval in chat. Next steps: after the owner approves, merge; the Terraform apply then waits for the owner's approval in the `dev` GitHub Environment; then `terraform -chdir=infra/environments/dev output -raw live_ws_url` goes into `ios/Config/Local.xcconfig` as `WAD_LIVE_URL` (documented in `ios/Config/Local.xcconfig.example` and `infra/README.md`). Caveat: the PR adds an account-level API Gateway CloudWatch logs role (`aws_api_gateway_account`), required for WebSocket access logs; it would overwrite an existing setting if the account had one.
+- none.
 
 ## Decisions made
 
@@ -105,7 +105,6 @@ Last updated: 2026-10-08 (after #85)
 
 ## Questions waiting on @gillzj00
 
-- Approve PR #82 in chat (infra), then the `dev` environment apply.
 - "Start every hole at par" (2026-10-08): #85 defaults it off and keeps the toggle. Say if the option should be removed entirely.
 - The scoring phone while sharing live (2026-10-08): #85 never plays shows on it while sharing. Say if a "Play shows on this phone" switch is wanted instead.
 - Candidate next features offered 2026-10-05, no answer yet: local-only Profile tab (name, handicap index, Venmo handle to prefill setup); scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
@@ -113,7 +112,7 @@ Last updated: 2026-10-08 (after #85)
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
 - M3.2 choices to confirm (implemented and documented in #28): a member writes only their own score, any member writes guests' scores and hole events; `gross: null` clears a score, gross is 1-20; a greenie winner already over par is rejected with 400, a winner with no score yet is accepted and shows as pending; game state is the raw engine output and is never stored; skins state is null until every player has a course handicap.
-- Event animations on every player's phone (asked 2026-09-29): answered by #83, followers get the shows, pending the relay API (#82) being applied.
+- Event animations on every player's phone (asked 2026-09-29): answered by #83 and #82, followers get the shows.
 - Wolf, tie for last place before hole 17 or 18 (asked 2026-09-29): who is the Wolf? Until answered, the app asks the group to pick the Wolf among the tied players and the engine never picks.
 - Which other new games to build, if any (research in docs/research/side-games.md, #37). Recommended order: Nassau, Stableford-style points with Nines, Snake, Wolf, Junk. Each has rule questions listed in the document that must be answered before any implementation.
 - Profile API choices to confirm (#35): `GET /me` with no profile returns 200 with null fields and `complete: false`; `PUT /me` is a partial update; display name cannot be cleared; Venmo handle is 5-30 letters, digits, hyphens or underscores, stored without `@` and not checked against Venmo; profile changes do not alter rounds already joined; only `sub` is taken from the token.
@@ -129,7 +128,7 @@ Last updated: 2026-10-08 (after #85)
 - GitHub Actions refused to start jobs from 2026-09-29 23:45 UTC ("recent account payments have failed or your spending limit needs to be increased"). No PR can be merged until CI runs; @gillzj00 was notified. W1 (#49) was verified locally instead: 580 backend tests, lint, typecheck, build, and the iOS unit tests with the new bundle.
 - With "Start every hole at par" on (the default from 2026-09-29 until #85), a new round reads 18 of 18 and its settlement is Final from the start; results count pars on unplayed holes. The toggle can be switched off per round. The default is off since #85.
 - Score entry (reported by the owner 2026-10-08, fixed in #85): with the par default on, every hole is complete from the start, so entering scores one player at a time with + and - played the skin show after every step that changed who had the lowest net.
-- Live relay end-to-end on two devices is untested until #82 is applied; the message contract is in `docs/api.md` ("Live relay (dev, interim)") and `docs/adr/0014-live-relay-before-auth.md`.
+- Live relay (#82, deployed 2026-10-08): a shell smoke test with two WebSocket clients passed (subscribe, publish fans out to the other member with `delivered: 1`, pong, `invalid_message` on a bad room code, connection refused without the token). The two-simulator test through the app is blocked until the owner grants Claude access to the simulators in the desktop app ("Let Claude use it"); the app is built, installed and running on two simulators. The message contract is in `docs/api.md` ("Live relay (dev, interim)") and `docs/adr/0014-live-relay-before-auth.md`.
 - Worktrees for merged PRs were removed on 2026-10-08; `.claude/worktrees/` keeps only the ones for open PRs.
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
@@ -140,7 +139,7 @@ Last updated: 2026-10-08 (after #85)
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
 - Theme (#66): nav bar title attributes stay on the UIKit proxy (a custom UINavigationBarAppearance hid the large title on iOS 26), so on iOS 18 the light-mode nav bar background is the system material rather than charcoal; light-mode alerts remain system dialogs; the chain overlay on the scoring bars overlaps the list edge by about 4pt. Checked at accessibility-extra-large Dynamic Type on the settlement screen; iOS 17 untested.
 - Course lookup (#64): on iOS 17 a denied location permission shows as "could not be found" after the 15 s timeout (the denial flags on CLLocationUpdate are iOS 18+). The provider's daily quota is about 35 requests; the app caches searches and courses for 7 days and serves stale copies when the API fails. The round does not store the course or tee ids; the draft only notes the selection.
-- Animations (#68) play on the scoring phone, and since #83 also on phones following the round live once the relay API (#82) is deployed. The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
+- Animations (#68) play on the scoring phone, and since #83 also on phones following the round live (#82 deployed 2026-10-08). The owner judged the subjects still crude on 2026-10-01; T2b is the art pass. The ceiling for code-drawn art is a flat cel-shaded cartoon; anything beyond needs authored vector or Rive/Lottie assets, which would change the art-in-code rule.
 - The W2 subagent force-pushed (with lease) its own PR branch after a rebase on 2026-10-01; main was untouched, but the owner's rule is no force-push anywhere. Briefs now say: merge main, never rebase a pushed branch.
 - Animation shows (#68, #71) stay in the app as merged but are frozen: the owner rejected their look on 2026-10-02 and will choose a different route. Art pass (#71) leftovers (now moot): the wolf's lower fangs are hidden at the open-jaw hold frame (the jaw sprite sits behind the head); the eagle's hold frame catches the near wing partly off screen; the eagle coverts still read a little paddle-like on the up-flap. Small choreography tweaks, or moot once generated art lands.
 - CI ui-tests flaked once on #64 (round delete test timed out on the suite's cold first launch, 10 s); a rerun passed.
