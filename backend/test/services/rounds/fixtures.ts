@@ -52,6 +52,7 @@ interface Command {
 interface TransactItem {
   Put?: { Item: Item; ConditionExpression?: string };
   Update?: { Key: Item; UpdateExpression: string; ConditionExpression: string; ExpressionAttributeValues: Record<string, number> };
+  Delete?: { Key: Item; ConditionExpression?: string };
 }
 
 export function transactionCancelled(codes: string[]): Error {
@@ -74,11 +75,15 @@ export function fakeDb(seed: Item[] = []) {
   const failures: Error[] = [];
 
   function transact(actions: TransactItem[]) {
-    const codes = actions.map(({ Put, Update }) => {
+    const codes = actions.map(({ Put, Update, Delete }) => {
       if (Put) {
         if (Put.ConditionExpression === undefined) return "None";
         if (Put.ConditionExpression !== "attribute_not_exists(PK)") throw new Error(`fake db: unsupported condition ${Put.ConditionExpression}`);
         return items.has(keyOf(Put.Item)) ? "ConditionalCheckFailed" : "None";
+      }
+      if (Delete) {
+        if (Delete.ConditionExpression !== undefined) throw new Error("fake db: unsupported delete condition");
+        return "None";
       }
       if (!Update) throw new Error("fake db: unsupported transaction item");
       if (
@@ -92,8 +97,9 @@ export function fakeDb(seed: Item[] = []) {
       return existing && (existing.playerCount as number) < max ? "None" : "ConditionalCheckFailed";
     });
     if (codes.some((c) => c !== "None")) throw transactionCancelled(codes);
-    for (const { Put, Update } of actions) {
+    for (const { Put, Update, Delete } of actions) {
       if (Put) items.set(keyOf(Put.Item), Put.Item);
+      if (Delete) items.delete(keyOf(Delete.Key));
       if (Update) {
         const existing = items.get(keyOf(Update.Key))!;
         items.set(keyOf(Update.Key), {
@@ -130,8 +136,20 @@ export function fakeDb(seed: Item[] = []) {
           return {};
         }
         case "DeleteCommand": {
-          if (cmd.input.ConditionExpression !== undefined) throw new Error("fake db: unsupported delete condition");
-          items.delete(keyOf(cmd.input.Key as Item));
+          const key = cmd.input.Key as Item;
+          const condition = cmd.input.ConditionExpression as string | undefined;
+          if (condition !== undefined) {
+            // Only "<attribute> = :value" (the attribute may be a #name): the item must exist with that value.
+            const match = /^(#?\w+) = (:\w+)$/.exec(condition);
+            if (!match) throw new Error(`fake db: unsupported delete condition ${condition}`);
+            const names = (cmd.input.ExpressionAttributeNames ?? {}) as Record<string, string>;
+            const attribute = match[1]!.startsWith("#") ? names[match[1]!] : match[1]!;
+            const existing = items.get(keyOf(key));
+            if (!existing || attribute === undefined || existing[attribute] !== (cmd.input.ExpressionAttributeValues as Item)[match[2]!]) {
+              throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
+            }
+          }
+          items.delete(keyOf(key));
           return {};
         }
         case "UpdateCommand": {

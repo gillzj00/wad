@@ -1,35 +1,28 @@
 // Routes: GET /v1/courses?q=<search>, GET /v1/courses/{courseId},
 // POST /v1/courses, POST /v1/courses/{courseId}/corrections
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
-import { timingSafeEqual } from "node:crypto";
 import { DynamoCourseCache } from "../services/courses/cache.js";
 import { CourseNotFoundError, CourseService, QueryTooShortError } from "../services/courses/courseService.js";
 import { GolfCourseApiProvider } from "../services/courses/golfCourseApi.js";
 import { ProviderError } from "../services/courses/provider.js";
 import { validateCorrection, validateManualCourse, ValidationError } from "../services/courses/validation.js";
+import { CLIENT_TOKEN_HEADER, clientTokenMatches } from "../shared/clientToken.js";
 import { error, json } from "../shared/http.js";
+import { requireEnv, ssmValue } from "../shared/ssm.js";
 
-/**
- * Interim quota guard (ADR-0013): the API is deployed before auth exists, so
- * every request must carry the shared client token in this header. This is
- * not authentication; it goes away when the Cognito authorizer lands (M1.1).
- */
-export const CLIENT_TOKEN_HEADER = "x-wad-client";
+export { CLIENT_TOKEN_HEADER };
 
 class UnauthorizedError extends Error {}
 class InvalidClientTokenError extends Error {}
 class InvalidBodyError extends Error {}
 
+/** Interim quota guard (ADR-0013): every request must carry the shared client token. */
 function requireClientToken(event: APIGatewayProxyEventV2, expected: string): void {
   // API Gateway v2 lowercases header names.
-  const given = event.headers?.[CLIENT_TOKEN_HEADER];
-  if (typeof given !== "string" || given.length === 0) throw new InvalidClientTokenError();
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) throw new InvalidClientTokenError();
+  if (!clientTokenMatches(event.headers?.[CLIENT_TOKEN_HEADER], expected)) throw new InvalidClientTokenError();
 }
 
 /** The caller's user id: the `sub` claim set by the API Gateway JWT authorizer. */
@@ -92,31 +85,6 @@ export function createHandler(service: CourseService, clientToken: () => Promise
       throw err;
     }
   };
-}
-
-/** Reads a SecureString once per container; a failed read is retried on the next call. */
-function ssmValue(ssm: SSMClient, name: string): () => Promise<string> {
-  let value: Promise<string> | undefined;
-  return () => {
-    value ??= ssm
-      .send(new GetParameterCommand({ Name: name, WithDecryption: true }))
-      .then((res) => {
-        const v = res.Parameter?.Value;
-        if (!v) throw new Error(`SSM parameter ${name} is empty`);
-        return v;
-      })
-      .catch((err: unknown) => {
-        value = undefined;
-        throw err;
-      });
-    return value;
-  };
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`missing environment variable ${name}`);
-  return value;
 }
 
 let handlerInstance: ReturnType<typeof createHandler> | undefined;

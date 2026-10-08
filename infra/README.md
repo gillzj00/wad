@@ -69,6 +69,12 @@ CI does the same before `plan` and `apply`, which is why the Terraform workflow 
 
 The provider key at `/wad/dev/golfcourseapi/key` is created out of band (see `docs/course-data.md`); Terraform only grants the function permission to read it, so it must exist before the first request.
 
+## Live relay (dev)
+
+`environments/dev/live_api.tf` deploys the WebSocket relay of [ADR-0014](../docs/adr/0014-live-relay-before-auth.md) behind the same client token. Its URL is the `live_ws_url` output (`terraform -chdir=infra/environments/dev output -raw live_ws_url`, a `wss://` URL); the iOS app reads it as `WAD_LIVE_URL` from the same git-ignored `ios/Config/Local.xcconfig` as the token, and sends the token in the `x-wad-client` header when it connects. The contract is in `docs/api.md`, WebSocket API.
+
+Unlike an HTTP API, a WebSocket stage writes its access logs through API Gateway's account-level CloudWatch role, so this file also creates that role and sets it with `aws_api_gateway_account` (one per region; reuse it for any later API that needs it).
+
 ## Environments
 
 `dev` first. Add `prod` later by copying `environments/dev` to `environments/prod` with its own `backend.tf` state key and variables.

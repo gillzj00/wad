@@ -20,7 +20,9 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Game state | `ROUND#<roundId>` | `STATE#<gameType>#<segment>` | Reserved. Game state is computed by the engines on every read; nothing writes this item. |
 | Settlement | `ROUND#<roundId>` | `SETTLEMENT` | Reserved. Positions and transfers are derived by the engines on every read; nothing writes this item. |
 | Transfer paid | `ROUND#<roundId>` | `SETTLEMENT#PAID#<transferId>` | Marks one derived transfer as paid. Holds `transferId`, `from`, `to`, `amountCents`, `paidAt`, `paidBy`. |
-| WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. |
+| WS connection | `ROUND#<roundId>` | `CONN#<connectionId>` | Live WebSocket connections for fan-out. Has `ttl`. Reserved for the target round sync; nothing writes it yet. |
+| Live room member | `LIVE#<roundCode>` | `CONN#<connectionId>` | Interim relay ([ADR-0014](adr/0014-live-relay-before-auth.md)): a connection subscribed to the room named by the code the phone chose. Has `ttl` (6 hours, renewed on subscribe); also checked on read. |
+| Live connection | `CONN#<connectionId>` | `LIVE` | The room (`roundCode`) a relay connection is in, so `$disconnect` and `publish` find it without a scan. Same `ttl` as its member item. |
 | Join code | `JOINCODE#<code>` | `ROUND` | Maps a short code to a `roundId`. Has `ttl` (48 hours after the round is created); also checked on read. |
 
 User profile item:
@@ -66,6 +68,8 @@ Both items also carry `updatedAt` (ISO timestamp) and `updatedBy` (the caller's 
 | 7 | Fan out to live connections for a round | `PK=ROUND#id, SK begins_with CONN#` |
 | 8 | List a course's corrections, oldest first (review; not exposed by the API yet) | `PK=COURSE#id, SK begins_with CORRECTION#` |
 | 9 | List a round's paid transfers | `PK=ROUND#id, SK begins_with SETTLEMENT#PAID#` |
+| 10 | Fan out to a live room (interim relay) | `PK=LIVE#code, SK begins_with CONN#`, then post to each connection but the sender |
+| 11 | Find the room of a live connection | `PK=CONN#id, SK=LIVE` |
 
 ### GSI1 (user history)
 Round items and round-player items carry:
@@ -84,7 +88,8 @@ so a user's rounds list newest-first without a scan. `startEpoch` is when the ro
 - **Paid markers are tied to the transfer they were made for.** Transfers are not stored. `transferId` is a digest of the round id, payer, payee and amount, and the marker stores those values too; a marker counts only for a current transfer with the same id, payer, payee and amount. After a score correction or a handicap override a changed transfer has a new id, so an old marker matches nothing and is reported as a stale payment instead of marking another transfer paid. The marker is written with `attribute_not_exists(PK)`, so marking twice keeps the first; unmarking is a delete.
 - **Money is integer cents** everywhere it is stored.
 - **Round writes are conditional transactions.** Creating a round writes the join code, the round and the creator's player item together, each with `attribute_not_exists(PK)`; a join code collision cancels the write and it is retried with a new code. Adding a player increments `playerCount` on the round with the condition `playerCount < 4` and puts the player item with `attribute_not_exists(PK)`, so concurrent joins cannot exceed four players or add someone twice.
-- **TTL** auto-expires `CONN#` items (short, e.g. a few hours) and `JOINCODE#` items (48 hours after the round is created).
+- **A live subscribe is a transaction.** The room member item and the connection's reverse item are written together, with the delete of the previous room's member item when the connection moves, so a connection is never in a room its reverse item does not name. Removing a connection (on `$disconnect`, or when a message finds it gone) deletes the member item, and the reverse item only while it still names that room.
+- **TTL** auto-expires `CONN#` items (short, e.g. a few hours), the relay's `LIVE#` and `CONN#...LIVE` items (6 hours after the last subscribe) and `JOINCODE#` items (48 hours after the round is created).
 
 ## Notes for implementers
 

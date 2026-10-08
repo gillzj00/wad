@@ -188,6 +188,23 @@ The `Round` type in `backend/src/shared/rounds.ts`. A hole with a Wolf record al
 
 ## WebSocket API
 
+### Live relay (dev, interim)
+
+Deployed before auth and the rounds API exist ([ADR-0014](adr/0014-live-relay-before-auth.md)): phones in the same room receive each other's messages, and the server does not read them. The target contract below replaces it when auth (M1) and round sync (M3.3) land.
+
+- URL: the `live_ws_url` Terraform output of `infra/environments/dev` (a `wss://` URL). JSON text frames.
+- `$connect` must carry `x-wad-client: <token>`, the same shared token as the courses API (`infra/README.md` says how to fetch it); otherwise API Gateway refuses the connection with a 401. Connecting subscribes to nothing.
+- Client -> server actions (`action` selects what happens; every reply goes to the sender only):
+  - `{ "action": "subscribe", "roundCode": "ABC123" }`: joins the room. `roundCode` must match `^[A-Z0-9]{6}$`. A connection is in one room at a time: subscribing again moves it, or renews the subscription when it is the same room. Reply `{ "event": "subscribed", "roundCode": "ABC123", "members": 2 }`, the connections in the room, this one included.
+  - `{ "action": "publish", "roundCode": "ABC123", "message": { ... } }`: sends `message`, a JSON object, to every other connection in the room; the sender must be subscribed to that room. Reply `{ "event": "published", "roundCode": "ABC123", "delivered": 1 }`, the number of other connections the message reached. A connection that is gone is dropped from the room and not counted.
+  - `{ "action": "ping" }`: reply `{ "event": "pong" }`. The app sends one every 30 seconds to keep the connection warm; API Gateway drops an idle connection after 10 minutes and any connection after 2 hours, and a subscription expires 6 hours after the last subscribe.
+- Server -> client: `{ "event": "message", "roundCode": "ABC123", "message": { ... }, "sentAt": "2026-10-05T15:00:00.000Z" }` to the other members of the room, with the message as published.
+- Errors are replies to the sender, `{ "event": "error", "code": "..." }`: `invalid_message` (a frame over 4096 bytes, not JSON or not a JSON object; a bad `roundCode`; a `message` that is not a JSON object), `not_subscribed` (a publish to a room the connection is not in) or `unknown_action` (no `action`, or one other than the three). A publish is checked in that order: the room code, then the subscription, then the message.
+- Limits: frames of at most 4096 bytes; the stage is throttled to a burst of 20 and 10 frames per second across all clients.
+- The payload is opaque to the server. The app sends `{ "type": "gameEvent", "kind": "birdie", "hole": 4, "playerIDs": ["p1"], "playerNames": ["Zach"], "otherNames": ["Sam", "Alex"], "amountCents": null }` and `{ "type": "score", "playerID": "p1", "playerName": "Zach", "hole": 4, "par": 4, "gross": 3 }`; those shapes are the app's and change without a server change.
+
+### Target contract
+
 Used only while a round is live. Auth via token on `$connect` (query string or subprotocol). The server tracks the connection against the round for fan-out.
 
 Client -> server actions:
