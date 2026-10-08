@@ -20,11 +20,6 @@ final class Round {
     var skinsBaseCents: Int
     var greeniesAmountCents: Int
 
-    /// The round was created with par saved for every player on every hole,
-    /// to be changed as the round is played. Rounds from before this setting
-    /// exists read false.
-    var startsEveryHoleAtPar: Bool = false
-
     /// A pushed skins hole adds its value to the next hole. Off, a push pays
     /// nothing and the next hole is worth the base again. Rounds from before
     /// this setting exists read true, the only way skins was played.
@@ -65,7 +60,6 @@ final class Round {
         courseRating: Double? = nil,
         slope: Int? = nil,
         settings: GameSettings = .defaults,
-        startsEveryHoleAtPar: Bool = false,
         skinsCarryover: Bool = true
     ) {
         self.id = id
@@ -77,7 +71,6 @@ final class Round {
         self.wadStepCents = settings.wadStepCents
         self.skinsBaseCents = settings.skinsBaseCents
         self.greeniesAmountCents = settings.greeniesAmountCents
-        self.startsEveryHoleAtPar = startsEveryHoleAtPar
         self.skinsCarryover = skinsCarryover
     }
 

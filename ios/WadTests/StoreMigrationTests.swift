@@ -5,7 +5,8 @@ import Testing
 
 /// The models as they were before Venmo handles and paid markers were added
 /// (commit 601ef1d): no `RoundPlayer.venmoHandle`, no `PaidMarker`, and no
-/// `Round.startsEveryHoleAtPar` or `Round.skinsCarryover`, which came later.
+/// `Round.skinsCarryover`, which came later. (`Round.startsEveryHoleAtPar`
+/// came later too and has since been removed.)
 /// The entity names are the class names, so a store written with these is a
 /// store of the previous version of the app.
 enum PreviousSchema {
@@ -172,7 +173,6 @@ struct StoreMigrationTests {
         // What is new starts empty.
         #expect(round.orderedPlayers.map(\.venmoHandle) == [nil, nil, nil])
         #expect(round.paidMarkers.isEmpty)
-        #expect(round.startsEveryHoleAtPar == false)
         #expect(round.liveCode == nil)
         // Skins always carried over before the setting existed.
         #expect(round.skinsCarryover == true)

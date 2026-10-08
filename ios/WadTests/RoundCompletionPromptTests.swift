@@ -15,8 +15,8 @@ struct RoundCompletionPromptTests {
         #expect(RoundCompletionPrompt.shows(wasComplete: false, isComplete: true, changedHole: hole, lastHole: lastHole, wasDismissed: false))
     }
 
-    /// A round that started every hole at par is complete from the start: a
-    /// change on its last hole is what pops the summary up.
+    /// A round that is already fully scored: a change on its last hole is what
+    /// pops the summary up.
     @Test func onTheLastHoleOfARoundAlreadyComplete() {
         #expect(RoundCompletionPrompt.shows(wasComplete: true, isComplete: true, changedHole: 18, lastHole: lastHole, wasDismissed: false))
     }

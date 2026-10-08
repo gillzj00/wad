@@ -10,7 +10,6 @@ enum RoundFixtures {
     /// directly. Its holes start unscored, like every draft built on it.
     static func unratedDraft() -> RoundDraft {
         var draft = RoundDraft()
-        draft.startsEveryHoleAtPar = false
         draft.courseName = "Pebble Beach"
         draft.holes = (0..<18).map {
             RoundDraft.Hole(number: $0 + 1, par: pars[$0], strokeIndexText: String(strokeIndexes[$0]))
@@ -48,6 +47,15 @@ enum RoundFixtures {
             RoundDraft.Hole(number: $0, par: $0 == 3 ? 3 : 4, strokeIndexText: String($0))
         }
         return draft
+    }
+
+    /// Saves par for every player on every hole, so the round is complete.
+    static func scoreEveryHoleAtPar(_ round: Round) {
+        for hole in round.orderedHoles {
+            for player in round.orderedPlayers {
+                round.setGross(hole.par, playerID: player.playerID, hole: hole.number)
+            }
+        }
     }
 
     /// A valid draft on a rated tee (72.5 / 131) with four players, one overridden.
