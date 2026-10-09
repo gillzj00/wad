@@ -66,3 +66,17 @@ final class ProfileStore {
         return defaults
     }
 }
+
+extension RoundDraft {
+    /// The draft with its first player filled in from the profile: name,
+    /// handicap index and Venmo handle, as text, for setup to validate. The
+    /// other players stay as they are, and an empty profile changes nothing.
+    func prefilled(from profile: Profile) -> RoundDraft {
+        guard !profile.isEmpty, !players.isEmpty else { return self }
+        var draft = self
+        draft.players[0].name = profile.trimmedName
+        draft.players[0].handicapIndexText = profile.trimmedHandicapIndexText
+        draft.players[0].venmoHandleText = profile.trimmedVenmoHandleText
+        return draft
+    }
+}
