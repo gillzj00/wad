@@ -32,6 +32,7 @@
 		29204EA415C5CD44DC62CD94 /* LiveMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8DD489A3A59FEF6208672D7 /* LiveMessage.swift */; };
 		2936E08BE7E39E787F316453 /* EventSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC8A2E4B0AF4401F2AD68F1 /* EventSettingsView.swift */; };
 		2F481E59DD52C65C3D697417 /* RoundFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528D789C9D8A692704AC67C2 /* RoundFixtures.swift */; };
+		30A26957C19DBF7B5C356C26 /* ProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A0EF97088BF9FA1461F5AE /* ProfileTests.swift */; };
 		314CB8175E781693A5D7C600 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3F794D411FEEBEB887070E /* Appearance.swift */; };
 		31B8EF9220CBFD3C5BCC859C /* SkullIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A176DD7223A1EABDC3795 /* SkullIllustration.swift */; };
 		33FF65F03254A03D1E9BBB05 /* Art+Creatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = F467142E42E3D1B341A8A89D /* Art+Creatures.swift */; };
@@ -100,6 +101,7 @@
 		BFA47CE91ED96D733258E701 /* EventHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79DAB84E45AFB9828998E49B /* EventHaptics.swift */; };
 		C216948CF792106665C99575 /* RoundDeleteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C05F0716A72349D2C6C4F7 /* RoundDeleteUITests.swift */; };
 		C4D300A6BF1D3ACAB300E4AB /* EventOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2DEA8C7507569731AD52B6 /* EventOverlay.swift */; };
+		C56B32C1A130EF2F6F5E78C2 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C6C67ED1341826EADCF4898 /* Profile.swift */; };
 		C6B6B43414FDA2AD41E68E02 /* ScoreNotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE51D46F5765B9E0E4177512 /* ScoreNotation.swift */; };
 		C900DF2D1DE8BB6960B83BB8 /* PaymentLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8AD507E0F991DF23F594D7 /* PaymentLedger.swift */; };
 		CB4FB12ED4D76A456F16E96C /* LiveMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4EA82DAD04D9DF920BD953 /* LiveMessageTests.swift */; };
@@ -155,8 +157,10 @@
 		0B1F0EC82C58BCF0C525EA3F /* WolfHoleModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfHoleModel.swift; sourceTree = "<group>"; };
 		0B3A134F3E4F6A7DFCD5F810 /* Contrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Contrast.swift; sourceTree = "<group>"; };
 		118E85773F6E4DCD2DE72521 /* CourseLookupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseLookupViews.swift; sourceTree = "<group>"; };
+		11A0EF97088BF9FA1461F5AE /* ProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileTests.swift; sourceTree = "<group>"; };
 		16D1CADB905FA895CA6F0ADF /* CoursesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoursesTests.swift; sourceTree = "<group>"; };
 		18C993117C88B2D9392DEDC0 /* EventSynth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSynth.swift; sourceTree = "<group>"; };
+		1C6C67ED1341826EADCF4898 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
 		20D6263288B8B3A683232856 /* VenmoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenmoTests.swift; sourceTree = "<group>"; };
 		21CC23CCB832C0C9647F9D15 /* SetupTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupTextTests.swift; sourceTree = "<group>"; };
 		22F240D58851243780EA3592 /* Anim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Anim.swift; sourceTree = "<group>"; };
@@ -341,6 +345,7 @@
 				9974695DCCEA5F11652F6BC1 /* Live */,
 				3866AB93AA367ABC41B8F343 /* Models */,
 				D87C89764F316568ABBE4899 /* Payments */,
+				9D469211CA6065899237620F /* Profile */,
 				E3A88C04363A4775D035ED52 /* Resources */,
 				2ADB78951CCFF2FF82D55B9A /* Rounds */,
 				03C5DD7883141D5C3F36CE29 /* Scoring */,
@@ -380,6 +385,7 @@
 				75E9F73EB3FB5F9B2B95EFEE /* LiveSessionTests.swift */,
 				475E17658506CC1C45DC229B /* PaletteContrastTests.swift */,
 				C5FB6ED545DD1295664F678A /* PaymentTests.swift */,
+				11A0EF97088BF9FA1461F5AE /* ProfileTests.swift */,
 				F90F82CA49E2B024F36931B0 /* RoundCompletionPromptTests.swift */,
 				BAE26489214D11F38B99B353 /* RoundDraftTests.swift */,
 				78A03D4C8291CC654846B808 /* RoundEngineMappingTests.swift */,
@@ -482,6 +488,14 @@
 				85635FE2DD965274992B6C63 /* LiveViews.swift */,
 			);
 			path = Live;
+			sourceTree = "<group>";
+		};
+		9D469211CA6065899237620F /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				1C6C67ED1341826EADCF4898 /* Profile.swift */,
+			);
+			path = Profile;
 			sourceTree = "<group>";
 		};
 		ACC2A4F0B688A939E6EE3FDC /* Settlement */ = {
@@ -704,6 +718,7 @@
 				D9DD69D1BE064487F10E88B8 /* LiveSessionTests.swift in Sources */,
 				437C412F663A653B6D58BD11 /* PaletteContrastTests.swift in Sources */,
 				F9CFF8FB188C1EF97D90BA8E /* PaymentTests.swift in Sources */,
+				30A26957C19DBF7B5C356C26 /* ProfileTests.swift in Sources */,
 				25637B1BB303F10A88289547 /* RoundCompletionPromptTests.swift in Sources */,
 				62128B2E3BAE0757C69DC9CA /* RoundDraftTests.swift in Sources */,
 				97B5C12FF701DE50A2B33FED /* RoundEngineMappingTests.swift in Sources */,
@@ -775,6 +790,7 @@
 				5190BB98939D0884E93F8DFF /* PaymentSheet.swift in Sources */,
 				41BC16092F0EF4F55B9EBE34 /* PaymentStatus.swift in Sources */,
 				3FB43802011FCC28A6DB1DEF /* PaymentText.swift in Sources */,
+				C56B32C1A130EF2F6F5E78C2 /* Profile.swift in Sources */,
 				57C2188B51FC32580E11CA65 /* RootView.swift in Sources */,
 				683D5AE172A5EABB174F2B2F /* Round+Engine.swift in Sources */,
 				D8480444BEFCDA525B807361 /* Round+Wolf.swift in Sources */,
