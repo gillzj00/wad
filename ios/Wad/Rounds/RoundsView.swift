@@ -15,6 +15,7 @@ enum RoundsRoute: Hashable {
 struct RoundsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation: AppNavigation?
+    @Environment(ProfileStore.self) private var profile: ProfileStore?
     @Query(sort: \Round.startedAt, order: .reverse) private var rounds: [Round]
 
     @State private var path: [RoundsRoute] = []
@@ -41,7 +42,7 @@ struct RoundsView: View {
                         title: "No rounds yet",
                         message: "Set up a course, the players and the games to start one."
                     ) {
-                        Button("New round") { setup = SetupPresentation() }
+                        Button("New round", action: newRound)
                             .buttonStyle(.primary)
                         Button("Follow a round") { showsFollow = true }
                             .buttonStyle(.secondary)
@@ -87,7 +88,7 @@ struct RoundsView: View {
                         .accessibilityIdentifier("live.follow")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("New round", systemImage: "plus") { setup = SetupPresentation() }
+                    Button("New round", systemImage: "plus", action: newRound)
                 }
             }
             .sheet(isPresented: $showsSettings) {
@@ -133,6 +134,11 @@ struct RoundsView: View {
             .task { applyDebugLaunchArguments() }
             #endif
         }
+    }
+
+    /// The setup flow on a new draft, its first player filled in from the profile.
+    private func newRound() {
+        setup = SetupPresentation(draft: RoundDraft().prefilled(from: profile?.profile ?? Profile()))
     }
 
     private func delete(_ round: Round) {

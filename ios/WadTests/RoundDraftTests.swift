@@ -175,6 +175,37 @@ struct RoundDraftTests {
         #expect(try unrated.courseHandicap(for: unrated.players[0], using: bridge) == 15)
     }
 
+    // MARK: Profile
+
+    @Test func profileFillsInTheFirstPlayerOnly() {
+        let draft = RoundDraft().prefilled(from: Profile(name: " Zach ", handicapIndexText: "15.4", venmoHandleText: "zach-gill"))
+        #expect(draft.players.count == 2)
+        #expect(draft.players[0].name == "Zach")
+        #expect(draft.players[0].handicapIndexText == "15.4")
+        #expect(draft.players[0].venmoHandleText == "zach-gill")
+        #expect(draft.players[0].courseHandicapText.isEmpty)
+        #expect(draft.players[0].overridesCourseHandicap == false)
+        #expect(draft.players[1].name.isEmpty)
+        #expect(draft.players[1].handicapIndexText.isEmpty)
+        #expect(draft.players[1].venmoHandleText.isEmpty)
+    }
+
+    @Test func emptyProfileLeavesTheDraftUntouched() {
+        let draft = RoundFixtures.ratedDraft()
+        #expect(draft.prefilled(from: Profile()) == draft)
+        #expect(draft.prefilled(from: Profile(name: "  ", venmoHandleText: " ")) == draft)
+        let blank = RoundDraft()
+        #expect(blank.prefilled(from: Profile()) == blank)
+    }
+
+    @Test func profileTextIsCopiedVerbatim() {
+        let draft = RoundDraft().prefilled(from: Profile(name: "Zach", handicapIndexText: "+1.2", venmoHandleText: "@zach_g"))
+        #expect(draft.players[0].handicapIndexText == "+1.2")
+        #expect(draft.players[0].venmoHandleText == "@zach_g")
+        #expect(SetupText.handicapIndex(draft.players[0].handicapIndexText) == -1.2)
+        #expect(VenmoHandle.normalized(draft.players[0].venmoHandleText) == "zach_g")
+    }
+
     // MARK: Games
 
     @Test func gameAmountsDefaultToTheDomainModel() {
