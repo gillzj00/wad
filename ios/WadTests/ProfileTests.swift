@@ -42,4 +42,16 @@ struct ProfileTests {
         #expect(!Profile(venmoHandleText: "zach_g").isEmpty)
         #expect(Profile(name: " Zach ").trimmedName == "Zach")
     }
+
+    @Test func advisesOnAHandicapIndexOrVenmoHandleThatDoesNotParse() {
+        #expect(ProfileView.advisories(for: Profile()).isEmpty)
+        #expect(ProfileView.advisories(for: Profile(handicapIndexText: "+1.2", venmoHandleText: "@zach_g")).isEmpty)
+        #expect(ProfileView.advisories(for: Profile(handicapIndexText: "15.4")).isEmpty)
+        #expect(ProfileView.advisories(for: Profile(handicapIndexText: "60")) == [ProfileView.handicapIndexAdvice])
+        #expect(ProfileView.advisories(for: Profile(venmoHandleText: "zg")) == [VenmoHandle.rule])
+        #expect(
+            ProfileView.advisories(for: Profile(handicapIndexText: "abc", venmoHandleText: "no spaces"))
+                == [ProfileView.handicapIndexAdvice, VenmoHandle.rule]
+        )
+    }
 }
