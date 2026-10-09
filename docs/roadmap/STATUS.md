@@ -2,7 +2,7 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-08 (after #89)
+Last updated: 2026-10-08 (after #91)
 
 ## Current phase
 
@@ -67,6 +67,7 @@ Last updated: 2026-10-08 (after #89)
 | P4.4b | iOS live client (`ios/Wad/Live/`): "Share live" on the round detail shows a 6-character code (`Round.liveCode`); "Follow a round" on the Rounds tab plays the scoring phone's game events through the same shows and keeps a feed; `EventCenter.relay`/`relayScores` hooks; needs `WAD_LIVE_URL` in `ios/Config/Local.xcconfig`, nothing connects without it; 309 unit tests on main | ios/ | done 2026-10-08 | #83 |
 | P4.5 | Score entry fix (owner, 2026-10-08): shows play only when every player has a score on the hole, in both the before and after snapshot; "Start every hole at par" defaults off; the scoring phone skips its own shows while sharing live (followers still get them) | ios/ | done 2026-10-08 (319 unit tests, 3 UI smoke tests) | #85 |
 | P4.6 | Remove the "Start every hole at par" option (owner decision 2026-10-08): toggle, draft property, par fill and the `Round` attribute are gone (lightweight migration drops it); a complete round opens on its last hole | ios/ | done 2026-10-08 (316 unit tests, 3 UI smoke tests) | #89 |
+| P4.7 | Local Profile tab (M1.4 without sign-in, owner pick 2026-10-08): name, handicap index and Venmo handle kept in UserDefaults (`ProfileStore`), advisory validation, a "Shows" link to the animation settings; "New round" and "Start a round here" prefill player 1 from it; `-inMemoryStore` clears it for the UI tests | ios/, docs/ | done 2026-10-08 (323 unit tests, 3 UI smoke tests) | #91 |
 
 ## Tasks in flight
 
@@ -107,7 +108,7 @@ Last updated: 2026-10-08 (after #89)
 ## Questions waiting on @gillzj00
 
 - Owner decisions 2026-10-08: no "Play shows on this phone" switch (the scoring phone never plays shows while sharing, as in #85); "Start every hole at par" removed entirely (#89).
-- Candidate next features offered 2026-10-05, no answer yet: local-only Profile tab (name, handicap index, Venmo handle to prefill setup); scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
+- Candidate next features offered 2026-10-05 (the Profile tab was picked and shipped in #91): scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
 - Default tee for course lookup (#64): the first usable men's tee in the API's order. Say if a specific tee by name is wanted instead.
 
 - The per-round handicap override route was already in docs/api.md, so it was queued without a decision (M3.1b).
@@ -133,7 +134,7 @@ Last updated: 2026-10-08 (after #89)
 - The phone runs iOS 26.6.2 (answered 2026-09-29), the same major version as local verification. iOS 17 remains untested.
 - Device install needs the phone near the Mac (USB, or unlocked on the same Wi-Fi). Personal Team builds expire after 7 days. `ios/scripts/install-device.sh` now reports this clearly (#41).
 - Simulator access cannot be granted over Remote Control, so screens are verified by the XCUITest walkthrough (setup and scoring since #20) rather than by manual tapping. Optional manual pass when @gillzj00 is back at the Mac.
-- Demo verification: 316 unit tests and 3 UI smoke tests on main as of #89. Earlier: 83 unit tests and 6 UI tests as of #39, then 83 unit tests and 3 UI tests (full 18-hole round to settlement, seeded round with an unresolved carryover) on iOS 26 locally and iOS 18 in CI. A device-architecture build of main compiled unsigned; the app has been installed on the phone since 2026-09-30.
+- Demo verification: 323 unit tests and 3 UI smoke tests on main as of #91. Earlier: 83 unit tests and 6 UI tests as of #39, then 83 unit tests and 3 UI tests (full 18-hole round to settlement, seeded round with an unresolved carryover) on iOS 26 locally and iOS 18 in CI. A device-architecture build of main compiled unsigned; the app has been installed on the phone since 2026-09-30.
 - Hole events are last-writer-wins per field: two devices recording different Wad makers on the same hole at the same moment can lose one maker. Conditional writes were not called for by the docs; revisit with WebSocket sync (M3.3).
 - Venmo: the deep link format is undocumented by Venmo; verified on the owner's phone on 2026-09-30 (Venmo opened with the payment filled in). The app still falls back to the web link or marking paid by hand.
 - The update keeps saved rounds: a store written by the previous build opens with the new models (#41, unit test plus a manual check on the simulator).
