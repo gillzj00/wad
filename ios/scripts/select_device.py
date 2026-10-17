@@ -15,6 +15,12 @@ Exit status:
 A phone can be reached when its tunnel is "connected" (in use) or
 "disconnected" (reachable, what the device list shows as "available").
 "unavailable" means paired but not reachable now.
+
+Newer devicectl releases put the device record under `properties`
+(`hardware`, `connection` with `state` for the tunnel) and mark the old
+`hardwareProperties` and `connectionProperties` blocks deprecated; they also
+leave `reality` out for a physical phone and keep it only for simulators
+("simulated"). Both shapes are read, and a missing `reality` means physical.
 """
 import json
 import sys
@@ -32,13 +38,30 @@ Connect the phone with a USB cable, unlock it and tap Trust, then run this
 script again."""
 
 
+def hardware_of(device):
+    """The hardware record, with the newer `properties.hardware` keys winning."""
+    hardware = dict(device.get("hardwareProperties", {}))
+    hardware.update(device.get("properties", {}).get("hardware", {}))
+    return hardware
+
+
+def connection_of(device):
+    """The connection record as the old shape: `tunnelState` holds the newer `state`."""
+    connection = dict(device.get("connectionProperties", {}))
+    newer = device.get("properties", {}).get("connection", {})
+    connection.update(newer)
+    if "state" in newer:
+        connection["tunnelState"] = newer["state"]
+    return connection
+
+
 def phones(listing):
     """The physical, paired iPhones of a devicectl listing."""
     found = []
     for device in listing.get("result", {}).get("devices", []):
-        hardware = device.get("hardwareProperties", {})
-        connection = device.get("connectionProperties", {})
-        if hardware.get("reality") != "physical":
+        hardware = hardware_of(device)
+        connection = connection_of(device)
+        if hardware.get("reality", "physical") != "physical":
             continue
         if hardware.get("deviceType") != "iPhone":
             continue
@@ -55,7 +78,7 @@ def select(listing):
     candidates = phones(listing)
     for state in REACHABLE:
         for device in candidates:
-            if device.get("connectionProperties", {}).get("tunnelState") == state:
+            if connection_of(device).get("tunnelState") == state:
                 return "ok", device
     return ("unavailable" if candidates else "none"), None
 
@@ -78,7 +101,7 @@ def main(arguments):
     if status == "none":
         print(NO_PHONE_MESSAGE, file=sys.stderr)
         return 3
-    hardware = device["hardwareProperties"]
+    hardware = hardware_of(device)
     print(hardware["udid"])
     print(hardware.get("marketingName", "iPhone"))
     return 0
