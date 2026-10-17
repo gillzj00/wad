@@ -201,4 +201,54 @@ struct RoundEngineMappingTests {
         #expect(front.valueCents == 900)
         #expect(wad.ignored.isEmpty)
     }
+
+    // MARK: Participation
+
+    /// Scores for every player on holes 1 and 3, a Wad make by Sam and a greenie by Zach.
+    func scoredRound(_ draft: RoundDraft) throws -> Round {
+        let round = try makeRound(draft)
+        let scorer = RoundScorer(round: round)
+        try scorer.setParForUnscored(hole: 1)
+        try scorer.setParForUnscored(hole: 3)
+        try scorer.addWadMaker(playerID: "sam", hole: 1)
+        try scorer.setGreenieWinner("zach", hole: 3)
+        return round
+    }
+
+    @Test func aPlayerOutOfAGameIsLeftOutOfItsInput() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[3].playsGreenies = false
+        draft.players[2].playsSkins = false
+        draft.players[0].playsWad = false
+        let round = try scoredRound(draft)
+
+        #expect(round.greeniesInput.players == ["zach", "sam", "alex"])
+        #expect(round.greeniesInput.scores.count == 6)
+        #expect(!round.greeniesInput.scores.contains { $0.userId == "jo" })
+
+        #expect(round.skinsInput.players.map(\.userId) == ["zach", "sam", "jo"])
+        #expect(round.skinsInput.scores.count == 6)
+        #expect(!round.skinsInput.scores.contains { $0.userId == "alex" })
+
+        #expect(round.wadInput.players == ["sam", "alex", "jo"])
+        #expect(round.wadInput.scores.count == 6)
+        #expect(!round.wadInput.scores.contains { $0.userId == "zach" })
+
+        // The hole events and the rest stay whole.
+        #expect(round.wadInput.holeEvents == round.engineHoleEvents)
+        #expect(round.greeniesInput.holeEvents == round.engineHoleEvents)
+        #expect(round.enginePlayerIDs == ["zach", "sam", "alex", "jo"])
+        #expect(round.engineScores.count == 8)
+    }
+
+    @Test func everyoneInMapsEveryPlayerAndScore() throws {
+        let round = try scoredRound(RoundFixtures.fourPlayerDraft())
+
+        #expect(round.skinsInput.players == round.enginePlayers)
+        #expect(round.wadInput.players == round.enginePlayerIDs)
+        #expect(round.greeniesInput.players == round.enginePlayerIDs)
+        #expect(round.skinsInput.scores == round.engineScores)
+        #expect(round.wadInput.scores == round.engineScores)
+        #expect(round.greeniesInput.scores == round.engineScores)
+    }
 }

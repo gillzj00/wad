@@ -284,4 +284,39 @@ struct RoundStatusTests {
         #expect(!scorecard.isEditable(playerID: "zach", hole: 19))
         #expect(!scorecard.isEditable(playerID: "jo", hole: 1))
     }
+
+    // MARK: Participation
+
+    /// Zach 15, Sam 7, Alex 10, Jo 7. With Sam and Jo out of Skins, Alex (10)
+    /// is the lowest in Skins and plays off scratch; Zach gets 5 ticks, on
+    /// stroke indexes 1 to 5 (holes 5, 12, 4, 17, 8).
+    @Test func ticksAreAllocatedAmongTheSkinsPlayersOnly() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[1].playsSkins = false
+        draft.players[3].playsSkins = false
+        let round = try draft.makeRound(using: bridge)
+        container.mainContext.insert(round)
+        let status = try RoundStatus(round: round, bridge: bridge)
+
+        #expect(Set(status.ticks.keys) == ["zach", "alex"])
+        #expect(status.ticks["alex"]?.values.reduce(0, +) == 0)
+        #expect(status.ticks["zach"]?.values.reduce(0, +) == 5)
+        #expect([5, 12, 4, 17, 8].allSatisfy { status.ticks(playerID: "zach", hole: $0) == 1 })
+        #expect(status.ticks(playerID: "sam", hole: 5) == nil)
+        #expect(status.ticks(playerID: "jo", hole: 5) == nil)
+        #expect(try round.skinsTicks(using: bridge) == status.ticks)
+    }
+
+    @Test func nobodyHasTicksWhenSkinsIsNotPlayed() throws {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[1].playsSkins = false
+        draft.players[2].playsSkins = false
+        let round = try draft.makeRound(using: bridge)
+        container.mainContext.insert(round)
+        let status = try RoundStatus(round: round, bridge: bridge)
+
+        #expect(status.ticks.isEmpty)
+        #expect(status.skins == RoundStatus.notPlayedSkins)
+        #expect(status.skinsHole(1) == nil)
+    }
 }

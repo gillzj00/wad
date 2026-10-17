@@ -154,4 +154,30 @@ struct GameSnapshotRoundTests {
         try scorer.setGross(5, playerID: "alex", hole: 2)
         #expect(try self.snapshot().events.filter { $0.hole == 2 }.map(\.kind).contains(.eagle))
     }
+
+    /// Alex is out of Greenies: a greenie written for Alex past the scorer is
+    /// not paid and is no event; Sam's greenie is.
+    @Test func aPlayerOutOfGreeniesIsInNoGreenieEvent() throws {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[2].playsGreenies = false
+        let round = try draft.makeRound(using: bridge)
+        container.mainContext.insert(round)
+        let scorer = RoundScorer(round: round)
+        try scorer.setGross(2, playerID: "alex", hole: 3)
+        try scorer.setParForUnscored(hole: 3)
+        #expect(throws: ScoringError.self) { try scorer.setGreenieWinner("alex", hole: 3) }
+
+        let before = GameSnapshot(round: round, status: try RoundStatus(round: round, bridge: bridge))
+        round.hole(3)?.greenieWinnerID = "alex"
+        let forced = GameSnapshot(round: round, status: try RoundStatus(round: round, bridge: bridge))
+        #expect(forced.greenieWins.isEmpty)
+        #expect(!EventDetector.events(before: before, after: forced).contains { $0.kind == .greenie })
+
+        try scorer.setGreenieWinner("sam", hole: 3)
+        let after = GameSnapshot(round: round, status: try RoundStatus(round: round, bridge: bridge))
+        #expect(after.greenieWins == [GameSnapshot.GreenieWin(hole: 3, winnerID: "sam")])
+        let events = EventDetector.events(before: before, after: after).filter { $0.kind == .greenie }
+        #expect(events.count == 1)
+        #expect(events.allSatisfy { !$0.playerNames.contains("Alex") })
+    }
 }
