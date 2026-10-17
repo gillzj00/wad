@@ -9,11 +9,12 @@ struct RoundDetailView: View {
     @State private var handleEdit: VenmoHandleEdit?
     @State private var scoreEdit: ScoreEdit?
 
-    /// Total ticks per player id, from the engine. Nil if the engine failed.
+    /// Total Skins ticks per player id, from the engine; a player out of Skins
+    /// has none. Nil if the engine failed.
     private var totalTicks: [String: Int]? {
         guard
             let bridge = SharedEngine.bridge,
-            let ticks = try? bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
+            let ticks = try? round.skinsTicks(using: bridge)
         else { return nil }
         return ticks.mapValues { $0.values.reduce(0, +) }
     }
@@ -114,7 +115,7 @@ struct RoundDetailView: View {
                     if totalTicks == nil {
                         SectionFooter("Ticks could not be computed.")
                     } else {
-                        SectionFooter("Ticks are strokes received relative to the lowest course handicap in the group.")
+                        SectionFooter("Ticks are strokes received in Skins, relative to the lowest course handicap among the players in Skins.")
                     }
                 }
 
@@ -124,6 +125,10 @@ struct RoundDetailView: View {
                     LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
                     LabeledContent("Skins carryover", value: round.skinsCarryover ? "On" : "Off")
                     LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+                    ForEach(SideGame.allCases.filter { !round.isEveryoneIn($0) }, id: \.self) { game in
+                        LabeledContent("\(game.title), who's in", value: SetupText.field(round.players(in: game).map(\.displayName)))
+                            .accessibilityIdentifier("detail.field.\(game.title)")
+                    }
                     if let pointCents = round.wolfPointCents {
                         LabeledContent("Wolf, per point", value: "$" + Money.dollars(fromCents: pointCents))
                             .accessibilityIdentifier("detail.wolfPoint")

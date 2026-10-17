@@ -225,9 +225,10 @@ struct SettlementView: View {
                     Text(player.name)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    amountCell(SettlementText.signed(player.skinsCents), width: width).foregroundStyle(color(player.skinsCents))
-                    amountCell(SettlementText.signed(player.wadCents), width: width).foregroundStyle(color(player.wadCents))
-                    amountCell(SettlementText.signed(player.greeniesCents), width: width).foregroundStyle(color(player.greeniesCents))
+                    ForEach(SideGame.allCases, id: \.self) { game in
+                        amountCell(SettlementText.amount(player, game), width: width)
+                            .foregroundStyle(player.plays(game) ? color(player.cents(game)) : Theme.Palette.ash)
+                    }
                     if showsWolf {
                         amountCell(SettlementText.signed(player.wolfCents), width: width).foregroundStyle(color(player.wolfCents))
                     }
@@ -245,6 +246,7 @@ struct SettlementView: View {
 
     private func skins(_ settlement: RoundSettlement) -> some View {
         Section {
+            fieldRows(settlement, .skins)
             ForEach(settlement.skins.holes, id: \.hole) { hole in
                 HoleLineRow(
                     hole: hole.hole,
@@ -263,9 +265,18 @@ struct SettlementView: View {
         }
     }
 
+    @ViewBuilder
     private func wad(_ settlement: RoundSettlement) -> some View {
+        if !settlement.isPlayed(.wad) {
+            Section {
+                fieldRows(settlement, .wad)
+            } header: {
+                SectionHeader("Wad", systemImage: "banknote")
+            }
+        }
         ForEach(settlement.wadInstances, id: \.segment) { instance in
             Section {
+                fieldRows(settlement, .wad)
                 StatusLineView(line: ScoringText.wad(instance, makesOnHole: [], name: settlement.name))
                     .accessibilityIdentifier("settlement.wad.\(instance.segment.rawValue)")
                 ForEach(Array(instance.makes.enumerated()), id: \.offset) { offset, make in
@@ -282,7 +293,8 @@ struct SettlementView: View {
 
     private func greenies(_ settlement: RoundSettlement) -> some View {
         Section {
-            if settlement.greenieHoles.isEmpty {
+            fieldRows(settlement, .greenies)
+            if settlement.isPlayed(.greenies), settlement.greenieHoles.isEmpty {
                 Text("The course has no par 3.")
                     .foregroundStyle(Theme.Palette.ash)
             }
@@ -299,6 +311,22 @@ struct SettlementView: View {
     }
 
     // MARK: Pieces
+
+    /// "Not played" when fewer than two players are in the game; the players in
+    /// it when not everyone is; nothing when everyone is.
+    @ViewBuilder
+    private func fieldRows(_ settlement: RoundSettlement, _ game: SideGame) -> some View {
+        if !settlement.isPlayed(game) {
+            Text(SetupText.notPlayedDetail)
+                .foregroundStyle(Theme.Palette.ash)
+                .accessibilityIdentifier("settlement.\(game.title.lowercased()).notPlayed")
+        } else if let field = settlement.partialField(game) {
+            Text(field)
+                .font(.subheadline)
+                .foregroundStyle(Theme.Palette.ash)
+                .accessibilityIdentifier("settlement.\(game.title.lowercased()).field")
+        }
+    }
 
     private func amountCell(_ text: String, width: CGFloat = 80) -> some View {
         Text(text)
