@@ -5,7 +5,7 @@
 
 ## Context
 
-Skins needs each player's handicap to allocate ticks. The obvious source is GHIN, but the USGA/GHIN has **no open public API**; sanctioned access is via the USGA **GPA program** (application + license), which we do not control and which could block the MVP. Reverse-engineered GHIN endpoints violate USGA terms.
+Skins needs each player's handicap to allocate strokes. The obvious source is GHIN, but the USGA/GHIN has **no open public API**; sanctioned access is via the USGA **GPA program** (application + license), which we do not control and which could block the MVP. Reverse-engineered GHIN endpoints violate USGA terms.
 
 ## Decision
 

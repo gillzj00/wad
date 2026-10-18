@@ -132,7 +132,7 @@ struct HoleScoringView: View {
                     name: player.displayName,
                     par: hole.par,
                     gross: round.gross(playerID: player.playerID, hole: hole.number),
-                    ticks: status?.ticks(playerID: player.playerID, hole: hole.number),
+                    strokes: status?.strokes(playerID: player.playerID, hole: hole.number),
                     net: status?.net(playerID: player.playerID, hole: hole.number),
                     onStep: { delta in
                         perform { try scorer.stepGross(by: delta, playerID: player.playerID, hole: hole.number) }
@@ -152,7 +152,7 @@ struct HoleScoringView: View {
             SectionHeader("Scores", systemImage: "pencil.and.list.clipboard")
         } footer: {
             if status == nil {
-                SectionFooter("Ticks and the games could not be computed.")
+                SectionFooter("Strokes and the games could not be computed.")
             }
         }
     }
@@ -469,7 +469,7 @@ struct PlayerScoreRow: View {
     let name: String
     let par: Int
     let gross: Int?
-    let ticks: Int?
+    let strokes: Int?
     let net: Int?
     let onStep: (Int) -> Void
     let onClear: () -> Void
@@ -480,7 +480,7 @@ struct PlayerScoreRow: View {
 
     private var detail: String {
         var parts: [String] = []
-        if let ticks { parts.append(ScoringText.ticks(ticks)) }
+        if let strokes { parts.append(ScoringText.strokes(strokes)) }
         if let net { parts.append("Net \(net)") }
         return parts.joined(separator: ", ")
     }

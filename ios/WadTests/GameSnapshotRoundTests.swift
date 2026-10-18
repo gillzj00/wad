@@ -41,7 +41,7 @@ struct GameSnapshotRoundTests {
         #expect(snapshot.wolfWins.isEmpty)
     }
 
-    /// Zach gets a tick on hole 1, so three pars give him the skin, net.
+    /// Zach gets a stroke on hole 1, so three pars give him the skin, net.
     @Test func aSoleLowestNetScoreIsASkinWin() throws {
         try scorer.setGross(4, playerID: "zach", hole: 1)
         try scorer.setGross(4, playerID: "sam", hole: 1)
@@ -138,7 +138,7 @@ struct GameSnapshotRoundTests {
         #expect(snapshot.events.map(\.kind) == [.eagle])
     }
 
-    /// Hole 1 is complete: Sam's birdie wins the skin (Zach's tick makes his 5
+    /// Hole 1 is complete: Sam's birdie wins the skin (Zach's stroke makes his 5
     /// a net 4). Hole 2 is not: Zach's eagle waits for Alex's score.
     @Test func aPartlyScoredHolesEventsAreLeftOut() throws {
         try scorer.setGross(5, playerID: "zach", hole: 1)

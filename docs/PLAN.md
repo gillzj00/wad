@@ -14,7 +14,7 @@ An iPhone app you take onto the golf course to keep score for your group and run
 - Create a round, invite others via a join code, everyone scores from their own phone with live sync.
 - The games, scored automatically:
   - **Wad** (putting game, resets every 9)
-  - **Skins** (net, with handicap ticks and carryovers)
+  - **Skins** (net, with handicap strokes and carryovers)
   - **Greenies** (par-3 game)
   - **Wolf** (four players, net best ball for points, with a rotating Wolf)
 - End-of-round settlement: net who owes whom across all games, open Venmo pre-filled, track paid/unpaid.

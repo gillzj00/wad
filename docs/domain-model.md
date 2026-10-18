@@ -10,9 +10,9 @@ Conventions used here:
 
 ---
 
-## Handicaps and "ticks" (shared by Skins and Wolf)
+## Handicaps and strokes (shared by Skins and Wolf)
 
-Players of different ability are equalized by giving weaker players extra strokes ("ticks") on the hardest holes.
+Players of different ability are equalized by giving weaker players extra strokes on the hardest holes. (The engine and the API call these strokes `ticks`; in the app a tick is a skin won, see Skins.)
 
 **Course Handicap** (World Handicap System) is the default, computed from each player's Handicap Index and the selected tee:
 
@@ -22,15 +22,15 @@ Course Handicap = round( HandicapIndex * (Slope / 113) + (CourseRating - Par) )
 
 The group can override any player's handicap for a round (e.g. an agreed playing handicap). The override replaces the computed course handicap for that round only.
 
-**Allocating ticks (relative method):**
+**Allocating strokes (relative method):**
 1. Find the lowest course handicap in the group; call it the group scratch.
-2. Each player's ticks = `their course handicap − group scratch` (so the best player gets 0).
-3. Allocate a player's ticks to holes in stroke-index order: 1 tick each to the holes with stroke index 1, 2, 3, … up to the number of ticks.
-4. If a player has more than 18 ticks, wrap around: every hole gets 1, then the hardest holes get a 2nd, etc.
+2. Each player's strokes = `their course handicap − group scratch` (so the best player gets 0).
+3. Allocate a player's strokes to holes in stroke-index order: 1 stroke each to the holes with stroke index 1, 2, 3, … up to the number of strokes.
+4. If a player has more than 18 strokes, wrap around: every hole gets 1, then the hardest holes get a 2nd, etc.
 
-A player's **net score** on a hole = `gross strokes − ticks received on that hole`.
+A player's **net score** on a hole = `gross strokes − strokes received on that hole`.
 
-> Example: Zach is a 15 course handicap, friend is 7. Group scratch = 7. Zach gets `15 − 7 = 8` ticks, placed on the holes whose stroke index is 1–8 (the 8 hardest). On those holes Zach's net = gross − 1. The friend gets net = gross everywhere.
+> Example: Zach is a 15 course handicap, friend is 7. Group scratch = 7. Zach gets `15 − 7 = 8` strokes, placed on the holes whose stroke index is 1–8 (the 8 hardest). On those holes Zach's net = gross − 1. The friend gets net = gross everywhere.
 
 ---
 
@@ -60,7 +60,7 @@ State the engine exposes, per instance: current holder (nullable), current value
 
 Hole-by-hole net competition for a base amount per skin (default **$5**).
 
-**Winning a skin:** on each hole, compute every player's net score (gross − ticks). The player with the **sole lowest net score wins the skin** and **collects the hole's value from each other player**.
+**Winning a skin:** on each hole, compute every player's net score (gross − strokes received). The player with the **sole lowest net score wins the skin** and **collects the hole's value from each other player**.
 
 **Push / carryover:** if two or more players tie for the lowest net score, nobody wins and no money changes hands on that hole. The hole's value carries forward: the next hole is worth the carried value **plus** the base value. Carrying continues until a hole is won outright.
 
@@ -71,6 +71,8 @@ Skins is **one game over the whole round**: carryovers continue through the turn
 **Carryover is a per-round setting**, on by default. With it off, a pushed hole is worth nothing to anyone: no money changes hands and the next hole is worth the base value again, so no carryover is ever left unresolved. The winning rule is the same either way. It can be changed at any time, before, during or at the end of the round; the whole round is then rescored with the new setting.
 
 The engine exposes, per hole: base value, carried-in value, total at stake, winner (nullable if pushed), and the resulting per-player deltas.
+
+A **tick** is a skin won; the app counts ticks per player. (The engine's `ticks` field still means strokes.)
 
 ---
 
@@ -108,7 +110,7 @@ A points game for **exactly four players** over an 18-hole round. On every hole 
 
 **Recording:** for each hole the group records the Wolf's choice: the partner, or lone. On 17 and 18 with a tie for last place the group also records the Wolf. The app does not check when the choice was made.
 
-**Winning a hole:** net best ball. Each side's score is the **lowest net score** among its players, where net = gross - ticks, with the same relative tick allocation as Skins (see above). The lower side score wins the hole. If the two side scores are equal the hole is **tied**: nobody gets points and nothing carries over to the next hole.
+**Winning a hole:** net best ball. Each side's score is the **lowest net score** among its players, where net = gross - strokes received, with the same relative stroke allocation as Skins (see above). The lower side score wins the hole. If the two side scores are equal the hole is **tied**: nobody gets points and nothing carries over to the next hole.
 
 **Points:**
 
@@ -145,7 +147,7 @@ Each player is **in or out of each of Skins, Wad and Greenies**; everyone starts
 
 1. Participation is chosen in the round setup, before the round is created, and **can be changed at any time from the round**: before the first score, during the round or when settling up. Leaving a game removes the player's recorded wins and makes in it (their greenies when leaving Greenies, their Wad makes when leaving Wad; nothing is recorded per player in Skins), and the settlement recomputes. Joining a game again restores nothing. A change of participation never plays a show.
 2. A game's **field** is the players who are in it. Money in a game moves only between players in it. A player who is out of a game never wins or owes anything in it and never appears in its results.
-3. **Skins:** the skin is contested among the players in Skins; a lower score from a player who is out is ignored. Ticks are allocated among the players in Skins only, so the lowest course handicap among them plays off scratch. A player out of Skins gets no ticks.
+3. **Skins:** the skin is contested among the players in Skins; a lower score from a player who is out is ignored. Strokes are allocated among the players in Skins only, so the lowest course handicap among them plays off scratch. A player out of Skins gets no strokes and has no ticks.
 4. **Greenies:** only a player in Greenies can win a greenie; the winner collects the amount from each other player in Greenies.
 5. **Wad:** only a player in Wad can be a Wad maker; the Wad is collected from the other players in Wad, and its nine is complete when every player in Wad has a score on the nine's last hole.
 6. A game with **fewer than two players in is not played**: no money moves and it has no results. This is how a group turns a game off; it is not an error.

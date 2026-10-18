@@ -30,9 +30,10 @@ extension Round {
         return engineScores.filter { ids.contains($0.userId) }
     }
 
-    /// Ticks per player id, allocated among the players in Skins: the lowest
-    /// course handicap among them plays off scratch. Empty when Skins is not played.
-    func skinsTicks(using bridge: EngineBridge) throws -> [Engine.UserID: Engine.TicksByHole] {
+    /// Handicap strokes per player id, allocated among the players in Skins: the
+    /// lowest course handicap among them plays off scratch. Empty when Skins is
+    /// not played. The engine calls these strokes "ticks".
+    func skinsStrokes(using bridge: EngineBridge) throws -> [Engine.UserID: Engine.TicksByHole] {
         guard isPlayed(.skins) else { return [:] }
         return try bridge.allocateTicks(players: enginePlayers(in: .skins), holes: engineHoles)
     }

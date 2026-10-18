@@ -8,7 +8,8 @@ enum Engine {
     typealias Cents = Int
     /// Net money change per player; positive = owed to them. Sums to zero.
     typealias Deltas = [UserID: Cents]
-    /// Ticks received on each hole, keyed by hole number.
+    /// Handicap strokes received on each hole, keyed by hole number (the
+    /// engine's "ticks").
     typealias TicksByHole = [Int: Int]
 
     struct HoleInfo: Codable, Equatable, Sendable {

@@ -29,28 +29,28 @@ struct RoundSettlementTests {
     /// Course: pars 4 5 3 4 4 3 5 4 4 / 4 3 5 4 4 5 3 4 4,
     /// stroke indexes 7 11 17 3 1 15 9 5 13 / 8 18 2 10 6 12 16 4 14.
     /// Handicaps: Zach 15, Sam 7, Alex 10, Jo 7, so the group scratch is 7.
-    /// Zach gets 8 ticks, on stroke indexes 1 to 8: holes 5, 12, 4, 17, 8, 14, 1, 10.
-    /// Alex gets 3 ticks, on stroke indexes 1 to 3: holes 5, 12, 4.
+    /// Zach gets 8 strokes, on stroke indexes 1 to 8: holes 5, 12, 4, 17, 8, 14, 1, 10.
+    /// Alex gets 3 strokes, on stroke indexes 1 to 3: holes 5, 12, 4.
     /// Defaults: skins $5, Wad $7 start and $2 step, greenies $5. Four players,
     /// so a winner collects from three others.
     ///
-    /// Everybody makes par except where listed. Net = gross - ticks.
+    /// Everybody makes par except where listed. Net = gross - strokes.
     ///
     /// Skins, hole by hole (the amount is what each other player pays):
-    ///  1  par 4, Zach ticks: nets 3 4 4 4              Zach wins $5
+    ///  1  par 4, Zach strokes: nets 3 4 4 4              Zach wins $5
     ///  2  par 5: all net 5                             push, $5 carries
     ///  3  par 3: Sam 2                                 Sam wins $10
-    ///  4  par 4, Zach and Alex tick: nets 3 4 3 4      push, $5 carries
+    ///  4  par 4, Zach and Alex stroke: nets 3 4 3 4      push, $5 carries
     ///  5  par 4, Zach 5 (net 4), Alex net 3            Alex wins $10
     ///  6  par 3: all net 3                             push, $5 carries
     ///  7  par 5: Jo 4                                  Jo wins $10
     ///  8  par 4, Zach 5 (net 4): all net 4             push, $5 carries
     ///  9  par 4: all net 4                             push, $10 carries
-    /// 10  par 4, Zach ticks: nets 3 4 4 4              Zach wins $15
+    /// 10  par 4, Zach strokes: nets 3 4 4 4              Zach wins $15
     /// 11  par 3: Alex 4, the others 3                  push, $5 carries
     /// 12  par 5, Zach 6 (net 5), Alex net 4, Jo 4      push (Alex and Jo), $10 carries
     /// 13  par 4: Sam 3                                 Sam wins $15
-    /// 14  par 4, Zach ticks: nets 3 4 4 4              Zach wins $5
+    /// 14  par 4, Zach strokes: nets 3 4 4 4              Zach wins $5
     /// 15  par 5: all net 5                             push, $5 carries
     /// 16  par 3: Zach 2                                Zach wins $10
     /// 17  par 4, Zach 5 (net 4): all net 4             push, $5 carries
@@ -412,7 +412,7 @@ struct RoundSettlementTests {
     // MARK: The UI test scenarios
 
     /// The round the UI walkthrough scores by tapping. Every hole is a par 4
-    /// except the third; Zach gets a tick on holes 1 to 8. Pars except where listed.
+    /// except the third; Zach gets a stroke on holes 1 to 8. Pars except where listed.
     ///
     /// Skins (amount from each of the two others):
     ///  1  Zach 5 (net 4), 4, 4          push, $5 carries
@@ -472,7 +472,7 @@ struct RoundSettlementTests {
     }
 
     /// `DebugRounds.finalPush`: pars everywhere, so Zach wins the holes he has
-    /// a tick on (1, 4, 5, 8, 10, 12, 14) and the others push; on 17 his bogey
+    /// a stroke on (1, 4, 5, 8, 10, 12, 14) and the others push; on 17 his bogey
     /// nets 4 and pushes too, so holes 15 to 18 leave $20 unresolved.
     ///  Skins from each: hole 1 $5, 4 $15, 5 $5, 8 $15, 10 $10, 12 $10, 14 $10 = $70
     ///   Zach +140, Sam -70, Alex -70
@@ -514,8 +514,8 @@ struct RoundSettlementTests {
         #expect(settlement.players.map(\.netCents).reduce(0, +) == 0)
     }
 
-    /// Alex is out of Skins; the ticks are among Zach (15), Sam (7) and Jo (7),
-    /// so Zach gets a tick on hole 1 (stroke index 7) and none on hole 2.
+    /// Alex is out of Skins; the strokes are among Zach (15), Sam (7) and Jo (7),
+    /// so Zach gets a stroke on hole 1 (stroke index 7) and none on hole 2.
     /// Hole 1, all par: Zach nets 3 and wins $5 from Sam and Jo.
     /// Hole 2 (par 5): Alex 3, Sam 4, Zach and Jo 5. Alex's 3 is ignored and
     /// Sam wins $5 from Zach and Jo.
@@ -532,6 +532,29 @@ struct RoundSettlementTests {
         #expect(hole2.net?["alex"] == nil)
         #expect(settlement.skins.holes.allSatisfy { $0.winnerUserId != "alex" })
         #expect(settlement.players.map(\.skinsCents) == [500, 500, 0, -1000])
+    }
+
+    /// The full round's skins: Zach won 1, 10, 14 and 16; Sam 3 and 13; Alex 5;
+    /// Jo 7 and 18. The nine pushed holes count for nobody.
+    @Test func ticksCountTheSkinsEachPlayerWon() throws {
+        let round = try makeRound(RoundFixtures.fourPlayerDraft(), plays: Self.fullRound)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 4, "sam": 2, "alex": 1, "jo": 2])
+        #expect(settlement.skins.holes.filter { $0.status == .pushed }.count == 9)
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 4, Sam 2, Alex 1, Jo 2")
+        #expect(try RoundStatus(round: round, bridge: bridge).ticks == settlement.ticks)
+    }
+
+    /// Alex is out of Skins and has no tick count; Zach won hole 1 and Sam hole 2.
+    @Test func aPlayerOutOfSkinsHasNoTicks() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[2].playsSkins = false
+        let round = try makeRound(draft, plays: [2: HolePlay(gross: ["alex": 3, "sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 1, "sam": 1, "jo": 0])
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 1, Sam 1, Jo 0")
     }
 
     /// Jo is out of all three games and Wolf is off: Jo's birdies change
@@ -571,6 +594,8 @@ struct RoundSettlementTests {
         #expect(!settlement.isPlayed(.skins))
         #expect(settlement.partialField(.skins) == nil)
         #expect(settlement.skins.holes.isEmpty)
+        #expect(settlement.ticks.isEmpty)
+        #expect(SettlementText.ticks(settlement) == nil)
         #expect(settlement.players.allSatisfy { $0.skinsCents == 0 })
         #expect(settlement.unresolvedSkinsCarryoverCents == nil)
         #expect(settlement.isFinal)
@@ -593,7 +618,7 @@ struct RoundSettlementTests {
         }
     }
 
-    /// Zach (15) ticks on hole 1; Sam and Alex (7) do not. $5 skins, $5 greenies.
+    /// Zach (15) gets a stroke on hole 1; Sam and Alex (7) do not. $5 skins, $5 greenies.
     /// Hole 1 (par 4), all par: Zach nets 3 and wins $5 from Sam and Alex.
     /// Hole 2 (par 5): Sam 4 wins $5 from Zach and Alex.
     /// Hole 3 (par 3), all par: push; Zach's greenie pays $5 from each.
