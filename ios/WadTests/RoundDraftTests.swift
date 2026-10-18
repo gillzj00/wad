@@ -300,4 +300,46 @@ struct RoundDraftTests {
         #expect(Set(issues.map(\.message)).count == issues.count)
         #expect(SetupIssue.strokeIndexDuplicate(strokeIndex: 1, holes: [1, 5]).message == "Stroke index 1 is used on holes 1, 5.")
     }
+
+    // MARK: Participation
+
+    @Test func newPlayersAreInEveryGame() {
+        let draft = RoundDraft()
+        #expect(draft.players.allSatisfy { $0.playsSkins && $0.playsWad && $0.playsGreenies })
+        #expect(SideGame.allCases.allSatisfy { RoundDraft.Player().plays($0) })
+        for game in SideGame.allCases {
+            #expect(RoundFixtures.fourPlayerDraft().players(in: game).count == 4)
+            #expect(RoundFixtures.fourPlayerDraft().isPlayed(game))
+        }
+    }
+
+    @Test @MainActor func makeRoundCarriesWhoIsInEachGame() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[1].setPlays(.skins, false)
+        draft.players[2].setPlays(.wad, false)
+        draft.players[3].setPlays(.greenies, false)
+        let round = try draft.makeRound(using: try EngineBridge())
+
+        let players = round.orderedPlayers
+        #expect(players.map(\.playsSkins) == [true, false, true, true])
+        #expect(players.map(\.playsWad) == [true, true, false, true])
+        #expect(players.map(\.playsGreenies) == [true, true, true, false])
+        #expect(round.players(in: .skins).map(\.playerID) == ["zach", "alex", "jo"])
+        #expect(round.players(in: .wad).map(\.playerID) == ["zach", "sam", "jo"])
+        #expect(round.players(in: .greenies).map(\.playerID) == ["zach", "sam", "alex"])
+        #expect(SideGame.allCases.allSatisfy { round.isPlayed($0) && !round.isEveryoneIn($0) })
+    }
+
+    @Test func aGameWithOnePlayerInIsNotPlayedAndIsNoIssue() {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[1].playsSkins = false
+        #expect(draft.isPlayed(.skins))
+        draft.players[2].playsSkins = false
+        #expect(draft.players(in: .skins).map(\.id) == ["zach"])
+        #expect(!draft.isPlayed(.skins))
+        #expect(draft.isPlayed(.wad) && draft.isPlayed(.greenies))
+        #expect(draft.allIssues.isEmpty)
+        #expect(SetupText.field(draft.players(in: .skins).map(\.trimmedName)) == "Not played")
+        #expect(SetupText.field(["Zach", "Sam"]) == "Zach, Sam")
+    }
 }

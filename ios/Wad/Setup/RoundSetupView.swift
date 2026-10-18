@@ -444,20 +444,23 @@ struct GamesStepView: View {
         Section {
             AmountRow(title: "Start value", identifier: "setup.amount.wadStart", text: $draft.wadStartText)
             AmountRow(title: "Step", identifier: "setup.amount.wadStep", text: $draft.wadStepText)
+            WhosInRow(draft: $draft, game: .wad)
         } header: {
             SectionHeader("Wad", systemImage: "banknote")
         } footer: {
-            SectionFooter("The first qualifying putt takes the Wad at the start value. Every make after that adds the step.")
+            footer(.wad, "The first qualifying putt takes the Wad at the start value. Every make after that adds the step.")
         }
 
         Section {
             AmountRow(title: "Per skin", identifier: "setup.amount.skins", text: $draft.skinsBaseText)
             Toggle("Carry pushed holes over", isOn: $draft.skinsCarryover)
                 .accessibilityIdentifier("setup.skinsCarryover")
+            WhosInRow(draft: $draft, game: .skins)
         } header: {
             SectionHeader("Skins", systemImage: "dollarsign.circle")
         } footer: {
-            SectionFooter(
+            footer(
+                .skins,
                 "Net skins: the lowest net score alone wins the amount from each other player. "
                     + "With carryover on, a pushed hole adds its value to the next hole; "
                     + "off, a push pays nothing and the next hole is worth the base again."
@@ -466,13 +469,61 @@ struct GamesStepView: View {
 
         Section {
             AmountRow(title: "Per greenie", identifier: "setup.amount.greenies", text: $draft.greeniesAmountText)
+            WhosInRow(draft: $draft, game: .greenies)
         } header: {
             SectionHeader("Greenies", systemImage: "flag.fill")
         } footer: {
-            SectionFooter("Par 3s only. Every amount is collected from each other player.")
+            footer(.greenies, "Par 3s only. Every amount is collected from each other player.")
         }
 
         WolfGamesSection(draft: $draft)
+    }
+
+    @ViewBuilder
+    private func footer(_ game: SideGame, _ text: String) -> some View {
+        if draft.isPlayed(game) {
+            SectionFooter(text)
+        } else {
+            SectionFooter(SetupText.notPlayedDetail)
+        }
+    }
+}
+
+/// One chip per player to put them in or out of a side game. Everyone starts in.
+struct WhosInRow: View {
+    @Binding var draft: RoundDraft
+    let game: SideGame
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            Text("Who's in")
+                .font(.subheadline)
+                .foregroundStyle(Theme.Palette.ash)
+            ChoiceGrid {
+                ForEach(Array(draft.players.enumerated()), id: \.element.id) { offset, player in
+                    let isIn = player.plays(game)
+                    ChoiceChip(
+                        title: player.trimmedName.isEmpty ? "Player \(offset + 1)" : player.trimmedName,
+                        badge: nil,
+                        isSelected: isIn
+                    ) {
+                        guard let index = draft.players.firstIndex(where: { $0.id == player.id }) else { return }
+                        draft.players[index].setPlays(game, !isIn)
+                    }
+                    .accessibilityIdentifier("setup.\(identifier).player.\(offset + 1)")
+                    .accessibilityValue(isIn ? "In" : "Out")
+                }
+            }
+        }
+        .padding(.vertical, Theme.Spacing.xs)
+    }
+
+    private var identifier: String {
+        switch game {
+        case .skins: "skins"
+        case .wad: "wad"
+        case .greenies: "greenies"
+        }
     }
 }
 

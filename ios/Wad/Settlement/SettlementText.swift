@@ -27,9 +27,21 @@ enum SettlementText {
 
     /// With `wolf`, the round plays Wolf and its column is included.
     static func games(_ player: RoundSettlement.PlayerResult, wolf: Bool) -> String {
-        "\(player.name): Skins \(signed(player.skinsCents)), Wad \(signed(player.wadCents)), "
-            + "Greenies \(signed(player.greeniesCents))"
+        "\(player.name): "
+            + SideGame.allCases.map { game in
+                "\(game.title) " + (player.plays(game) ? signed(player.cents(game)) : "out")
+            }.joined(separator: ", ")
             + (wolf ? ", Wolf \(signed(player.wolfCents))" : "")
+    }
+
+    /// A player's amount in a game for the table: "-" when out of it.
+    static func amount(_ player: RoundSettlement.PlayerResult, _ game: SideGame) -> String {
+        player.plays(game) ? signed(player.cents(game)) : "-"
+    }
+
+    /// "Players in: Zach, Sam, Alex".
+    static func field(_ names: [String]) -> String {
+        "Players in: " + names.joined(separator: ", ")
     }
 
     static func holes(_ holes: [Int]) -> String {

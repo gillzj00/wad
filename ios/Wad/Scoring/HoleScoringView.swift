@@ -43,8 +43,10 @@ struct HoleScoringView: View {
                     if round.playsWolf {
                         WolfHoleSection(round: round, hole: hole, status: status, perform: perform)
                     }
-                    wad(hole, status: status)
-                    if hole.par == 3 || hole.greenieWinnerID != nil {
+                    if round.isPlayed(.wad) {
+                        wad(hole, status: status)
+                    }
+                    if round.isPlayed(.greenies), hole.par == 3 || hole.greenieWinnerID != nil {
                         greenie(hole, status: status)
                     }
                     skins(hole, status: status)
@@ -191,7 +193,7 @@ struct HoleScoringView: View {
     private func wad(_ hole: RoundHole, status: RoundStatus?) -> some View {
         Section {
             ChoiceGrid {
-                ForEach(round.orderedPlayers) { player in
+                ForEach(round.players(in: .wad)) { player in
                     let order = scorer.wadOrder(playerID: player.playerID, hole: hole.number)
                     ChoiceChip(
                         title: player.displayName,

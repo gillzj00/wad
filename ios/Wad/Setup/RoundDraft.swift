@@ -92,8 +92,28 @@ struct RoundDraft: Equatable, Sendable {
         var overridesCourseHandicap = false
         /// Optional. With or without the leading "@".
         var venmoHandleText = ""
+        /// Whether the player is in each side game. Everyone starts in.
+        var playsSkins = true
+        var playsWad = true
+        var playsGreenies = true
 
         var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        func plays(_ game: SideGame) -> Bool {
+            switch game {
+            case .skins: playsSkins
+            case .wad: playsWad
+            case .greenies: playsGreenies
+            }
+        }
+
+        mutating func setPlays(_ game: SideGame, _ plays: Bool) {
+            switch game {
+            case .skins: playsSkins = plays
+            case .wad: playsWad = plays
+            case .greenies: playsGreenies = plays
+            }
+        }
     }
 
     var courseName = ""
@@ -246,6 +266,16 @@ struct RoundDraft: Equatable, Sendable {
         )
     }
 
+    /// The game's field: the players who are in it, in order.
+    func players(in game: SideGame) -> [Player] {
+        players.filter { $0.plays(game) }
+    }
+
+    /// At least two players are in the game. Fewer is allowed: the game is not played.
+    func isPlayed(_ game: SideGame) -> Bool {
+        players(in: game).count >= SideGame.minimumPlayers
+    }
+
     func gameIssues() -> [SetupIssue] {
         [
             ("Wad start", wadStartText),
@@ -287,7 +317,10 @@ struct RoundDraft: Equatable, Sendable {
                 position: offset,
                 handicapIndex: tee == nil ? nil : SetupText.handicapIndex(player.handicapIndexText),
                 courseHandicap: courseHandicap,
-                venmoHandle: VenmoHandle.normalized(player.venmoHandleText)
+                venmoHandle: VenmoHandle.normalized(player.venmoHandleText),
+                playsSkins: player.playsSkins,
+                playsWad: player.playsWad,
+                playsGreenies: player.playsGreenies
             )
         }
         wolf.apply(to: round, players: players)
