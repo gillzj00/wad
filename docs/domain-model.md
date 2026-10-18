@@ -160,6 +160,10 @@ At the end of the round the app computes each player's net position across **all
 
 A player who is out of every game played has a net position of zero and is in no payment.
 
+The engine also reports a **pairwise ledger** (`pairwiseLedger`): for every pair of players with a non-zero net, what one owes the other across the games and why, from which holes of Skins and Greenies, which nine of the Wad, and how many Wolf points. It expands each game's "collect from each other player in the game" into flows between pairs exactly as the game engines move the money, nets each pair across games, and keeps the items the debtor won back as amounts that come off the debt. Each player's pairwise nets add up to their net position. The app shows the ledger during play ("Owed so far" on the scoring screen) and at settlement ("Who owes whom"). It explains the amounts; it is not what is paid. The minimized transfers above remain the payments and drive the Venmo links.
+
+> Example (three players, $5 skins and greenies): A wins the skin on hole 1, B the skin on hole 2, A the greenie on hole 3. The ledger: B owes A $5 (skins on hole 1, less skins on hole 2, the greenie on hole 3), C owes A $10, C owes B $5. B's position is $0, so the only payment is C pays A $15.
+
 ---
 
 ## Open Questions
