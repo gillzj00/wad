@@ -25,6 +25,7 @@ var WadEngines = (() => {
     allocateTicks: () => allocateTicks,
     courseHandicap: () => courseHandicap,
     netScore: () => netScore,
+    pairwiseLedger: () => pairwiseLedger,
     scoreGreenies: () => scoreGreenies,
     scoreSkins: () => scoreSkins,
     scoreWad: () => scoreWad,
@@ -106,6 +107,88 @@ var WadEngines = (() => {
       results.push({ hole: h.hole, winnerUserId: winner, status });
     }
     return { holes: results, deltas };
+  }
+
+  // src/engines/ledger.ts
+  var GAMES = ["skins", "wad", "greenies", "wolf"];
+  var byId = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  function fromEach(flows, field, winner, base) {
+    if (!Number.isInteger(base.cents)) throw new Error(`amount must be integer cents, got ${base.cents}`);
+    if (base.cents === 0) return;
+    for (const p of field) if (p !== winner) flows.push({ ...base, payer: p, payee: winner });
+  }
+  function pairwiseLedger(input) {
+    const flows = [];
+    if (input.skins) {
+      const { players, result } = input.skins;
+      for (const h of result.holes) {
+        if (h.status !== "won" || h.winnerUserId === null || h.atStakeCents === null) continue;
+        fromEach(flows, players, h.winnerUserId, { game: "skins", cents: h.atStakeCents, hole: h.hole });
+      }
+    }
+    if (input.wad) {
+      const { players, result } = input.wad;
+      for (const w of result.instances) {
+        if (!w.complete || w.holderUserId === null) continue;
+        fromEach(flows, players, w.holderUserId, { game: "wad", cents: w.valueCents, segment: w.segment });
+      }
+    }
+    if (input.greenies) {
+      const { players, result, amountCents } = input.greenies;
+      for (const h of result.holes) {
+        if (h.status !== "awarded" || h.winnerUserId === null) continue;
+        fromEach(flows, players, h.winnerUserId, { game: "greenies", cents: amountCents, hole: h.hole });
+      }
+    }
+    if (input.wolf) {
+      const { result, pointCents } = input.wolf;
+      const ids = result.teeOrder;
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = ids[i];
+          const b = ids[j];
+          const diff = (result.points[a] ?? 0) - (result.points[b] ?? 0);
+          if (diff === 0 || pointCents === 0) continue;
+          const [payer, payee] = diff > 0 ? [b, a] : [a, b];
+          const points = Math.abs(diff);
+          flows.push({ game: "wolf", payer, payee, cents: pointCents * points, points });
+        }
+      }
+    }
+    const pairs = /* @__PURE__ */ new Map();
+    for (const f of flows) {
+      const [low, high] = byId(f.payer, f.payee) < 0 ? [f.payer, f.payee] : [f.payee, f.payer];
+      const key = JSON.stringify([low, high]);
+      let pair = pairs.get(key);
+      if (!pair) {
+        pair = { low, high, flows: [] };
+        pairs.set(key, pair);
+      }
+      pair.flows.push(f);
+    }
+    const ledger = [];
+    for (const { low, high, flows: pairFlows } of pairs.values()) {
+      const lowOwes = pairFlows.reduce((sum, f) => sum + (f.payer === low ? f.cents : -f.cents), 0);
+      if (lowOwes === 0) continue;
+      const [from, to] = lowOwes > 0 ? [low, high] : [high, low];
+      const items = [];
+      for (const game of GAMES) {
+        for (const owed of [true, false]) {
+          const group = pairFlows.filter((f) => f.game === game && f.payer === from === owed);
+          if (group.length === 0) continue;
+          const sign = owed ? 1 : -1;
+          items.push({
+            game,
+            holes: group.flatMap((f) => f.hole === void 0 ? [] : [f.hole]).sort((a, b) => a - b),
+            segments: group.flatMap((f) => f.segment === void 0 ? [] : [f.segment]),
+            points: sign * group.reduce((sum, f) => sum + (f.points ?? 0), 0) || 0,
+            amountCents: sign * group.reduce((sum, f) => sum + f.cents, 0)
+          });
+        }
+      }
+      ledger.push({ from, to, amountCents: Math.abs(lowOwes), items });
+    }
+    return ledger.sort((a, b) => byId(a.from, b.from) || byId(a.to, b.to));
   }
 
   // src/engines/skins.ts
