@@ -57,6 +57,29 @@ struct RoundStatusTests {
         #expect(status.net(playerID: "zach", hole: 3) == nil)
     }
 
+    /// The scoring screen's "Owed so far": empty until a hole moves money, then
+    /// one row per pair from the status's ledger.
+    @Test func ledgerIsEmptyUnscoredAndFillsAfterAWonSkin() throws {
+        let fresh = try RoundFixtures.threePlayerDraft().makeRound(using: bridge)
+        container.mainContext.insert(fresh)
+        #expect(try RoundStatus(round: fresh, bridge: bridge).ledger.isEmpty)
+
+        // Hole 1, all par: Zach's tick wins $5 from Sam and Alex.
+        try RoundScorer(round: fresh).setParForUnscored(hole: 1)
+        let ledger = try RoundStatus(round: fresh, bridge: bridge).ledger
+        #expect(ledger.map { SettlementText.owes(from: name($0.from), to: name($0.to), cents: $0.amountCents) } == [
+            "Alex owes Zach $5",
+            "Sam owes Zach $5",
+        ])
+
+        // This fixture: Zach's $10 skin on hole 2 and his greenie on hole 3.
+        let status = try RoundStatus(round: round, bridge: bridge)
+        #expect(status.ledger.map(\.amountCents) == [1500, 1500])
+        #expect(status.ledger.map { SettlementText.reasons($0.items) } == Array(
+            repeating: "skins on hole 2 ($10), the greenie on hole 3 ($5)", count: 2
+        ))
+    }
+
     @Test func skinsStatusOfAPartiallyScoredRound() throws {
         let status = try RoundStatus(round: round, bridge: bridge)
 

@@ -11,6 +11,9 @@ struct RoundStatus: Equatable, Sendable {
     var greenies: Engine.GreeniesResult
     /// Nil when Wolf is not played, or unavailable (not exactly four players).
     var wolf: Engine.WolfResult?
+    /// Who owes whom so far, pair by pair, with the holes of each game behind
+    /// it. Empty when nobody owes anything.
+    var ledger: [Engine.LedgerPair]
 
     @MainActor
     init(round: Round, bridge: EngineBridge) throws {
@@ -21,6 +24,28 @@ struct RoundStatus: Equatable, Sendable {
         wad = round.isPlayed(.wad) ? try bridge.scoreWad(round.wadInput) : Self.notPlayedWad
         greenies = round.isPlayed(.greenies) ? try bridge.scoreGreenies(round.greeniesInput) : Self.notPlayedGreenies
         wolf = try round.wolfInput.flatMap(bridge.scoreWolf)
+        ledger = try bridge.pairwiseLedger(Self.ledgerInput(
+            round: round, skins: skins, wad: wad, greenies: greenies, wolf: wolf
+        ))
+    }
+
+    /// Each played game's result with its field, as the ledger engine takes them.
+    @MainActor
+    static func ledgerInput(
+        round: Round,
+        skins: Engine.SkinsResult,
+        wad: Engine.WadResult,
+        greenies: Engine.GreeniesResult,
+        wolf: Engine.WolfResult?
+    ) -> Engine.LedgerInput {
+        Engine.LedgerInput(
+            skins: round.isPlayed(.skins) ? .init(players: round.enginePlayerIDs(in: .skins), result: skins) : nil,
+            wad: round.isPlayed(.wad) ? .init(players: round.enginePlayerIDs(in: .wad), result: wad) : nil,
+            greenies: round.isPlayed(.greenies)
+                ? .init(players: round.enginePlayerIDs(in: .greenies), result: greenies, amountCents: round.greeniesAmountCents)
+                : nil,
+            wolf: wolf.flatMap { result in round.wolfPointCents.map { .init(result: result, pointCents: $0) } }
+        )
     }
 
     static let notPlayedSkins = Engine.SkinsResult(holes: [], deltas: [:], complete: false, carryOutCents: 0)
