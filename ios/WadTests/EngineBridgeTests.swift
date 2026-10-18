@@ -234,6 +234,40 @@ struct EngineBridgeTests {
         ])
     }
 
+    @Test func pairwiseLedgerRoundTripsWithReasons() throws {
+        let skins = Engine.SkinsResult(
+            holes: [
+                Engine.SkinHoleResult(hole: 1, status: .won, carriedInCents: 0, atStakeCents: 500, winnerUserId: "A"),
+                Engine.SkinHoleResult(hole: 2, status: .pushed, carriedInCents: 0, atStakeCents: 500),
+            ],
+            deltas: ["A": 500, "B": -500],
+            complete: false,
+            carryOutCents: 500
+        )
+        let greenies = Engine.GreeniesResult(
+            holes: [Engine.GreenieHoleResult(hole: 3, winnerUserId: "B", status: .awarded)],
+            deltas: ["A": -200, "B": 200]
+        )
+        // A nine with no maker: the nil holder is left out of the JSON and pays nothing.
+        let wad = Engine.WadResult(
+            instances: [Engine.WadInstanceResult(segment: .front, valueCents: 700, makes: [], complete: true)],
+            deltas: ["A": 0, "B": 0],
+            ignored: []
+        )
+        let ledger = try bridge.pairwiseLedger(Engine.LedgerInput(
+            skins: .init(players: ["A", "B"], result: skins),
+            wad: .init(players: ["A", "B"], result: wad),
+            greenies: .init(players: ["A", "B"], result: greenies, amountCents: 200)
+        ))
+        #expect(ledger == [
+            Engine.LedgerPair(from: "B", to: "A", amountCents: 300, items: [
+                Engine.LedgerItem(game: .skins, holes: [1], segments: [], points: 0, amountCents: 500),
+                Engine.LedgerItem(game: .greenies, holes: [3], segments: [], points: 0, amountCents: -200),
+            ]),
+        ])
+        #expect(try bridge.pairwiseLedger(Engine.LedgerInput()) == [])
+    }
+
     @Test func javaScriptExceptionIsThrownAsSwiftError() throws {
         #expect(throws: EngineError.javaScriptException(message: "Error: deltas must sum to zero, got 100")) {
             try bridge.settle([["A": 100, "B": 0]])
