@@ -122,21 +122,21 @@ var WadEngines = (() => {
     if (input.skins) {
       const { players, result } = input.skins;
       for (const h of result.holes) {
-        if (h.status !== "won" || h.winnerUserId === null || h.atStakeCents === null) continue;
+        if (h.status !== "won" || !h.winnerUserId || typeof h.atStakeCents !== "number") continue;
         fromEach(flows, players, h.winnerUserId, { game: "skins", cents: h.atStakeCents, hole: h.hole });
       }
     }
     if (input.wad) {
       const { players, result } = input.wad;
       for (const w of result.instances) {
-        if (!w.complete || w.holderUserId === null) continue;
+        if (!w.complete || !w.holderUserId) continue;
         fromEach(flows, players, w.holderUserId, { game: "wad", cents: w.valueCents, segment: w.segment });
       }
     }
     if (input.greenies) {
       const { players, result, amountCents } = input.greenies;
       for (const h of result.holes) {
-        if (h.status !== "awarded" || h.winnerUserId === null) continue;
+        if (h.status !== "awarded" || !h.winnerUserId) continue;
         fromEach(flows, players, h.winnerUserId, { game: "greenies", cents: amountCents, hole: h.hole });
       }
     }

@@ -151,6 +151,13 @@ describe("pairwiseLedger", () => {
     expectMatchesSettle(input, ledger);
   });
 
+  it("treats a winner or holder left out of the JSON as none", () => {
+    const ids = ["a", "b", "c"];
+    const fromJSON = JSON.parse(JSON.stringify(wad(ids, scoresFor(ids, front9), []), (_, v: unknown) => (v === null ? undefined : v)));
+    expect(fromJSON.result.instances[0].holderUserId).toBeUndefined();
+    expect(pairwiseLedger({ wad: fromJSON })).toEqual([]);
+  });
+
   it("settles Wolf per pair by the difference in points and reproduces the deltas", () => {
     const input = { wolf: wolf({ a: 6, b: 2, c: 2, d: 0 }, 100) };
     const ledger = pairwiseLedger(input);
