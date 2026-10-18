@@ -18,6 +18,7 @@ struct SettlementView: View {
                 let paymentStatus = PaymentStatus(settlement: settlement, records: round.paidRecords)
                 Group {
                     status(settlement)
+                    debts(settlement)
                     payments(settlement, status: paymentStatus)
                     stalePayments(paymentStatus)
                     positions(settlement)
@@ -107,6 +108,23 @@ struct SettlementView: View {
                 WolfNeedsFixingRows(round: round, settlement: settlement)
             } header: {
                 SectionHeader("Needs fixing", systemImage: "wrench.adjustable")
+            }
+        }
+    }
+
+    /// Every pair that owes something, with the reasons; hidden when nobody owes anything.
+    @ViewBuilder
+    private func debts(_ settlement: RoundSettlement) -> some View {
+        if !settlement.debts.isEmpty {
+            Section {
+                ForEach(settlement.debts) { debt in
+                    StatusLineView(line: SettlementText.debt(debt))
+                        .accessibilityIdentifier("settlement.owes.\(debt.fromName).\(debt.toName)")
+                }
+            } header: {
+                SectionHeader(SettlementText.owesHeader, systemImage: "person.2")
+            } footer: {
+                SectionFooter(SettlementText.owesFooter)
             }
         }
     }

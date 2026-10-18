@@ -287,4 +287,62 @@ enum Engine {
         var positions: Deltas
         var transfers: [Transfer]
     }
+
+    // MARK: Pairwise ledger
+
+    /// A played game's result with its field. See backend/src/engines/ledger.ts.
+    struct LedgerGameInput<Result: Codable & Equatable & Sendable>: Codable, Equatable, Sendable {
+        var players: [UserID]
+        var result: Result
+    }
+
+    struct LedgerGreeniesInput: Codable, Equatable, Sendable {
+        var players: [UserID]
+        var result: GreeniesResult
+        var amountCents: Cents
+    }
+
+    /// Wolf's field is the result's tee order.
+    struct LedgerWolfInput: Codable, Equatable, Sendable {
+        var result: WolfResult
+        var pointCents: Cents
+    }
+
+    /// Nil for a game that is not played.
+    struct LedgerInput: Codable, Equatable, Sendable {
+        var skins: LedgerGameInput<SkinsResult>?
+        var wad: LedgerGameInput<WadResult>?
+        var greenies: LedgerGreeniesInput?
+        var wolf: LedgerWolfInput?
+    }
+
+    enum LedgerGame: String, Codable, Sendable {
+        case skins, wad, greenies, wolf
+    }
+
+    /// Why a pair owes what it owes, for one game and one direction. Signed
+    /// toward the pair's net: positive is money `from` owes `to`, negative is
+    /// money `to` owes `from` in this game, which comes off what `from` owes.
+    struct LedgerItem: Codable, Equatable, Sendable {
+        var game: LedgerGame
+        /// Skins and greenies: the holes the money came from, ascending.
+        var holes: [Int]
+        /// Wad: the nines the money came from.
+        var segments: [WadSegment]
+        /// Wolf: the difference in the pair's points, signed like `amountCents`.
+        var points: Int
+        var amountCents: Cents
+    }
+
+    /// What one player owes another, net across the games, and why.
+    struct LedgerPair: Codable, Equatable, Identifiable, Sendable {
+        var from: UserID
+        var to: UserID
+        /// Positive.
+        var amountCents: Cents
+        /// In the order skins, wad, greenies, wolf; within a game, the positive item first.
+        var items: [LedgerItem]
+
+        var id: String { "\(from)>\(to)" }
+    }
 }

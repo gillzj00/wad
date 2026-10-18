@@ -579,6 +579,103 @@ struct RoundSettlementTests {
         #expect(settlement.payments.map(SettlementText.payment) == ["Alex pays Sam $5.00", "Zach pays Sam $5.00"])
     }
 
+    // MARK: Who owes whom
+
+    /// Each player's pairwise nets add up to their position from the settlement.
+    func expectDebtsMatchPositions(_ settlement: RoundSettlement) {
+        var net: [String: Int] = [:]
+        for debt in settlement.debts {
+            net[debt.fromID, default: 0] -= debt.amountCents
+            net[debt.toID, default: 0] += debt.amountCents
+        }
+        for player in settlement.players {
+            #expect(net[player.playerID, default: 0] == player.netCents, "\(player.name)")
+        }
+    }
+
+    /// Zach (15) ticks on hole 1; Sam and Alex (7) do not. $5 skins, $5 greenies.
+    /// Hole 1 (par 4), all par: Zach nets 3 and wins $5 from Sam and Alex.
+    /// Hole 2 (par 5): Sam 4 wins $5 from Zach and Alex.
+    /// Hole 3 (par 3), all par: push; Zach's greenie pays $5 from each.
+    /// Pairs: Alex owes Sam 5 (skin 2); Alex owes Zach 5 + 5 = 10;
+    /// Sam owes Zach 5 - 5 + 5 = 5. Positions: Zach +15, Sam 0, Alex -15, so
+    /// the one payment is Alex to Zach, while Sam and Zach still see why.
+    @Test func whoOwesWhomWithTheReasons() throws {
+        let plays: [Int: HolePlay] = [2: HolePlay(gross: ["sam": 4]), 3: HolePlay(greenie: "zach")]
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), plays: plays, holes: 1...3)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.debts.map(\.id) == ["alex>sam", "alex>zach", "sam>zach"])
+        #expect(settlement.debts.map(SettlementText.debt) == [
+            StatusLine(title: "Alex owes Sam $5", detail: "skins on hole 2 ($5)"),
+            StatusLine(title: "Alex owes Zach $10", detail: "skins on hole 1 ($5), the greenie on hole 3 ($5)"),
+            StatusLine(
+                title: "Sam owes Zach $5",
+                detail: "skins on hole 1 ($5), less skins on hole 2 ($5), the greenie on hole 3 ($5)"
+            ),
+        ])
+        #expect(settlement.payments.map(SettlementText.payment) == ["Alex pays Zach $15.00"])
+        expectDebtsMatchPositions(settlement)
+    }
+
+    /// Zach wins hole 1 and Sam hole 2, $5 each: Zach and Sam are square and
+    /// have no row; Alex owes each of them $5.
+    @Test func aPairThatIsSquareHasNoRow() throws {
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), plays: [2: HolePlay(gross: ["sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.debts.map(SettlementText.owes) == ["Alex owes Sam $5", "Alex owes Zach $5"])
+        #expect(!settlement.debts.contains { Set([$0.fromID, $0.toID]) == ["sam", "zach"] })
+        expectDebtsMatchPositions(settlement)
+    }
+
+    @Test func theFullRoundsDebtsAddUpToThePositions() throws {
+        let round = try makeRound(RoundFixtures.fourPlayerDraft(), plays: Self.fullRound)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(!settlement.debts.isEmpty)
+        expectDebtsMatchPositions(settlement)
+        // The Wad pays the holder of each nine: Sam the front ($13), Alex the back ($9).
+        let joToSam = try #require(settlement.debts.first { $0.id == "jo>sam" })
+        #expect(joToSam.items.contains(Engine.LedgerItem(game: .wad, holes: [], segments: [.front], points: 0, amountCents: 1300)))
+    }
+
+    @Test func aRoundWithoutScoresOwesNobody() throws {
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), holes: nil)
+        #expect(try RoundSettlement(round: round, bridge: bridge).debts.isEmpty)
+    }
+
+    @Test func wordsTheReasons() {
+        func item(_ game: Engine.LedgerGame, holes: [Int] = [], segments: [Engine.WadSegment] = [], points: Int = 0, _ cents: Int)
+            -> Engine.LedgerItem {
+            Engine.LedgerItem(game: game, holes: holes, segments: segments, points: points, amountCents: cents)
+        }
+        #expect(SettlementText.list([]) == "")
+        #expect(SettlementText.list(["1"]) == "1")
+        #expect(SettlementText.list(["1", "6"]) == "1 and 6")
+        #expect(SettlementText.list(["1", "6", "9"]) == "1, 6 and 9")
+        #expect(SettlementText.holeList([14]) == "hole 14")
+        #expect(SettlementText.holeList([3, 11]) == "holes 3 and 11")
+
+        #expect(SettlementText.shortDollars(2500) == "$25")
+        #expect(SettlementText.shortDollars(-750) == "$7.50")
+        #expect(SettlementText.owes(from: "Zach", to: "Jay", cents: 2500) == "Zach owes Jay $25")
+
+        #expect(SettlementText.reasons([
+            item(.skins, holes: [1, 6, 9], 1500),
+            item(.greenies, holes: [3, 11], 1000),
+        ]) == "skins on holes 1, 6 and 9 ($15), greenies on holes 3 and 11 ($10)")
+        #expect(SettlementText.reason(item(.skins, holes: [14], -500)) == "less skins on hole 14 ($5)")
+        #expect(SettlementText.reason(item(.greenies, holes: [3], 500)) == "the greenie on hole 3 ($5)")
+        #expect(SettlementText.reason(item(.greenies, holes: [3, 6], -1000)) == "less greenies on holes 3 and 6 ($10)")
+        #expect(SettlementText.reason(item(.wad, segments: [.front], 700)) == "the Wad on the front nine ($7)")
+        #expect(SettlementText.reason(item(.wad, segments: [.back], -900)) == "less the Wad on the back nine ($9)")
+        #expect(SettlementText.reason(item(.wad, segments: [.front, .back], 1600)) == "the Wad on the front and back nines ($16)")
+        #expect(SettlementText.reason(item(.wolf, points: 3, 300)) == "Wolf, 3 points ($3)")
+        #expect(SettlementText.reason(item(.wolf, points: 1, 50)) == "Wolf, 1 point ($0.50)")
+        #expect(SettlementText.reason(item(.wolf, points: -2, -200)) == "less Wolf, 2 points ($2)")
+    }
+
     // MARK: Wording
 
     @Test func wordsAmountsWithTheirSign() {

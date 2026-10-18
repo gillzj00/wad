@@ -87,6 +87,12 @@ final class EngineBridge {
         try call("settle", arguments: gameDeltas)
     }
 
+    /// Who owes whom, pair by pair, and from which holes of which game. Pairs
+    /// are ordered by the debtor's id, then the creditor's.
+    func pairwiseLedger(_ input: Engine.LedgerInput) throws -> [Engine.LedgerPair] {
+        try call("pairwiseLedger", arguments: [input])
+    }
+
     private func call<Result: Decodable>(_ function: String, arguments: [any Encodable]) throws -> Result {
         let encoded = try arguments.map { String(decoding: try encoder.encode($0), as: UTF8.self) }
         let argumentsJSON = "[" + encoded.joined(separator: ",") + "]"

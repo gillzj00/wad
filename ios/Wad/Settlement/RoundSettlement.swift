@@ -42,6 +42,20 @@ struct RoundSettlement: Equatable, Sendable {
         var amountCents: Int
     }
 
+    /// What one player owes another, net across the games, with the engine's
+    /// reasons per game. Not a payment: the payments combine these.
+    struct Debt: Equatable, Identifiable, Sendable {
+        var fromID: String
+        var fromName: String
+        var toID: String
+        var toName: String
+        var amountCents: Int
+        /// Signed toward the debt: a negative item is one the debtor won back.
+        var items: [Engine.LedgerItem]
+
+        var id: String { "\(fromID)>\(toID)" }
+    }
+
     /// Every hole of the round, in order.
     var holeNumbers: [Int]
     /// Holes without a score from every player. The settlement is final when there are none.
@@ -50,6 +64,8 @@ struct RoundSettlement: Equatable, Sendable {
     var players: [PlayerResult]
     /// In the engine's order: largest creditor and debtor first.
     var payments: [Payment]
+    /// The engine's pairwise ledger, in its order: by the debtor's id, then the creditor's.
+    var debts: [Debt]
     var skins: Engine.SkinsResult
     /// The round's skins setting; off, a pushed hole pays nothing.
     var skinsCarryover: Bool
@@ -95,6 +111,7 @@ struct RoundSettlement: Equatable, Sendable {
                 amountCents: transfer.amountCents
             )
         }
+        debts = Self.debts(status.ledger, names: names)
         skins = status.skins
         skinsCarryover = round.skinsCarryover
         wadInstances = status.wad.instances
@@ -106,6 +123,19 @@ struct RoundSettlement: Equatable, Sendable {
     }
 
     private static let unknownPlayer = "Unknown player"
+
+    static func debts(_ ledger: [Engine.LedgerPair], names: [String: String]) -> [Debt] {
+        ledger.map { pair in
+            Debt(
+                fromID: pair.from,
+                fromName: names[pair.from] ?? unknownPlayer,
+                toID: pair.to,
+                toName: names[pair.to] ?? unknownPlayer,
+                amountCents: pair.amountCents,
+                items: pair.items
+            )
+        }
+    }
 
     func name(_ playerID: String) -> String {
         names[playerID] ?? Self.unknownPlayer
