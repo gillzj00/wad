@@ -13,7 +13,7 @@ Wolf was requested as a fourth game. The research in `docs/research/side-games.m
 - **Tee order:** a fixed order of the four players, set for the round. The default is the order the players were added, and it can be reordered before play. The Wolf rotates through it on holes 1-16.
 - **Holes 17 and 18:** the Wolf is the player in last place on points, after hole 16 for hole 17 and after hole 17 for hole 18.
 - **Choice:** one partner (2 v 2) or Lone Wolf (1 v 3), recorded per hole by the group. Blind Wolf is not played.
-- **Winning a hole:** net best ball, with the same relative tick allocation as Skins. A tied hole gives no points and carries nothing over.
+- **Winning a hole:** net best ball, with the same relative stroke allocation as Skins. A tied hole gives no points and carries nothing over.
 - **Points:** Wolf and partner win, 2 each. Wolf and partner lose, 3 to each opponent. Lone Wolf wins, 4. Lone Wolf loses, 1 to each opponent.
 - **Money:** a value per point (default $1). Every pair of players settles the difference in their points, so a player's result is `value * (4 * own points - total points)`. Wolf is one game over 18 holes, 18-hole rounds only, and part of the single round settlement.
 - **Invalid records** (the partner is the Wolf, the partner is not in the round, a recorded Wolf that contradicts the rotation or is not in last place, a partner together with lone) are reported, score no points, and are never corrected silently.
