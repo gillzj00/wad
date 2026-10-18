@@ -275,6 +275,12 @@ struct SettlementView: View {
     private func skins(_ settlement: RoundSettlement) -> some View {
         Section {
             fieldRows(settlement, .skins)
+            if let ticks = SettlementText.ticks(settlement) {
+                Text(ticks)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .accessibilityIdentifier("settlement.skins.ticks")
+            }
             ForEach(settlement.skins.holes, id: \.hole) { hole in
                 HoleLineRow(
                     hole: hole.hole,

@@ -67,6 +67,9 @@ struct RoundSettlement: Equatable, Sendable {
     /// The engine's pairwise ledger, in its order: by the debtor's id, then the creditor's.
     var debts: [Debt]
     var skins: Engine.SkinsResult
+    /// Skins won per player id, from the engine's result: only the players in
+    /// Skins, and nobody when Skins is not played.
+    var ticks: [String: Int]
     /// The round's skins setting; off, a pushed hole pays nothing.
     var skinsCarryover: Bool
     var wadInstances: [Engine.WadInstanceResult]
@@ -113,6 +116,7 @@ struct RoundSettlement: Equatable, Sendable {
         }
         debts = Self.debts(status.ledger, names: names)
         skins = status.skins
+        ticks = status.ticks
         skinsCarryover = round.skinsCarryover
         wadInstances = status.wad.instances
         greenieHoles = status.greenies.holes

@@ -6,6 +6,9 @@ struct RoundStatus: Equatable, Sendable {
     /// Skins handicap strokes per player id, then per hole number: only the
     /// players in Skins, and nobody when Skins is not played.
     var strokes: [Engine.UserID: Engine.TicksByHole]
+    /// Skins won ("ticks") per player id: only the players in Skins, and nobody
+    /// when Skins is not played.
+    var ticks: [Engine.UserID: Int]
     var skins: Engine.SkinsResult
     var wad: Engine.WadResult
     var greenies: Engine.GreeniesResult
@@ -21,6 +24,7 @@ struct RoundStatus: Equatable, Sendable {
         // not run and its empty result moves no money.
         strokes = try round.skinsStrokes(using: bridge)
         skins = round.isPlayed(.skins) ? try bridge.scoreSkins(round.skinsInput) : Self.notPlayedSkins
+        ticks = Self.ticks(skins, players: round.isPlayed(.skins) ? round.enginePlayerIDs(in: .skins) : [])
         wad = round.isPlayed(.wad) ? try bridge.scoreWad(round.wadInput) : Self.notPlayedWad
         greenies = round.isPlayed(.greenies) ? try bridge.scoreGreenies(round.greeniesInput) : Self.notPlayedGreenies
         wolf = try round.wolfInput.flatMap(bridge.scoreWolf)
@@ -46,6 +50,18 @@ struct RoundStatus: Equatable, Sendable {
                 : nil,
             wolf: wolf.flatMap { result in round.wolfPointCents.map { .init(result: result, pointCents: $0) } }
         )
+    }
+
+    /// The engine's won holes per player: zero for a player in Skins who has
+    /// won none, and no entry for a player out of it. A pushed hole counts for nobody.
+    static func ticks(_ skins: Engine.SkinsResult, players: [Engine.UserID]) -> [Engine.UserID: Int] {
+        var ticks = Dictionary(players.map { ($0, 0) }, uniquingKeysWith: { first, _ in first })
+        for hole in skins.holes where hole.status == .won {
+            if let winner = hole.winnerUserId, ticks[winner] != nil {
+                ticks[winner, default: 0] += 1
+            }
+        }
+        return ticks
     }
 
     static let notPlayedSkins = Engine.SkinsResult(holes: [], deltas: [:], complete: false, carryOutCents: 0)

@@ -534,6 +534,29 @@ struct RoundSettlementTests {
         #expect(settlement.players.map(\.skinsCents) == [500, 500, 0, -1000])
     }
 
+    /// The full round's skins: Zach won 1, 10, 14 and 16; Sam 3 and 13; Alex 5;
+    /// Jo 7 and 18. The nine pushed holes count for nobody.
+    @Test func ticksCountTheSkinsEachPlayerWon() throws {
+        let round = try makeRound(RoundFixtures.fourPlayerDraft(), plays: Self.fullRound)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 4, "sam": 2, "alex": 1, "jo": 2])
+        #expect(settlement.skins.holes.filter { $0.status == .pushed }.count == 9)
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 4, Sam 2, Alex 1, Jo 2")
+        #expect(try RoundStatus(round: round, bridge: bridge).ticks == settlement.ticks)
+    }
+
+    /// Alex is out of Skins and has no tick count; Zach won hole 1 and Sam hole 2.
+    @Test func aPlayerOutOfSkinsHasNoTicks() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[2].playsSkins = false
+        let round = try makeRound(draft, plays: [2: HolePlay(gross: ["alex": 3, "sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 1, "sam": 1, "jo": 0])
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 1, Sam 1, Jo 0")
+    }
+
     /// Jo is out of all three games and Wolf is off: Jo's birdies change
     /// nothing, Jo's position is $0 and Jo is in no payment.
     @Test func aPlayerOutOfEveryGameIsEvenAndInNoPayment() throws {
@@ -571,6 +594,8 @@ struct RoundSettlementTests {
         #expect(!settlement.isPlayed(.skins))
         #expect(settlement.partialField(.skins) == nil)
         #expect(settlement.skins.holes.isEmpty)
+        #expect(settlement.ticks.isEmpty)
+        #expect(SettlementText.ticks(settlement) == nil)
         #expect(settlement.players.allSatisfy { $0.skinsCents == 0 })
         #expect(settlement.unresolvedSkinsCarryoverCents == nil)
         #expect(settlement.isFinal)

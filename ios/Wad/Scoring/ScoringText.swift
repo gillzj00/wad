@@ -22,6 +22,15 @@ enum ScoringText {
         }
     }
 
+    /// Ticks are skins won.
+    static func ticks(_ ticks: Int) -> String {
+        switch ticks {
+        case 0: "No ticks yet"
+        case 1: "1 tick"
+        default: "\(ticks) ticks"
+        }
+    }
+
     /// `carryover` is the round's skins setting. Off, a push pays nothing and
     /// nothing is ever carried in, so the wording says nothing about carrying.
     static func skins(

@@ -260,6 +260,9 @@ struct RoundStatusTests {
         #expect(ScoringText.strokes(0) == "No strokes")
         #expect(ScoringText.strokes(1) == "1 stroke")
         #expect(ScoringText.strokes(2) == "2 strokes")
+        #expect(ScoringText.ticks(0) == "No ticks yet")
+        #expect(ScoringText.ticks(1) == "1 tick")
+        #expect(ScoringText.ticks(3) == "3 ticks")
         #expect(ScoringText.dollars(1350) == "$13.50")
     }
 
@@ -330,6 +333,24 @@ struct RoundStatusTests {
         #expect(try round.skinsStrokes(using: bridge) == status.strokes)
     }
 
+    /// Only won holes count, for their winner, and only for the players given;
+    /// a pushed or pending hole counts for nobody.
+    @Test func ticksCountWonHolesOfThePlayersInSkins() {
+        func hole(_ number: Int, _ status: Engine.SkinStatus, _ winner: String? = nil) -> Engine.SkinHoleResult {
+            Engine.SkinHoleResult(
+                hole: number, status: status, carriedInCents: 0, atStakeCents: 500, winnerUserId: winner, net: nil
+            )
+        }
+        let skins = Engine.SkinsResult(
+            holes: [hole(1, .won, "zach"), hole(2, .pushed), hole(3, .won, "zach"), hole(4, .won, "sam"), hole(5, .pending)],
+            deltas: [:], complete: false, carryOutCents: 0
+        )
+
+        #expect(RoundStatus.ticks(skins, players: ["zach", "sam", "alex"]) == ["zach": 2, "sam": 1, "alex": 0])
+        #expect(RoundStatus.ticks(skins, players: ["sam", "alex"]) == ["sam": 1, "alex": 0])
+        #expect(RoundStatus.ticks(skins, players: []).isEmpty)
+    }
+
     @Test func nobodyHasStrokesWhenSkinsIsNotPlayed() throws {
         var draft = RoundFixtures.threePlayerDraft()
         draft.players[1].playsSkins = false
@@ -339,6 +360,7 @@ struct RoundStatusTests {
         let status = try RoundStatus(round: round, bridge: bridge)
 
         #expect(status.strokes.isEmpty)
+        #expect(status.ticks.isEmpty)
         #expect(status.skins == RoundStatus.notPlayedSkins)
         #expect(status.skinsHole(1) == nil)
     }

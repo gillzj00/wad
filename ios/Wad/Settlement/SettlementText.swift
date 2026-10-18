@@ -44,6 +44,15 @@ enum SettlementText {
         "Players in: " + names.joined(separator: ", ")
     }
 
+    /// "Ticks: Zach 3, Sam 1, Alex 0": the skins won by each player in Skins,
+    /// in order. Nil when Skins is not played.
+    static func ticks(_ settlement: RoundSettlement) -> String? {
+        let counts = settlement.players.compactMap { player in
+            settlement.ticks[player.playerID].map { "\(player.name) \($0)" }
+        }
+        return counts.isEmpty ? nil : "Ticks: " + counts.joined(separator: ", ")
+    }
+
     static func holes(_ holes: [Int]) -> String {
         (holes.count == 1 ? "hole " : "holes ") + holes.map(String.init).joined(separator: ", ")
     }
