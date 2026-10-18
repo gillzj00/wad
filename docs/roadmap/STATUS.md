@@ -2,15 +2,15 @@
 
 Source of truth for the orchestrated build-out. Updated after every merged PR. After any context summarization, re-read this file first.
 
-Last updated: 2026-10-08 (after #91)
+Last updated: 2026-10-17 (after #94)
 
 ## Current phase
 
-**Phase 1 demo is complete and installed** (merged in #16, #18, #20, #22). It was installed on the owner's iPhone on 2026-09-30 from main at #61. Reinstall with `ios/scripts/install-device.sh` when a newer build is wanted (Personal Team builds expire after 7 days). If the schema changed since the installed build, delete the older install of Wad first (no migration).
+**Phase 1 demo is complete and installed** (merged in #16, #18, #20, #22). It was reinstalled on the owner's iPhone on 2026-10-17 from main at #93 (the older install was removed first, at the owner's choice). Reinstall with `ios/scripts/install-device.sh` when a newer build is wanted (Personal Team builds expire after 7 days). The phone must be unlocked, Xcode must have the owner's Apple ID signed in (Xcode 27.1 lost it; the build fails with "No Accounts" otherwise), and after a fresh profile the owner trusts it on the phone under Settings > General > VPN & Device Management. Added attributes with defaults migrate in place (`StoreMigrationTests`), so an older install only needs deleting when a model changes incompatibly.
 
 **Phase 2 — backend:** the four listed items are merged (#24, #26, #28, #30); the documented handicap override route followed (#32). Remaining milestones (M1, M2.2/M2.4 deploy, M3.3, M3.4/M3.5, M5.2, M6) depend on auth, deploys or iOS sign-in and wait on Apple Developer Program enrollment or a decision from @gillzj00. Original scope: M3.1 round lifecycle API, M3.2 scoring API, M5.1 settlement API, M2.3 manual course entry. Handler code and tests only. No M1 auth, no Sign in with Apple, nothing that deploys a public endpoint until @gillzj00 confirms Apple Developer Program enrollment. Any `infra/` PR needs explicit approval in chat.
 
-**Phase 4 — scoring polish and live relay** started 2026-10-05: six PRs are merged (#79, #80, #81, #83, #85, #82). The relay API is deployed and the two-phone test is next.
+**Phase 4 — scoring polish and live relay** started 2026-10-05: eight feature PRs are merged (#79, #80, #81, #83, #85, #82, #91, #94). The relay API is deployed; the two-phone test now happens on real phones (the owner's and a follower's).
 
 ## Phase 1 task list
 
@@ -20,7 +20,7 @@ Last updated: 2026-10-08 (after #91)
 | P1.2 | Round models and setup flow | done | #18 |
 | P1.3 | Hole-by-hole scoring, UI walkthrough test | done | #20 |
 | P1.4 | Settlement screen, full 18-hole UI walkthrough | done | #22 |
-| P1.5 | Install on device | done 2026-09-30 (installed on the owner's iPhone from main at #61) | - |
+| P1.5 | Install on device | done 2026-09-30; reinstalled 2026-10-17 from main at #93 | - |
 
 ## Phase 2 task list
 
@@ -67,6 +67,8 @@ Last updated: 2026-10-08 (after #91)
 | P4.4b | iOS live client (`ios/Wad/Live/`): "Share live" on the round detail shows a 6-character code (`Round.liveCode`); "Follow a round" on the Rounds tab plays the scoring phone's game events through the same shows and keeps a feed; `EventCenter.relay`/`relayScores` hooks; needs `WAD_LIVE_URL` in `ios/Config/Local.xcconfig`, nothing connects without it; 309 unit tests on main | ios/ | done 2026-10-08 | #83 |
 | P4.5 | Score entry fix (owner, 2026-10-08): shows play only when every player has a score on the hole, in both the before and after snapshot; "Start every hole at par" defaults off; the scoring phone skips its own shows while sharing live (followers still get them) | ios/ | done 2026-10-08 (319 unit tests, 3 UI smoke tests) | #85 |
 | P4.6 | Remove the "Start every hole at par" option (owner decision 2026-10-08): toggle, draft property, par fill and the `Round` attribute are gone (lightweight migration drops it); a complete round opens on its last hole | ios/ | done 2026-10-08 (316 unit tests, 3 UI smoke tests) | #89 |
+| P4.8 | Per-player opt-in for Skins, Wad and Greenies (owner request 2026-10-17: "if 3 players want to play greenies but one doesn't"): `RoundPlayer.playsSkins/playsWad/playsGreenies` (default true, lightweight migration), `SideGame`, "Who's in" chips per game in the Games step (`setup.<game>.player.<n>`), engine inputs filtered per game (players and scores), Skins ticks allocated among the Skins players, pickers limited to the game's players, "who's in" rows on the detail and settlement screens, a game with fewer than two players in is "Not played"; domain model gained a Participation section | ios/, docs/ | done 2026-10-17 (337 unit tests, 3 UI smoke tests) | #94 |
+| F1 | `select_device.py` reads the newer devicectl record shape (no `reality` field on a phone, `properties` block), so `install-device.sh` finds the connected phone again | ios/scripts | done 2026-10-17 | #93 |
 | P4.7 | Local Profile tab (M1.4 without sign-in, owner pick 2026-10-08): name, handicap index and Venmo handle kept in UserDefaults (`ProfileStore`), advisory validation, a "Shows" link to the animation settings; "New round" and "Start a round here" prefill player 1 from it; `-inMemoryStore` clears it for the UI tests | ios/, docs/ | done 2026-10-08 (323 unit tests, 3 UI smoke tests) | #91 |
 
 ## Tasks in flight
@@ -77,7 +79,7 @@ Last updated: 2026-10-08 (after #91)
 
 ## Open PRs
 
-- none.
+- Dependabot #87 (`source-map-js` 1.2.1 to 1.2.2 in `backend/package-lock.json`, high alert): left for the owner; needs `gh pr update-branch 87` before merging.
 
 ## Decisions made
 
@@ -107,7 +109,9 @@ Last updated: 2026-10-08 (after #91)
 
 ## Questions waiting on @gillzj00
 
+- Participation defaults built into #94 (2026-10-17), to confirm: (1) participation is set in setup only, no joining or leaving a game mid-round; (2) Skins with three of four in is contested among the three and ticks are allocated among them, the fourth's score is ignored even when lowest; (3) a game with fewer than two players in is "Not played" and moves no money (this is how a group turns a game off); (4) the live relay carries nothing about participation, since events name only winners. The backend API has no per-player participation yet (rounds are local-only in the app); say if it should.
 - Owner decisions 2026-10-08: no "Play shows on this phone" switch (the scoring phone never plays shows while sharing, as in #85); "Start every hole at par" removed entirely (#89).
+- Features requested by the owner on 2026-10-17 (not started, in the owner's order): (1) let players opt in or out of each game at the end of a round too, not only in setup (extends #94; the settlement then recomputes with the new fields); (2) a settlement summary that says who owes whom and why, for example "Zach owes Jay $25 from skins on holes 1, 6 and 9 and 2 greenies"; (3) let the skins carryover setting be changed before, during and at the end of the round, not only in setup; (4) a running total during play of how much each player owes each other player, updated as holes are scored. (5) Rename "ticks" (owner decision 2026-10-18): handicap strokes received are called "strokes" everywhere in the app and the docs ("Zach gets 8 strokes"); a "tick" is a skin won, shown as a per-player count on the round detail and the settlement ("Zach: 3 ticks"). The engine's `allocateTicks` and `docs/domain-model.md` use the old name; rename in the docs and the app text first, the engine identifiers only if it stays cheap.
 - Candidate next features offered 2026-10-05 (the Profile tab was picked and shipped in #91): scorecard export as an image; Nassau or Stableford (`docs/research/side-games.md`); 9-hole rounds (Open Question 3) and a mid-round leaver (Open Question 2); hole detection from location (`docs/research/geolocation.md`, phase 2); Apple Developer Program enrollment to unblock M1 auth, TestFlight and a longer-lived device install.
 - Default tee for course lookup (#64): the first usable men's tee in the API's order. Say if a specific tee by name is wanted instead.
 
@@ -147,9 +151,10 @@ Last updated: 2026-10-08 (after #91)
 - Backend concurrency tests run against an in-memory fake, not real DynamoDB.
 - Wad makes that the engine ignores are not shown on the settlement screen.
 - iOS CI runs Xcode 16.4 with an iOS 18 simulator; local runs use iOS 26. Controls in list section headers were not hittable for XCUITest on iOS 18, so they were moved into full-width rows (#20).
-- The `Round` SwiftData schema changed with no migration; delete any older install of the app before installing.
+- SwiftData lightweight migration covers attributes added with defaults and dropped ones (`StoreMigrationTests`); only an incompatible model change needs the older install deleted.
+- Xcode 27.1 (2026-10-17): devicectl's device records lost the `reality` field for phones (#93), and the Apple ID had to be signed in again in Xcode before a device build would sign. A device build with `-allowProvisioningUpdates` also rewrites `ios/Wad.xcodeproj` (project format, scheme, and the team id into the build settings): run `git checkout -- ios/Wad.xcodeproj` afterwards and never commit that edit.
 
 ## Blocked / deferred
 
 - M1 auth, Sign in with Apple, any public endpoint deploy: waiting on Apple Developer Program enrollment.
-- Device install: waiting for the phone to be connected (`ios/scripts/install-device.sh`).
+- Device install: done 2026-10-17; rerun `ios/scripts/install-device.sh` with the phone unlocked when a newer build is wanted.

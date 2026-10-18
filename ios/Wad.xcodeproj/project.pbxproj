@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -195,7 +195,7 @@
 		620BC3C02FF4B4ABADA8EA79 /* RoundScorer+Wolf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RoundScorer+Wolf.swift"; sourceTree = "<group>"; };
 		6388D01910F1B4BD36E98B75 /* RoundDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDetailView.swift; sourceTree = "<group>"; };
 		66B61D9C0D6A514E61BE44BC /* LiveSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSession.swift; sourceTree = "<group>"; };
-		6BBD493D8E3EBA40EABAC02C /* Wad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6BBD493D8E3EBA40EABAC02C /* Wad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6DF518CEF4CB9AB454798F08 /* LiveConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveConfiguration.swift; sourceTree = "<group>"; };
 		71AFA2FB68E7EFFDCA5EB931 /* CourseLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseLookup.swift; sourceTree = "<group>"; };
 		72F1B766792B776DC40E58CD /* GameSnapshot+Round.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameSnapshot+Round.swift"; sourceTree = "<group>"; };
@@ -206,7 +206,7 @@
 		78DDA93C4D7483CA3BAE0849 /* EventQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventQueueTests.swift; sourceTree = "<group>"; };
 		79DAB84E45AFB9828998E49B /* EventHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventHaptics.swift; sourceTree = "<group>"; };
 		7A4EA82DAD04D9DF920BD953 /* LiveMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMessageTests.swift; sourceTree = "<group>"; };
-		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CAEF146D41870412F0025A4 /* WadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CFDB4A7DE9A3404B98DEC46 /* RoundScorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundScorerTests.swift; sourceTree = "<group>"; };
 		7E1A176DD7223A1EABDC3795 /* SkullIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkullIllustration.swift; sourceTree = "<group>"; };
 		7F6226252CA4567B45F89BCF /* CourseLookupClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseLookupClient.swift; sourceTree = "<group>"; };
@@ -243,7 +243,7 @@
 		B8DD489A3A59FEF6208672D7 /* LiveMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMessage.swift; sourceTree = "<group>"; };
 		B99C6AA1DB2376BE531C0676 /* DebugRounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRounds.swift; sourceTree = "<group>"; };
 		BAE26489214D11F38B99B353 /* RoundDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDraftTests.swift; sourceTree = "<group>"; };
-		BAE2C17388A7B361E43BC6DA /* WadUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WadUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAE2C17388A7B361E43BC6DA /* WadUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WadUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDDA0CA259F88AC197149488 /* CoursesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoursesModel.swift; sourceTree = "<group>"; };
 		BE3D66F13418D25AF32E4F0F /* WolfEngineBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WolfEngineBridgeTests.swift; sourceTree = "<group>"; };
 		BF48B724C43F7D8EA1D73131 /* RoundDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundDraft.swift; sourceTree = "<group>"; };
@@ -677,7 +677,6 @@
 			);
 			mainGroup = DD0CBEB2DC9A85086EFC0F56;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -952,6 +951,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 95D558LR9B;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1048,6 +1048,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 95D558LR9B;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
