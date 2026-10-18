@@ -50,6 +50,7 @@ struct HoleScoringView: View {
                         greenie(hole, status: status)
                     }
                     skins(hole, status: status)
+                    owed(status: status)
                 }
                 .themedRows()
             }
@@ -186,6 +187,26 @@ struct HoleScoringView: View {
                     .accessibilityIdentifier("status.skins")
             } header: {
                 SectionHeader("Skins", systemImage: "dollarsign.circle")
+            }
+        }
+    }
+
+    /// Who owes whom so far, from the ledger the status already holds; hidden
+    /// when nobody owes anything.
+    @ViewBuilder
+    private func owed(status: RoundStatus?) -> some View {
+        if let ledger = status?.ledger, !ledger.isEmpty {
+            Section {
+                ForEach(ledger) { pair in
+                    let from = name(pair.from)
+                    let to = name(pair.to)
+                    Text(SettlementText.owes(from: from, to: to, cents: pair.amountCents))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.Palette.bone)
+                        .accessibilityIdentifier("scoring.owes.\(from).\(to)")
+                }
+            } header: {
+                SectionHeader("Owed so far", systemImage: "person.2")
             }
         }
     }
