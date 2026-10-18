@@ -161,7 +161,7 @@ struct RoundEngineMappingTests {
         }
         var input = round.skinsInput
         input.carryover = nil
-        // Hole 1 is a tick for Zach (stroke index 7 is within 8 ticks): he wins it. Hole 2 pushes, hole 3 carries.
+        // Hole 1 is a stroke for Zach (stroke index 7 is within 8 strokes): he wins it. Hole 2 pushes, hole 3 carries.
         let result = try bridge.scoreSkins(input)
         #expect(result.holes[0].status == .won)
         #expect(result.holes[1].status == .pushed)
@@ -173,12 +173,12 @@ struct RoundEngineMappingTests {
     @Test func enginesAcceptTheMappedInputs() throws {
         let round = try makeRound(RoundFixtures.unratedDraft())
 
-        // 15 against 7: Zach gets 8 ticks, on stroke indexes 1 to 8.
-        let ticks = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
-        #expect(ticks["zach"]?.values.reduce(0, +) == 8)
-        #expect(ticks["sam"]?.values.reduce(0, +) == 0)
-        #expect(ticks["zach"]?[5] == 1)
-        #expect(ticks["zach"]?[3] == 0)
+        // 15 against 7: Zach gets 8 strokes, on stroke indexes 1 to 8.
+        let strokes = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
+        #expect(strokes["zach"]?.values.reduce(0, +) == 8)
+        #expect(strokes["sam"]?.values.reduce(0, +) == 0)
+        #expect(strokes["zach"]?[5] == 1)
+        #expect(strokes["zach"]?[3] == 0)
 
         // Hole 3 (par 3, stroke index 17): Sam's 3 beats Zach's 4 and wins the greenie.
         round.setGross(4, playerID: "zach", hole: 3)

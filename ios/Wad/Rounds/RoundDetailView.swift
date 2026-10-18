@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 /// A round: the way into scoring, its progress and scorecard, and its setup
-/// (course, players with the handicaps and ticks they play with, game amounts).
+/// (course, players with the handicaps and strokes they play with, game amounts).
 struct RoundDetailView: View {
     let round: Round
 
@@ -10,18 +10,18 @@ struct RoundDetailView: View {
     @State private var scoreEdit: ScoreEdit?
     @State private var editsGames = false
 
-    /// Total Skins ticks per player id, from the engine; a player out of Skins
-    /// has none. Nil if the engine failed.
-    private var totalTicks: [String: Int]? {
+    /// Total Skins strokes per player id, from the engine; a player out of
+    /// Skins has none. Nil if the engine failed.
+    private var totalStrokes: [String: Int]? {
         guard
             let bridge = SharedEngine.bridge,
-            let ticks = try? round.skinsTicks(using: bridge)
+            let strokes = try? round.skinsStrokes(using: bridge)
         else { return nil }
-        return ticks.mapValues { $0.values.reduce(0, +) }
+        return strokes.mapValues { $0.values.reduce(0, +) }
     }
 
     var body: some View {
-        let totalTicks = totalTicks
+        let totalStrokes = totalStrokes
         let scorecard = Scorecard(round: round)
         List {
             Section {
@@ -92,7 +92,7 @@ struct RoundDetailView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
-                                Text(ticksText(totalTicks?[player.playerID]))
+                                Text(strokesText(totalStrokes?[player.playerID]))
                                     .font(.caption)
                                     .foregroundStyle(Theme.Palette.ash)
                             }
@@ -113,10 +113,10 @@ struct RoundDetailView: View {
                 } header: {
                     SectionHeader("Players", systemImage: "person.2.fill")
                 } footer: {
-                    if totalTicks == nil {
-                        SectionFooter("Ticks could not be computed.")
+                    if totalStrokes == nil {
+                        SectionFooter("Strokes could not be computed.")
                     } else {
-                        SectionFooter("Ticks are strokes received in Skins, relative to the lowest course handicap among the players in Skins.")
+                        SectionFooter("Strokes are received in Skins, relative to the lowest course handicap among the players in Skins.")
                     }
                 }
 
@@ -202,8 +202,7 @@ struct RoundDetailView: View {
         )
     }
 
-    private func ticksText(_ ticks: Int?) -> String {
-        guard let ticks else { return "-" }
-        return ticks == 1 ? "1 tick" : "\(ticks) ticks"
+    private func strokesText(_ strokes: Int?) -> String {
+        strokes.map(ScoringText.strokes) ?? "-"
     }
 }

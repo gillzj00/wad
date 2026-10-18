@@ -3,9 +3,9 @@ import Foundation
 /// The state of every game for a round, scored by the engines from what has
 /// been recorded so far. Nothing here is computed in Swift.
 struct RoundStatus: Equatable, Sendable {
-    /// Skins ticks per player id, then per hole number: only the players in
-    /// Skins, and nobody when Skins is not played.
-    var ticks: [Engine.UserID: Engine.TicksByHole]
+    /// Skins handicap strokes per player id, then per hole number: only the
+    /// players in Skins, and nobody when Skins is not played.
+    var strokes: [Engine.UserID: Engine.TicksByHole]
     var skins: Engine.SkinsResult
     var wad: Engine.WadResult
     var greenies: Engine.GreeniesResult
@@ -19,7 +19,7 @@ struct RoundStatus: Equatable, Sendable {
     init(round: Round, bridge: EngineBridge) throws {
         // A game with fewer than two players in is not played: its engine does
         // not run and its empty result moves no money.
-        ticks = try round.skinsTicks(using: bridge)
+        strokes = try round.skinsStrokes(using: bridge)
         skins = round.isPlayed(.skins) ? try bridge.scoreSkins(round.skinsInput) : Self.notPlayedSkins
         wad = round.isPlayed(.wad) ? try bridge.scoreWad(round.wadInput) : Self.notPlayedWad
         greenies = round.isPlayed(.greenies) ? try bridge.scoreGreenies(round.greeniesInput) : Self.notPlayedGreenies
@@ -58,8 +58,8 @@ struct RoundStatus: Equatable, Sendable {
         [skins.deltas, wad.deltas, greenies.deltas] + (wolf.map { [$0.deltas] } ?? [])
     }
 
-    func ticks(playerID: String, hole: Int) -> Int? {
-        ticks[playerID]?[hole]
+    func strokes(playerID: String, hole: Int) -> Int? {
+        strokes[playerID]?[hole]
     }
 
     /// The engine's net score. Nil until every player has a score on the hole.

@@ -152,8 +152,8 @@ struct RoundGamesEditorTests {
 
     // MARK: Carryover
 
-    /// Hole 1 (stroke index 7): par for all, Zach's tick wins it, $5 from each.
-    /// Hole 2 (index 11): par for all, no ticks, pushed.
+    /// Hole 1 (stroke index 7): par for all, Zach's stroke wins it, $5 from each.
+    /// Hole 2 (index 11): par for all, no strokes, pushed.
     /// Hole 3 (index 17): Sam birdies and wins it: $10 from each with the
     /// carryover, $5 without. Sam: -5 + 30 = +25, or -5 + 15 = +10.
     @Test func changingTheCarryoverRescoresTheSkins() throws {
@@ -224,7 +224,7 @@ struct RoundGamesEditorTests {
     }
 
     /// An edit can make a skin out of a push: Sam and Jo tie on hole 1 (Zach
-    /// nets 5 with his tick, Alex 5) and Jo leaves Skins. The editor never goes through `EventCenter`, and the
+    /// nets 5 with his stroke, Alex 5) and Jo leaves Skins. The editor never goes through `EventCenter`, and the
     /// scoring screen takes its "before" right before each score change, so
     /// the next score change compares against the edited round and shows only
     /// what that score did, never the skin the edit made.

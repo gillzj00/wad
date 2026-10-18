@@ -15,7 +15,7 @@ struct RoundStatusTests {
     let names = ["zach": "Zach", "sam": "Sam", "alex": "Alex"]
     func name(_ id: String) -> String { names[id] ?? id }
 
-    /// Zach (15) gets a tick on stroke indexes 1 to 8; Sam and Alex (7) get none.
+    /// Zach (15) gets a stroke on stroke indexes 1 to 8; Sam and Alex (7) get none.
     /// Hole 1 (par 4, stroke index 7): 5, 4, 4 nets 4, 4, 4 and pushes.
     /// Hole 2 (par 5, stroke index 11): Zach's 5 beats two 6s for $10.
     /// Hole 3 (par 3): Alex has no score yet. Hole 4 onwards: nothing.
@@ -42,13 +42,13 @@ struct RoundStatusTests {
         try scorer.setGreenieWinner("zach", hole: 3)
     }
 
-    @Test func ticksAndNetScoresComeFromTheEngine() throws {
+    @Test func strokesAndNetScoresComeFromTheEngine() throws {
         let status = try RoundStatus(round: round, bridge: bridge)
 
-        #expect(status.ticks(playerID: "zach", hole: 1) == 1)
-        #expect(status.ticks(playerID: "zach", hole: 2) == 0)
-        #expect(status.ticks(playerID: "sam", hole: 1) == 0)
-        #expect(status.ticks(playerID: "nobody", hole: 1) == nil)
+        #expect(status.strokes(playerID: "zach", hole: 1) == 1)
+        #expect(status.strokes(playerID: "zach", hole: 2) == 0)
+        #expect(status.strokes(playerID: "sam", hole: 1) == 0)
+        #expect(status.strokes(playerID: "nobody", hole: 1) == nil)
 
         #expect(status.net(playerID: "zach", hole: 1) == 4)
         #expect(status.net(playerID: "sam", hole: 1) == 4)
@@ -64,7 +64,7 @@ struct RoundStatusTests {
         container.mainContext.insert(fresh)
         #expect(try RoundStatus(round: fresh, bridge: bridge).ledger.isEmpty)
 
-        // Hole 1, all par: Zach's tick wins $5 from Sam and Alex.
+        // Hole 1, all par: Zach's stroke wins $5 from Sam and Alex.
         try RoundScorer(round: fresh).setParForUnscored(hole: 1)
         let ledger = try RoundStatus(round: fresh, bridge: bridge).ledger
         #expect(ledger.map { SettlementText.owes(from: name($0.from), to: name($0.to), cents: $0.amountCents) } == [
@@ -257,9 +257,9 @@ struct RoundStatusTests {
             title: "No greenie",
             detail: "Worth $5.00 from each other player."
         ))
-        #expect(ScoringText.ticks(0) == "No ticks")
-        #expect(ScoringText.ticks(1) == "1 tick")
-        #expect(ScoringText.ticks(2) == "2 ticks")
+        #expect(ScoringText.strokes(0) == "No strokes")
+        #expect(ScoringText.strokes(1) == "1 stroke")
+        #expect(ScoringText.strokes(2) == "2 strokes")
         #expect(ScoringText.dollars(1350) == "$13.50")
     }
 
@@ -311,9 +311,9 @@ struct RoundStatusTests {
     // MARK: Participation
 
     /// Zach 15, Sam 7, Alex 10, Jo 7. With Sam and Jo out of Skins, Alex (10)
-    /// is the lowest in Skins and plays off scratch; Zach gets 5 ticks, on
+    /// is the lowest in Skins and plays off scratch; Zach gets 5 strokes, on
     /// stroke indexes 1 to 5 (holes 5, 12, 4, 17, 8).
-    @Test func ticksAreAllocatedAmongTheSkinsPlayersOnly() throws {
+    @Test func strokesAreAllocatedAmongTheSkinsPlayersOnly() throws {
         var draft = RoundFixtures.fourPlayerDraft()
         draft.players[1].playsSkins = false
         draft.players[3].playsSkins = false
@@ -321,16 +321,16 @@ struct RoundStatusTests {
         container.mainContext.insert(round)
         let status = try RoundStatus(round: round, bridge: bridge)
 
-        #expect(Set(status.ticks.keys) == ["zach", "alex"])
-        #expect(status.ticks["alex"]?.values.reduce(0, +) == 0)
-        #expect(status.ticks["zach"]?.values.reduce(0, +) == 5)
-        #expect([5, 12, 4, 17, 8].allSatisfy { status.ticks(playerID: "zach", hole: $0) == 1 })
-        #expect(status.ticks(playerID: "sam", hole: 5) == nil)
-        #expect(status.ticks(playerID: "jo", hole: 5) == nil)
-        #expect(try round.skinsTicks(using: bridge) == status.ticks)
+        #expect(Set(status.strokes.keys) == ["zach", "alex"])
+        #expect(status.strokes["alex"]?.values.reduce(0, +) == 0)
+        #expect(status.strokes["zach"]?.values.reduce(0, +) == 5)
+        #expect([5, 12, 4, 17, 8].allSatisfy { status.strokes(playerID: "zach", hole: $0) == 1 })
+        #expect(status.strokes(playerID: "sam", hole: 5) == nil)
+        #expect(status.strokes(playerID: "jo", hole: 5) == nil)
+        #expect(try round.skinsStrokes(using: bridge) == status.strokes)
     }
 
-    @Test func nobodyHasTicksWhenSkinsIsNotPlayed() throws {
+    @Test func nobodyHasStrokesWhenSkinsIsNotPlayed() throws {
         var draft = RoundFixtures.threePlayerDraft()
         draft.players[1].playsSkins = false
         draft.players[2].playsSkins = false
@@ -338,7 +338,7 @@ struct RoundStatusTests {
         container.mainContext.insert(round)
         let status = try RoundStatus(round: round, bridge: bridge)
 
-        #expect(status.ticks.isEmpty)
+        #expect(status.strokes.isEmpty)
         #expect(status.skins == RoundStatus.notPlayedSkins)
         #expect(status.skinsHole(1) == nil)
     }

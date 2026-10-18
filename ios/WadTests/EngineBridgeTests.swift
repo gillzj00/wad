@@ -189,8 +189,8 @@ struct EngineBridgeTests {
         #expect(result.deltas == ["A": 1000, "B": -500, "C": -500])
     }
 
-    @Test func allocatesEightTicksForFifteenVersusSeven() throws {
-        let ticks = try bridge.allocateTicks(
+    @Test func allocatesEightStrokesForFifteenVersusSeven() throws {
+        let strokes = try bridge.allocateTicks(
             players: [
                 Engine.Player(userId: "zach", displayName: "Zach", courseHandicap: 15),
                 Engine.Player(userId: "friend", displayName: "Friend", courseHandicap: 7),
@@ -198,8 +198,8 @@ struct EngineBridgeTests {
             holes: Self.course18
         )
 
-        let zach = try #require(ticks["zach"])
-        let friend = try #require(ticks["friend"])
+        let zach = try #require(strokes["zach"])
+        let friend = try #require(strokes["friend"])
         #expect(zach.count == 18)
         #expect(zach.values.reduce(0, +) == 8)
         for hole in Self.course18 {

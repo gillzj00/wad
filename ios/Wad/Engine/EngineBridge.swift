@@ -77,7 +77,8 @@ final class EngineBridge {
         try call("courseHandicap", arguments: [handicapIndex, tee])
     }
 
-    /// Ticks per player, keyed by user id and then hole number.
+    /// Handicap strokes per player, keyed by user id and then hole number. The
+    /// engine calls them "ticks"; the app calls them strokes.
     func allocateTicks(players: [Engine.Player], holes: [Engine.HoleInfo]) throws -> [Engine.UserID: Engine.TicksByHole] {
         try call("allocateTicks", arguments: [players, holes])
     }
