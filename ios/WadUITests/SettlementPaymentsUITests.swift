@@ -27,15 +27,18 @@ final class SettlementPaymentsUITests: XCTestCase {
 
         // A final settlement: both payments can be paid, none is.
         XCTAssertTrue(label(of: "settlement.status").hasPrefix("Final"))
+        XCTAssertTrue(label(of: "settlement.carryover").hasPrefix("$20.00 skins carryover is unresolved"))
+        XCTAssertTrue(label(of: "settlement.owes.Alex.Zach").hasPrefix("Alex owes Zach $65"))
         let first = element("settlement.payment.1")
         let second = element("settlement.payment.2")
+        // "Who owes whom" sits above the payments.
+        reach(second)
         XCTAssertEqual(first.label, "Alex pays Zach $67.00")
         XCTAssertEqual(first.value as? String, "Not paid")
         XCTAssertEqual(second.label, "Sam pays Zach $61.00")
         XCTAssertEqual(second.value as? String, "Not paid")
         XCTAssertFalse(element("settlement.allSettled").exists)
         XCTAssertFalse(element("settlement.stale.1").exists)
-        XCTAssertTrue(label(of: "settlement.carryover").hasPrefix("$20.00 skins carryover is unresolved"))
         attachScreenshot("60-settlement-payment-actions")
 
         // The payment: pay goes to Zach's handle; a request would go to Alex, who has none.
@@ -113,10 +116,12 @@ final class SettlementPaymentsUITests: XCTestCase {
         app.buttons["payment.done"].tap()
         XCTAssertTrue(element("settlement.allSettled").waitForExistence(timeout: 5))
         XCTAssertEqual(label(of: "settlement.allSettled"), "All settled")
+        reach(second)
         XCTAssertEqual(second.value as? String, "Paid")
         // The amounts are the same, and the carryover is still not paid.
         XCTAssertEqual(first.label, "Alex pays Zach $67.00")
         XCTAssertEqual(second.label, "Sam pays Zach $61.00")
+        app.collectionViews.firstMatch.swipeDown()
         XCTAssertTrue(label(of: "settlement.carryover").contains("NOT paid out"))
         attachScreenshot("65-settlement-all-settled")
 
