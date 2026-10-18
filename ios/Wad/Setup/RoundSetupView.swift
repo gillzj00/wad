@@ -489,10 +489,20 @@ struct GamesStepView: View {
     }
 }
 
-/// One chip per player to put them in or out of a side game. Everyone starts in.
+/// One chip per player to put them in or out of a side game, in the setup
+/// and in the Games sheet of a round. Everyone starts in.
 struct WhosInRow: View {
-    @Binding var draft: RoundDraft
+    struct Entry: Identifiable {
+        var id: String
+        var name: String
+        var isIn: Bool
+    }
+
+    let entries: [Entry]
+    /// "setup" or "games": the chips are "<scope>.<game>.player.<n>", n 1-based.
+    let scope: String
     let game: SideGame
+    let toggle: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
@@ -500,18 +510,16 @@ struct WhosInRow: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.Palette.ash)
             ChoiceGrid {
-                ForEach(Array(draft.players.enumerated()), id: \.element.id) { offset, player in
-                    let isIn = player.plays(game)
+                ForEach(Array(entries.enumerated()), id: \.element.id) { offset, entry in
                     ChoiceChip(
-                        title: player.trimmedName.isEmpty ? "Player \(offset + 1)" : player.trimmedName,
+                        title: entry.name.isEmpty ? "Player \(offset + 1)" : entry.name,
                         badge: nil,
-                        isSelected: isIn
+                        isSelected: entry.isIn
                     ) {
-                        guard let index = draft.players.firstIndex(where: { $0.id == player.id }) else { return }
-                        draft.players[index].setPlays(game, !isIn)
+                        toggle(entry.id)
                     }
-                    .accessibilityIdentifier("setup.\(identifier).player.\(offset + 1)")
-                    .accessibilityValue(isIn ? "In" : "Out")
+                    .accessibilityIdentifier("\(scope).\(identifier).player.\(offset + 1)")
+                    .accessibilityValue(entry.isIn ? "In" : "Out")
                 }
             }
         }
@@ -523,6 +531,19 @@ struct WhosInRow: View {
         case .skins: "skins"
         case .wad: "wad"
         case .greenies: "greenies"
+        }
+    }
+}
+
+extension WhosInRow {
+    init(draft: Binding<RoundDraft>, game: SideGame) {
+        self.init(
+            entries: draft.wrappedValue.players.map { Entry(id: $0.id, name: $0.trimmedName, isIn: $0.plays(game)) },
+            scope: "setup",
+            game: game
+        ) { id in
+            guard let index = draft.wrappedValue.players.firstIndex(where: { $0.id == id }) else { return }
+            draft.wrappedValue.players[index].setPlays(game, !draft.wrappedValue.players[index].plays(game))
         }
     }
 }
