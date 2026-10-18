@@ -178,8 +178,9 @@ final class RoundPlayer {
     var courseHandicap: Int
     /// Venmo username without the "@". Optional.
     var venmoHandle: String?
-    /// Whether the player is in each side game, chosen in the setup. Rounds
-    /// from before these settings exist read true: everyone played every game.
+    /// Whether the player is in each side game, chosen in the setup and changed
+    /// with `RoundGamesEditor`. Rounds from before these settings exist read
+    /// true: everyone played every game.
     var playsSkins: Bool = true
     var playsWad: Bool = true
     var playsGreenies: Bool = true
