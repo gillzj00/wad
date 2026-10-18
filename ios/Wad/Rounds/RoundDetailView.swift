@@ -8,6 +8,7 @@ struct RoundDetailView: View {
 
     @State private var handleEdit: VenmoHandleEdit?
     @State private var scoreEdit: ScoreEdit?
+    @State private var editsGames = false
 
     /// Total Skins ticks per player id, from the engine; a player out of Skins
     /// has none. Nil if the engine failed.
@@ -140,8 +141,16 @@ struct RoundDetailView: View {
                         )
                         .accessibilityIdentifier("detail.wolfTeeOrder")
                     }
+                    Button {
+                        editsGames = true
+                    } label: {
+                        Label("Edit games", systemImage: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("detail.editGames")
                 } header: {
                     SectionHeader("Games", systemImage: "dollarsign.circle")
+                } footer: {
+                    SectionFooter("Who's in each game and the skins carryover can be changed at any time.")
                 }
 
                 LiveShareSection(round: round)
@@ -157,6 +166,9 @@ struct RoundDetailView: View {
         }
         .sheet(item: $scoreEdit) { edit in
             ScoreEditSheet(round: round, edit: edit)
+        }
+        .sheet(isPresented: $editsGames) {
+            GamesEditSheet(round: round)
         }
     }
 

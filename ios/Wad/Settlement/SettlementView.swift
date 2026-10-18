@@ -9,6 +9,7 @@ struct SettlementView: View {
 
     @State private var selected: SelectedPayment?
     @State private var failure: String?
+    @State private var editsGames = false
 
     var body: some View {
         let settlement = SharedEngine.bridge.flatMap { try? RoundSettlement(round: round, bridge: $0) }
@@ -44,6 +45,15 @@ struct SettlementView: View {
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Edit games", systemImage: "slider.horizontal.3") { editsGames = true }
+                    .accessibilityIdentifier("settlement.editGames")
+            }
+        }
+        .sheet(isPresented: $editsGames) {
+            GamesEditSheet(round: round)
+        }
         .sheet(item: $selected) { selected in
             SelectedPaymentView(round: round, selected: selected)
         }

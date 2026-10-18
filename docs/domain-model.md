@@ -68,7 +68,7 @@ Hole-by-hole net competition for a base amount per skin (default **$5**).
 
 Skins is **one game over the whole round**: carryovers continue through the turn (a push on 9 carries to 10). What happens to a carryover still unresolved after the final hole is an [Open Question](#open-questions).
 
-**Carryover is a per-round setting**, on by default. With it off, a pushed hole is worth nothing to anyone: no money changes hands and the next hole is worth the base value again, so no carryover is ever left unresolved. The winning rule is the same either way.
+**Carryover is a per-round setting**, on by default. With it off, a pushed hole is worth nothing to anyone: no money changes hands and the next hole is worth the base value again, so no carryover is ever left unresolved. The winning rule is the same either way. It can be changed at any time, before, during or at the end of the round; the whole round is then rescored with the new setting.
 
 The engine exposes, per hole: base value, carried-in value, total at stake, winner (nullable if pushed), and the resulting per-player deltas.
 
@@ -143,7 +143,7 @@ The engine exposes the tee order, the running points per player, the per-player 
 
 Each player is **in or out of each of Skins, Wad and Greenies**; everyone starts in. Wolf is not part of this: it is played by all four players or not at all.
 
-1. Participation is chosen in the round setup, before the round is created. It cannot be changed once the round exists (no joining or leaving mid-round).
+1. Participation is chosen in the round setup, before the round is created, and **can be changed at any time from the round**: before the first score, during the round or when settling up. Leaving a game removes the player's recorded wins and makes in it (their greenies when leaving Greenies, their Wad makes when leaving Wad; nothing is recorded per player in Skins), and the settlement recomputes. Joining a game again restores nothing. A change of participation never plays a show.
 2. A game's **field** is the players who are in it. Money in a game moves only between players in it. A player who is out of a game never wins or owes anything in it and never appears in its results.
 3. **Skins:** the skin is contested among the players in Skins; a lower score from a player who is out is ignored. Ticks are allocated among the players in Skins only, so the lowest course handicap among them plays off scratch. A player out of Skins gets no ticks.
 4. **Greenies:** only a player in Greenies can win a greenie; the winner collects the amount from each other player in Greenies.
