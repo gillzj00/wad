@@ -139,9 +139,26 @@ The engine exposes the tee order, the running points per player, the per-player 
 
 ---
 
+## Participation
+
+Each player is **in or out of each of Skins, Wad and Greenies**; everyone starts in. Wolf is not part of this: it is played by all four players or not at all.
+
+1. Participation is chosen in the round setup, before the round is created. It cannot be changed once the round exists (no joining or leaving mid-round).
+2. A game's **field** is the players who are in it. Money in a game moves only between players in it. A player who is out of a game never wins or owes anything in it and never appears in its results.
+3. **Skins:** the skin is contested among the players in Skins; a lower score from a player who is out is ignored. Ticks are allocated among the players in Skins only, so the lowest course handicap among them plays off scratch. A player out of Skins gets no ticks.
+4. **Greenies:** only a player in Greenies can win a greenie; the winner collects the amount from each other player in Greenies.
+5. **Wad:** only a player in Wad can be a Wad maker; the Wad is collected from the other players in Wad, and its nine is complete when every player in Wad has a score on the nine's last hole.
+6. A game with **fewer than two players in is not played**: no money moves and it has no results. This is how a group turns a game off; it is not an error.
+
+> Example ($5 greenies; A, B and C in, D out): A wins the greenie on hole 3 -> A +$10, B -$5, C -$5, D $0.
+
+---
+
 ## Cross-cutting: settlement
 
 At the end of the round the app computes each player's net position across **all** games (Wad + Skins + Greenies + Wolf), then reduces it to pairwise payments (who pays whom, how much) by repeatedly matching the largest creditor with the largest debtor, which needs at most one payment fewer than the number of players owed or owing. Those payments drive the Venmo deep links. All intermediate math stays in integer cents; only pairwise transfers are surfaced to the user.
+
+A player who is out of every game played has a net position of zero and is in no payment.
 
 ---
 

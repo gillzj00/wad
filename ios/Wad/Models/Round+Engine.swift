@@ -13,6 +13,30 @@ extension Round {
         orderedPlayers.map(\.playerID)
     }
 
+    /// The game's players, in order.
+    func enginePlayers(in game: SideGame) -> [Engine.Player] {
+        players(in: game).map {
+            Engine.Player(userId: $0.playerID, displayName: $0.displayName, courseHandicap: $0.courseHandicap)
+        }
+    }
+
+    func enginePlayerIDs(in game: SideGame) -> [Engine.UserID] {
+        players(in: game).map(\.playerID)
+    }
+
+    /// The scores of the game's players only.
+    func engineScores(in game: SideGame) -> [Engine.Score] {
+        let ids = Set(enginePlayerIDs(in: game))
+        return engineScores.filter { ids.contains($0.userId) }
+    }
+
+    /// Ticks per player id, allocated among the players in Skins: the lowest
+    /// course handicap among them plays off scratch. Empty when Skins is not played.
+    func skinsTicks(using bridge: EngineBridge) throws -> [Engine.UserID: Engine.TicksByHole] {
+        guard isPlayed(.skins) else { return [:] }
+        return try bridge.allocateTicks(players: enginePlayers(in: .skins), holes: engineHoles)
+    }
+
     var engineHoles: [Engine.HoleInfo] {
         orderedHoles.map { Engine.HoleInfo(hole: $0.number, par: $0.par, strokeIndex: $0.strokeIndex) }
     }
@@ -47,9 +71,9 @@ extension Round {
 
     var skinsInput: Engine.SkinsInput {
         Engine.SkinsInput(
-            players: enginePlayers,
+            players: enginePlayers(in: .skins),
             holes: engineHoles,
-            scores: engineScores,
+            scores: engineScores(in: .skins),
             baseCents: skinsBaseCents,
             carryover: skinsCarryover
         )
@@ -57,9 +81,9 @@ extension Round {
 
     var wadInput: Engine.WadInput {
         Engine.WadInput(
-            players: enginePlayerIDs,
+            players: enginePlayerIDs(in: .wad),
             holes: engineHoles,
-            scores: engineScores,
+            scores: engineScores(in: .wad),
             holeEvents: engineHoleEvents,
             startCents: wadStartCents,
             stepCents: wadStepCents
@@ -68,9 +92,9 @@ extension Round {
 
     var greeniesInput: Engine.GreeniesInput {
         Engine.GreeniesInput(
-            players: enginePlayerIDs,
+            players: enginePlayerIDs(in: .greenies),
             holes: engineHoles,
-            scores: engineScores,
+            scores: engineScores(in: .greenies),
             holeEvents: engineHoleEvents,
             amountCents: greeniesAmountCents
         )

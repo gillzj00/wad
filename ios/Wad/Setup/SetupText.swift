@@ -33,6 +33,14 @@ enum Money {
 
 /// Parsing for the numeric text fields of the setup flow.
 enum SetupText {
+    static let notPlayed = "Not played"
+    static let notPlayedDetail = "Not played: fewer than two players are in."
+
+    /// Who is in a side game, "Zach, Sam, Alex", or "Not played" with fewer than two.
+    static func field(_ names: [String]) -> String {
+        names.count < SideGame.minimumPlayers ? notPlayed : names.joined(separator: ", ")
+    }
+
     /// The value of a non-empty run of ASCII digits (at most 9 of them).
     static func digits(_ text: some StringProtocol) -> Int? {
         guard (1...9).contains(text.count), text.allSatisfy({ ("0"..."9").contains($0) }) else { return nil }

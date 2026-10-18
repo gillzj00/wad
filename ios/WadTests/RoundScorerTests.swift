@@ -281,4 +281,44 @@ struct RoundScorerTests {
         #expect(try RoundStatus(round: stored, bridge: bridge) == expected)
         #expect(Scorecard(round: stored) == Scorecard(round: round))
     }
+
+    // MARK: Participation
+
+    /// The three-player round again, with Alex out of Greenies and Sam out of Wad.
+    func roundWithOuts() throws -> (Round, RoundScorer) {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[2].playsGreenies = false
+        draft.players[1].playsWad = false
+        let round = try draft.makeRound(using: bridge)
+        container.mainContext.insert(round)
+        return (round, RoundScorer(round: round))
+    }
+
+    @Test func aPlayerOutOfGreeniesIsNoCandidateAndCannotWin() throws {
+        let (round, scorer) = try roundWithOuts()
+        // Hole 3 is a par 3; everyone makes par.
+        try scorer.setParForUnscored(hole: 3)
+
+        #expect(scorer.greenieCandidates(hole: 3).map(\.playerID) == ["zach", "sam"])
+        #expect(throws: ScoringError.greenieNotEligible(playerID: "alex", hole: 3)) {
+            try scorer.setGreenieWinner("alex", hole: 3)
+        }
+        #expect(round.hole(3)?.greenieWinnerID == nil)
+        try scorer.setGreenieWinner("sam", hole: 3)
+        #expect(round.hole(3)?.greenieWinnerID == "sam")
+    }
+
+    @Test func aPlayerOutOfWadCannotBeAMaker() throws {
+        let (round, scorer) = try roundWithOuts()
+
+        #expect(throws: ScoringError.notInWad(playerID: "sam")) {
+            try scorer.addWadMaker(playerID: "sam", hole: 1)
+        }
+        #expect(throws: ScoringError.notInWad(playerID: "sam")) {
+            try scorer.toggleWadMaker(playerID: "sam", hole: 1)
+        }
+        #expect(round.hole(1)?.wadMakerIDs == [])
+        try scorer.toggleWadMaker(playerID: "alex", hole: 1)
+        #expect(round.hole(1)?.wadMakerIDs == ["alex"])
+    }
 }

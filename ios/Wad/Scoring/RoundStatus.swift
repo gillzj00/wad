@@ -3,7 +3,8 @@ import Foundation
 /// The state of every game for a round, scored by the engines from what has
 /// been recorded so far. Nothing here is computed in Swift.
 struct RoundStatus: Equatable, Sendable {
-    /// Ticks per player id, then per hole number.
+    /// Skins ticks per player id, then per hole number: only the players in
+    /// Skins, and nobody when Skins is not played.
     var ticks: [Engine.UserID: Engine.TicksByHole]
     var skins: Engine.SkinsResult
     var wad: Engine.WadResult
@@ -13,12 +14,18 @@ struct RoundStatus: Equatable, Sendable {
 
     @MainActor
     init(round: Round, bridge: EngineBridge) throws {
-        ticks = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
-        skins = try bridge.scoreSkins(round.skinsInput)
-        wad = try bridge.scoreWad(round.wadInput)
-        greenies = try bridge.scoreGreenies(round.greeniesInput)
+        // A game with fewer than two players in is not played: its engine does
+        // not run and its empty result moves no money.
+        ticks = try round.skinsTicks(using: bridge)
+        skins = round.isPlayed(.skins) ? try bridge.scoreSkins(round.skinsInput) : Self.notPlayedSkins
+        wad = round.isPlayed(.wad) ? try bridge.scoreWad(round.wadInput) : Self.notPlayedWad
+        greenies = round.isPlayed(.greenies) ? try bridge.scoreGreenies(round.greeniesInput) : Self.notPlayedGreenies
         wolf = try round.wolfInput.flatMap(bridge.scoreWolf)
     }
+
+    static let notPlayedSkins = Engine.SkinsResult(holes: [], deltas: [:], complete: false, carryOutCents: 0)
+    static let notPlayedWad = Engine.WadResult(instances: [], deltas: [:], ignored: [])
+    static let notPlayedGreenies = Engine.GreeniesResult(holes: [], deltas: [:])
 
     /// Per-game deltas in the order skins, wad, greenies, then Wolf when it is
     /// played: the input of `EngineBridge.settle`.

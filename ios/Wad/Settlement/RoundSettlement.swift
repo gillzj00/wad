@@ -15,8 +15,22 @@ struct RoundSettlement: Equatable, Sendable {
         var greeniesCents: Int
         /// Zero when Wolf is not played.
         var wolfCents: Int = 0
+        /// The side games the player is out of; their amount is zero.
+        var outOf: Set<SideGame> = []
 
         var id: String { playerID }
+
+        func plays(_ game: SideGame) -> Bool {
+            !outOf.contains(game)
+        }
+
+        func cents(_ game: SideGame) -> Int {
+            switch game {
+            case .skins: skinsCents
+            case .wad: wadCents
+            case .greenies: greeniesCents
+            }
+        }
     }
 
     /// One pairwise payment of the engine's settlement.
@@ -68,7 +82,8 @@ struct RoundSettlement: Equatable, Sendable {
                 skinsCents: status.skins.deltas[player.playerID] ?? 0,
                 wadCents: status.wad.deltas[player.playerID] ?? 0,
                 greeniesCents: status.greenies.deltas[player.playerID] ?? 0,
-                wolfCents: status.wolf?.deltas[player.playerID] ?? 0
+                wolfCents: status.wolf?.deltas[player.playerID] ?? 0,
+                outOf: Set(SideGame.allCases.filter { !player.plays($0) })
             )
         }
         payments = settlement.transfers.map { transfer in
@@ -94,6 +109,23 @@ struct RoundSettlement: Equatable, Sendable {
 
     func name(_ playerID: String) -> String {
         names[playerID] ?? Self.unknownPlayer
+    }
+
+    /// The names of the players in the game, in order.
+    func field(_ game: SideGame) -> [String] {
+        players.filter { $0.plays(game) }.map(\.name)
+    }
+
+    /// At least two players are in the game.
+    func isPlayed(_ game: SideGame) -> Bool {
+        field(game).count >= SideGame.minimumPlayers
+    }
+
+    /// The players in the game when it is played and not everyone is in; nil otherwise.
+    func partialField(_ game: SideGame) -> String? {
+        let field = field(game)
+        guard isPlayed(game), field.count < players.count else { return nil }
+        return SettlementText.field(field)
     }
 
     /// Every hole has every player's score and, when Wolf is played, every Wolf
