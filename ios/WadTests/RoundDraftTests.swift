@@ -175,6 +175,37 @@ struct RoundDraftTests {
         #expect(try unrated.courseHandicap(for: unrated.players[0], using: bridge) == 15)
     }
 
+    // MARK: Profile
+
+    @Test func profileFillsInTheFirstPlayerOnly() {
+        let draft = RoundDraft().prefilled(from: Profile(name: " Zach ", handicapIndexText: "15.4", venmoHandleText: "zach-gill"))
+        #expect(draft.players.count == 2)
+        #expect(draft.players[0].name == "Zach")
+        #expect(draft.players[0].handicapIndexText == "15.4")
+        #expect(draft.players[0].venmoHandleText == "zach-gill")
+        #expect(draft.players[0].courseHandicapText.isEmpty)
+        #expect(draft.players[0].overridesCourseHandicap == false)
+        #expect(draft.players[1].name.isEmpty)
+        #expect(draft.players[1].handicapIndexText.isEmpty)
+        #expect(draft.players[1].venmoHandleText.isEmpty)
+    }
+
+    @Test func emptyProfileLeavesTheDraftUntouched() {
+        let draft = RoundFixtures.ratedDraft()
+        #expect(draft.prefilled(from: Profile()) == draft)
+        #expect(draft.prefilled(from: Profile(name: "  ", venmoHandleText: " ")) == draft)
+        let blank = RoundDraft()
+        #expect(blank.prefilled(from: Profile()) == blank)
+    }
+
+    @Test func profileTextIsCopiedVerbatim() {
+        let draft = RoundDraft().prefilled(from: Profile(name: "Zach", handicapIndexText: "+1.2", venmoHandleText: "@zach_g"))
+        #expect(draft.players[0].handicapIndexText == "+1.2")
+        #expect(draft.players[0].venmoHandleText == "@zach_g")
+        #expect(SetupText.handicapIndex(draft.players[0].handicapIndexText) == -1.2)
+        #expect(VenmoHandle.normalized(draft.players[0].venmoHandleText) == "zach_g")
+    }
+
     // MARK: Games
 
     @Test func gameAmountsDefaultToTheDomainModel() {
@@ -235,13 +266,8 @@ struct RoundDraftTests {
         #expect(draft.gameIssues().isEmpty)
     }
 
-    @Test func aNewDraftStartsEveryHoleUnscored() {
-        #expect(RoundDraft().startsEveryHoleAtPar == false)
-        #expect(RoundFixtures.unratedDraft().startsEveryHoleAtPar == false)
-    }
-
-    /// A draft left at its default creates a round with a blank scorecard.
-    @Test @MainActor func aDefaultDraftCreatesARoundWithNoScore() throws {
+    /// A new round from a draft has a blank scorecard.
+    @Test @MainActor func aDraftCreatesARoundWithNoScore() throws {
         var draft = RoundDraft()
         draft.courseName = "Pebble Beach"
         draft.holes = (0..<18).map {
@@ -253,68 +279,14 @@ struct RoundDraftTests {
         ]
         let round = try draft.makeRound(using: try EngineBridge())
 
-        #expect(round.startsEveryHoleAtPar == false)
         #expect(round.scores.isEmpty)
         for hole in round.orderedHoles {
             for player in round.orderedPlayers {
                 #expect(round.gross(playerID: player.playerID, hole: hole.number) == nil)
             }
         }
-        #expect(round.firstIncompleteHole == 1)
-    }
-
-    /// With the setting on, the round is created with par saved for every
-    /// player on every hole: par 3s, 4s and 5s alike.
-    @Test @MainActor func startingAtParSavesParForEveryPlayerOnEveryHole() throws {
-        let bridge = try EngineBridge()
-        var draft = RoundFixtures.threePlayerDraft()
-        draft.startsEveryHoleAtPar = true
-        let round = try draft.makeRound(using: bridge)
-
-        #expect(round.startsEveryHoleAtPar == true)
-        #expect(round.scores.count == 18 * 3)
-        for hole in round.orderedHoles {
-            for player in round.orderedPlayers {
-                #expect(round.gross(playerID: player.playerID, hole: hole.number) == hole.par)
-            }
-        }
-        #expect(round.gross(playerID: "zach", hole: 1) == 4)
-        #expect(round.gross(playerID: "sam", hole: 2) == 5)
-        #expect(round.gross(playerID: "alex", hole: 3) == 3)
-        #expect(Set(RoundFixtures.pars) == [3, 4, 5])
-
-        // Every hole is complete from the start, and the scorecard adds up to par.
-        #expect(round.completedHoles == Array(1...18))
-        #expect(round.firstIncompleteHole == nil)
-        let scorecard = Scorecard(round: round)
-        #expect(scorecard.completedHoleCount == 18)
-        #expect(scorecard.rows.map(\.total) == [72, 72, 72])
-
-        // The scores are ordinary ones: one can be changed or cleared.
-        let container = try ModelContainer(for: Round.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        container.mainContext.insert(round)
-        let scorer = RoundScorer(round: round)
-        try scorer.stepGross(by: 1, playerID: "zach", hole: 1)
-        try scorer.setGross(nil, playerID: "sam", hole: 1)
-        #expect(round.gross(playerID: "zach", hole: 1) == 5)
-        #expect(round.gross(playerID: "sam", hole: 1) == nil)
-        #expect(round.firstIncompleteHole == 1)
-        let stored = try #require(try ModelContext(container).fetch(FetchDescriptor<Round>()).first)
-        #expect(stored.startsEveryHoleAtPar == true)
-        #expect(stored.scores.count == 18 * 3 - 1)
-    }
-
-    @Test @MainActor func notStartingAtParSavesNoScore() throws {
-        let bridge = try EngineBridge()
-        var draft = RoundFixtures.threePlayerDraft()
-        draft.startsEveryHoleAtPar = false
-        let round = try draft.makeRound(using: bridge)
-
-        #expect(round.startsEveryHoleAtPar == false)
-        #expect(round.scores.isEmpty)
         #expect(round.completedHoles.isEmpty)
         #expect(round.firstIncompleteHole == 1)
-        #expect(RoundDraft.sample.startsEveryHoleAtPar == false)
     }
 
     @Test func everyIssueHasAMessage() {
@@ -327,5 +299,47 @@ struct RoundDraftTests {
         ]
         #expect(Set(issues.map(\.message)).count == issues.count)
         #expect(SetupIssue.strokeIndexDuplicate(strokeIndex: 1, holes: [1, 5]).message == "Stroke index 1 is used on holes 1, 5.")
+    }
+
+    // MARK: Participation
+
+    @Test func newPlayersAreInEveryGame() {
+        let draft = RoundDraft()
+        #expect(draft.players.allSatisfy { $0.playsSkins && $0.playsWad && $0.playsGreenies })
+        #expect(SideGame.allCases.allSatisfy { RoundDraft.Player().plays($0) })
+        for game in SideGame.allCases {
+            #expect(RoundFixtures.fourPlayerDraft().players(in: game).count == 4)
+            #expect(RoundFixtures.fourPlayerDraft().isPlayed(game))
+        }
+    }
+
+    @Test @MainActor func makeRoundCarriesWhoIsInEachGame() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[1].setPlays(.skins, false)
+        draft.players[2].setPlays(.wad, false)
+        draft.players[3].setPlays(.greenies, false)
+        let round = try draft.makeRound(using: try EngineBridge())
+
+        let players = round.orderedPlayers
+        #expect(players.map(\.playsSkins) == [true, false, true, true])
+        #expect(players.map(\.playsWad) == [true, true, false, true])
+        #expect(players.map(\.playsGreenies) == [true, true, true, false])
+        #expect(round.players(in: .skins).map(\.playerID) == ["zach", "alex", "jo"])
+        #expect(round.players(in: .wad).map(\.playerID) == ["zach", "sam", "jo"])
+        #expect(round.players(in: .greenies).map(\.playerID) == ["zach", "sam", "alex"])
+        #expect(SideGame.allCases.allSatisfy { round.isPlayed($0) && !round.isEveryoneIn($0) })
+    }
+
+    @Test func aGameWithOnePlayerInIsNotPlayedAndIsNoIssue() {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[1].playsSkins = false
+        #expect(draft.isPlayed(.skins))
+        draft.players[2].playsSkins = false
+        #expect(draft.players(in: .skins).map(\.id) == ["zach"])
+        #expect(!draft.isPlayed(.skins))
+        #expect(draft.isPlayed(.wad) && draft.isPlayed(.greenies))
+        #expect(draft.allIssues.isEmpty)
+        #expect(SetupText.field(draft.players(in: .skins).map(\.trimmedName)) == "Not played")
+        #expect(SetupText.field(["Zach", "Sam"]) == "Zach, Sam")
     }
 }

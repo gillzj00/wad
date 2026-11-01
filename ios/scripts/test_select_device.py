@@ -40,6 +40,22 @@ def device(udid, tunnel, *, kind="iPhone", reality="physical", pairing="paired",
     }
 
 
+def newer_device(udid, state, *, kind="iPhone", pairing="paired", simulated=False):
+    """A record as newer devicectl releases write it: the `properties` block only,
+    no `marketingName`, and `reality` present only for a simulator."""
+    hardware = {"deviceType": kind, "platform": "iOS", "productType": "iPhone18,2", "udid": udid}
+    if simulated:
+        hardware["reality"] = "simulated"
+    return {
+        "identifier": "BBBBBBBB-0000-0000-0000-000000000002",
+        "properties": {
+            "connection": {"pairingState": pairing, "state": state, "transportType": "localNetwork"},
+            "hardware": hardware,
+            "state": {"bootState": "booted", "name": "Test phone"},
+        },
+    }
+
+
 def listing(*devices):
     return {"info": {"outcome": "success"}, "result": {"devices": list(devices)}}
 
@@ -51,7 +67,7 @@ def simulator(tunnel="connected"):
 class SelectTests(unittest.TestCase):
     def chosen(self, *devices):
         status, found = select_device.select(listing(*devices))
-        return status, found and found["hardwareProperties"]["udid"]
+        return status, found and select_device.hardware_of(found)["udid"]
 
     def test_a_connected_phone_is_chosen(self):
         self.assertEqual(self.chosen(device(PHONE, "connected")), ("ok", PHONE))
@@ -98,6 +114,24 @@ class SelectTests(unittest.TestCase):
     def test_an_unknown_state_is_not_reachable(self):
         self.assertEqual(self.chosen(device(PHONE, "somethingNew")), ("unavailable", None))
 
+    def test_a_phone_without_a_reality_field_is_physical(self):
+        # Newer devicectl leaves "reality" out for a phone and keeps it for simulators.
+        phone = device(PHONE, "disconnected")
+        del phone["hardwareProperties"]["reality"]
+        self.assertEqual(self.chosen(simulator(), phone), ("ok", PHONE))
+
+    def test_the_newer_properties_block_is_read(self):
+        self.assertEqual(self.chosen(newer_device(PHONE, "disconnected")), ("ok", PHONE))
+        self.assertEqual(self.chosen(newer_device(PHONE, "unavailable")), ("unavailable", None))
+        self.assertEqual(self.chosen(newer_device(PHONE, "connected", pairing="unpaired")), ("none", None))
+        self.assertEqual(self.chosen(newer_device(SIMULATOR, "connected", simulated=True)), ("none", None))
+        self.assertEqual(self.chosen(newer_device(OTHER_PHONE, "connected", kind="iPad")), ("none", None))
+
+    def test_the_newer_state_wins_over_the_deprecated_tunnel_state(self):
+        phone = device(PHONE, "connected")
+        phone["properties"] = {"connection": {"pairingState": "paired", "state": "unavailable"}}
+        self.assertEqual(self.chosen(phone), ("unavailable", None))
+
     def test_an_empty_list(self):
         self.assertEqual(self.chosen(), ("none", None))
         self.assertEqual(select_device.select({}), ("none", None))
@@ -117,6 +151,12 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout.splitlines(), [PHONE, "iPhone 17 Pro Max"])
         self.assertEqual(result.stderr, "")
+
+    def test_prints_a_generic_model_when_the_record_has_none(self):
+        result = self.run_script(json.dumps(listing(newer_device(PHONE, "disconnected"))))
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.splitlines(), [PHONE, "iPhone"])
+        self.assertNotIn("Test phone", result.stdout)
 
     def test_tells_what_to_do_when_the_phone_is_unavailable(self):
         result = self.run_script(json.dumps(listing(simulator(), device(PHONE, "unavailable"))))

@@ -9,6 +9,7 @@ struct SettlementView: View {
 
     @State private var selected: SelectedPayment?
     @State private var failure: String?
+    @State private var editsGames = false
 
     var body: some View {
         let settlement = SharedEngine.bridge.flatMap { try? RoundSettlement(round: round, bridge: $0) }
@@ -17,6 +18,7 @@ struct SettlementView: View {
                 let paymentStatus = PaymentStatus(settlement: settlement, records: round.paidRecords)
                 Group {
                     status(settlement)
+                    debts(settlement)
                     payments(settlement, status: paymentStatus)
                     stalePayments(paymentStatus)
                     positions(settlement)
@@ -43,6 +45,15 @@ struct SettlementView: View {
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Edit games", systemImage: "slider.horizontal.3") { editsGames = true }
+                    .accessibilityIdentifier("settlement.editGames")
+            }
+        }
+        .sheet(isPresented: $editsGames) {
+            GamesEditSheet(round: round)
+        }
         .sheet(item: $selected) { selected in
             SelectedPaymentView(round: round, selected: selected)
         }
@@ -97,6 +108,23 @@ struct SettlementView: View {
                 WolfNeedsFixingRows(round: round, settlement: settlement)
             } header: {
                 SectionHeader("Needs fixing", systemImage: "wrench.adjustable")
+            }
+        }
+    }
+
+    /// Every pair that owes something, with the reasons; hidden when nobody owes anything.
+    @ViewBuilder
+    private func debts(_ settlement: RoundSettlement) -> some View {
+        if !settlement.debts.isEmpty {
+            Section {
+                ForEach(settlement.debts) { debt in
+                    StatusLineView(line: SettlementText.debt(debt))
+                        .accessibilityIdentifier("settlement.owes.\(debt.fromName).\(debt.toName)")
+                }
+            } header: {
+                SectionHeader(SettlementText.owesHeader, systemImage: "person.2")
+            } footer: {
+                SectionFooter(SettlementText.owesFooter)
             }
         }
     }
@@ -225,9 +253,10 @@ struct SettlementView: View {
                     Text(player.name)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    amountCell(SettlementText.signed(player.skinsCents), width: width).foregroundStyle(color(player.skinsCents))
-                    amountCell(SettlementText.signed(player.wadCents), width: width).foregroundStyle(color(player.wadCents))
-                    amountCell(SettlementText.signed(player.greeniesCents), width: width).foregroundStyle(color(player.greeniesCents))
+                    ForEach(SideGame.allCases, id: \.self) { game in
+                        amountCell(SettlementText.amount(player, game), width: width)
+                            .foregroundStyle(player.plays(game) ? color(player.cents(game)) : Theme.Palette.ash)
+                    }
                     if showsWolf {
                         amountCell(SettlementText.signed(player.wolfCents), width: width).foregroundStyle(color(player.wolfCents))
                     }
@@ -245,6 +274,13 @@ struct SettlementView: View {
 
     private func skins(_ settlement: RoundSettlement) -> some View {
         Section {
+            fieldRows(settlement, .skins)
+            if let ticks = SettlementText.ticks(settlement) {
+                Text(ticks)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .accessibilityIdentifier("settlement.skins.ticks")
+            }
             ForEach(settlement.skins.holes, id: \.hole) { hole in
                 HoleLineRow(
                     hole: hole.hole,
@@ -263,9 +299,18 @@ struct SettlementView: View {
         }
     }
 
+    @ViewBuilder
     private func wad(_ settlement: RoundSettlement) -> some View {
+        if !settlement.isPlayed(.wad) {
+            Section {
+                fieldRows(settlement, .wad)
+            } header: {
+                SectionHeader("Wad", systemImage: "banknote")
+            }
+        }
         ForEach(settlement.wadInstances, id: \.segment) { instance in
             Section {
+                fieldRows(settlement, .wad)
                 StatusLineView(line: ScoringText.wad(instance, makesOnHole: [], name: settlement.name))
                     .accessibilityIdentifier("settlement.wad.\(instance.segment.rawValue)")
                 ForEach(Array(instance.makes.enumerated()), id: \.offset) { offset, make in
@@ -282,7 +327,8 @@ struct SettlementView: View {
 
     private func greenies(_ settlement: RoundSettlement) -> some View {
         Section {
-            if settlement.greenieHoles.isEmpty {
+            fieldRows(settlement, .greenies)
+            if settlement.isPlayed(.greenies), settlement.greenieHoles.isEmpty {
                 Text("The course has no par 3.")
                     .foregroundStyle(Theme.Palette.ash)
             }
@@ -299,6 +345,22 @@ struct SettlementView: View {
     }
 
     // MARK: Pieces
+
+    /// "Not played" when fewer than two players are in the game; the players in
+    /// it when not everyone is; nothing when everyone is.
+    @ViewBuilder
+    private func fieldRows(_ settlement: RoundSettlement, _ game: SideGame) -> some View {
+        if !settlement.isPlayed(game) {
+            Text(SetupText.notPlayedDetail)
+                .foregroundStyle(Theme.Palette.ash)
+                .accessibilityIdentifier("settlement.\(game.title.lowercased()).notPlayed")
+        } else if let field = settlement.partialField(game) {
+            Text(field)
+                .font(.subheadline)
+                .foregroundStyle(Theme.Palette.ash)
+                .accessibilityIdentifier("settlement.\(game.title.lowercased()).field")
+        }
+    }
 
     private func amountCell(_ text: String, width: CGFloat = 80) -> some View {
         Text(text)

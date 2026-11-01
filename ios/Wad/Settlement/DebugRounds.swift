@@ -8,7 +8,7 @@ import Foundation
 enum DebugRounds {
     /// A finished round whose last four holes push, so $20.00 of skins is unresolved.
     ///
-    /// Zach (15) gets a tick on the holes with stroke index 1 to 8 (holes 1, 4,
+    /// Zach (15) gets a stroke on the holes with stroke index 1 to 8 (holes 1, 4,
     /// 5, 8, 10, 12, 14 and 17) against Sam and Alex (7). Everybody makes par on
     /// every hole, except that Zach makes a bogey on hole 17. Sam makes a Wad
     /// putt on hole 2 and Alex wins the greenie on hole 3. Zach and Sam have a
@@ -85,7 +85,7 @@ enum DebugRounds {
 
     /// A Wolf round through hole 16, with three players tied for last place, so
     /// hole 17 asks the group to pick the Wolf. Four players with the same
-    /// handicap (no ticks), tee order Zach, Sam, Alex, Jo, $1 a point. Everyone
+    /// handicap (no strokes), tee order Zach, Sam, Alex, Jo, $1 a point. Everyone
     /// makes par and the Wolf goes alone (a tied hole) except:
     ///  1  Zach alone makes 3: Zach 4
     ///  2  Sam alone makes 4 on the par 5: Sam 4

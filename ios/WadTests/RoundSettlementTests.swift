@@ -29,28 +29,28 @@ struct RoundSettlementTests {
     /// Course: pars 4 5 3 4 4 3 5 4 4 / 4 3 5 4 4 5 3 4 4,
     /// stroke indexes 7 11 17 3 1 15 9 5 13 / 8 18 2 10 6 12 16 4 14.
     /// Handicaps: Zach 15, Sam 7, Alex 10, Jo 7, so the group scratch is 7.
-    /// Zach gets 8 ticks, on stroke indexes 1 to 8: holes 5, 12, 4, 17, 8, 14, 1, 10.
-    /// Alex gets 3 ticks, on stroke indexes 1 to 3: holes 5, 12, 4.
+    /// Zach gets 8 strokes, on stroke indexes 1 to 8: holes 5, 12, 4, 17, 8, 14, 1, 10.
+    /// Alex gets 3 strokes, on stroke indexes 1 to 3: holes 5, 12, 4.
     /// Defaults: skins $5, Wad $7 start and $2 step, greenies $5. Four players,
     /// so a winner collects from three others.
     ///
-    /// Everybody makes par except where listed. Net = gross - ticks.
+    /// Everybody makes par except where listed. Net = gross - strokes.
     ///
     /// Skins, hole by hole (the amount is what each other player pays):
-    ///  1  par 4, Zach ticks: nets 3 4 4 4              Zach wins $5
+    ///  1  par 4, Zach strokes: nets 3 4 4 4              Zach wins $5
     ///  2  par 5: all net 5                             push, $5 carries
     ///  3  par 3: Sam 2                                 Sam wins $10
-    ///  4  par 4, Zach and Alex tick: nets 3 4 3 4      push, $5 carries
+    ///  4  par 4, Zach and Alex stroke: nets 3 4 3 4      push, $5 carries
     ///  5  par 4, Zach 5 (net 4), Alex net 3            Alex wins $10
     ///  6  par 3: all net 3                             push, $5 carries
     ///  7  par 5: Jo 4                                  Jo wins $10
     ///  8  par 4, Zach 5 (net 4): all net 4             push, $5 carries
     ///  9  par 4: all net 4                             push, $10 carries
-    /// 10  par 4, Zach ticks: nets 3 4 4 4              Zach wins $15
+    /// 10  par 4, Zach strokes: nets 3 4 4 4              Zach wins $15
     /// 11  par 3: Alex 4, the others 3                  push, $5 carries
     /// 12  par 5, Zach 6 (net 5), Alex net 4, Jo 4      push (Alex and Jo), $10 carries
     /// 13  par 4: Sam 3                                 Sam wins $15
-    /// 14  par 4, Zach ticks: nets 3 4 4 4              Zach wins $5
+    /// 14  par 4, Zach strokes: nets 3 4 4 4              Zach wins $5
     /// 15  par 5: all net 5                             push, $5 carries
     /// 16  par 3: Zach 2                                Zach wins $10
     /// 17  par 4, Zach 5 (net 4): all net 4             push, $5 carries
@@ -412,7 +412,7 @@ struct RoundSettlementTests {
     // MARK: The UI test scenarios
 
     /// The round the UI walkthrough scores by tapping. Every hole is a par 4
-    /// except the third; Zach gets a tick on holes 1 to 8. Pars except where listed.
+    /// except the third; Zach gets a stroke on holes 1 to 8. Pars except where listed.
     ///
     /// Skins (amount from each of the two others):
     ///  1  Zach 5 (net 4), 4, 4          push, $5 carries
@@ -472,7 +472,7 @@ struct RoundSettlementTests {
     }
 
     /// `DebugRounds.finalPush`: pars everywhere, so Zach wins the holes he has
-    /// a tick on (1, 4, 5, 8, 10, 12, 14) and the others push; on 17 his bogey
+    /// a stroke on (1, 4, 5, 8, 10, 12, 14) and the others push; on 17 his bogey
     /// nets 4 and pushes too, so holes 15 to 18 leave $20 unresolved.
     ///  Skins from each: hole 1 $5, 4 $15, 5 $5, 8 $15, 10 $10, 12 $10, 14 $10 = $70
     ///   Zach +140, Sam -70, Alex -70
@@ -492,6 +492,213 @@ struct RoundSettlementTests {
         #expect(settlement.players.map(\.greeniesCents) == [-500, -500, 1000])
         #expect(settlement.players.map(\.netCents) == [12800, -6100, -6700])
         #expect(settlement.payments.map(SettlementText.payment) == ["Alex pays Zach $67.00", "Sam pays Zach $61.00"])
+    }
+
+    // MARK: Participation
+
+    /// Jo is out of Greenies. Sam's 2 on hole 3 wins the greenie, collected
+    /// from Zach and Alex only: Sam +$10, Zach -$5, Alex -$5, Jo $0.
+    @Test func aGreenieIsCollectedFromTheGreeniesPlayersOnly() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[3].playsGreenies = false
+        let round = try makeRound(draft, plays: [3: HolePlay(gross: ["sam": 2], greenie: "sam")])
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.players.map(\.greeniesCents) == [-500, 1000, -500, 0])
+        let jo = try result(settlement, "jo")
+        #expect(jo.outOf == [.greenies])
+        #expect(SettlementText.amount(jo, .greenies) == "-")
+        #expect(SettlementText.games(jo).hasSuffix("Greenies out"))
+        #expect(settlement.partialField(.greenies) == "Players in: Zach, Sam, Alex")
+        #expect(settlement.partialField(.skins) == nil)
+        #expect(settlement.players.map(\.netCents).reduce(0, +) == 0)
+    }
+
+    /// Alex is out of Skins; the strokes are among Zach (15), Sam (7) and Jo (7),
+    /// so Zach gets a stroke on hole 1 (stroke index 7) and none on hole 2.
+    /// Hole 1, all par: Zach nets 3 and wins $5 from Sam and Jo.
+    /// Hole 2 (par 5): Alex 3, Sam 4, Zach and Jo 5. Alex's 3 is ignored and
+    /// Sam wins $5 from Zach and Jo.
+    /// Skins: Zach 10 - 5 = +5, Sam 10 - 5 = +5, Jo -10, Alex 0.
+    @Test func aSkinIsContestedAmongTheSkinsPlayersOnly() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[2].playsSkins = false
+        let round = try makeRound(draft, plays: [2: HolePlay(gross: ["alex": 3, "sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        let hole2 = try #require(settlement.skins.holes.first { $0.hole == 2 })
+        #expect(hole2.status == .won)
+        #expect(hole2.winnerUserId == "sam")
+        #expect(hole2.net?["alex"] == nil)
+        #expect(settlement.skins.holes.allSatisfy { $0.winnerUserId != "alex" })
+        #expect(settlement.players.map(\.skinsCents) == [500, 500, 0, -1000])
+    }
+
+    /// The full round's skins: Zach won 1, 10, 14 and 16; Sam 3 and 13; Alex 5;
+    /// Jo 7 and 18. The nine pushed holes count for nobody.
+    @Test func ticksCountTheSkinsEachPlayerWon() throws {
+        let round = try makeRound(RoundFixtures.fourPlayerDraft(), plays: Self.fullRound)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 4, "sam": 2, "alex": 1, "jo": 2])
+        #expect(settlement.skins.holes.filter { $0.status == .pushed }.count == 9)
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 4, Sam 2, Alex 1, Jo 2")
+        #expect(try RoundStatus(round: round, bridge: bridge).ticks == settlement.ticks)
+    }
+
+    /// Alex is out of Skins and has no tick count; Zach won hole 1 and Sam hole 2.
+    @Test func aPlayerOutOfSkinsHasNoTicks() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[2].playsSkins = false
+        let round = try makeRound(draft, plays: [2: HolePlay(gross: ["alex": 3, "sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.ticks == ["zach": 1, "sam": 1, "jo": 0])
+        #expect(SettlementText.ticks(settlement) == "Ticks: Zach 1, Sam 1, Jo 0")
+    }
+
+    /// Jo is out of all three games and Wolf is off: Jo's birdies change
+    /// nothing, Jo's position is $0 and Jo is in no payment.
+    @Test func aPlayerOutOfEveryGameIsEvenAndInNoPayment() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[3].playsSkins = false
+        draft.players[3].playsWad = false
+        draft.players[3].playsGreenies = false
+        let plays: [Int: HolePlay] = [
+            2: HolePlay(gross: ["jo": 3], wadMakers: ["sam"]),
+            3: HolePlay(gross: ["sam": 2, "jo": 1], greenie: "sam"),
+            7: HolePlay(gross: ["jo": 3, "alex": 4]),
+        ]
+        let round = try makeRound(draft, plays: plays)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        let jo = try result(settlement, "jo")
+        #expect(jo.netCents == 0)
+        #expect(jo.skinsCents == 0 && jo.wadCents == 0 && jo.greeniesCents == 0)
+        #expect(jo.outOf == Set(SideGame.allCases))
+        #expect(SettlementText.games(jo) == "Jo: Skins out, Wad out, Greenies out")
+        #expect(!settlement.payments.isEmpty)
+        #expect(settlement.payments.allSatisfy { $0.fromID != "jo" && $0.toID != "jo" })
+        #expect(settlement.players.map(\.netCents).reduce(0, +) == 0)
+    }
+
+    /// Only Zach is in Skins: Skins is not played. Nobody wins or owes in it,
+    /// it has no holes, and the other games settle as usual.
+    @Test func skinsWithOnePlayerInIsNotPlayed() throws {
+        var draft = RoundFixtures.threePlayerDraft()
+        draft.players[1].playsSkins = false
+        draft.players[2].playsSkins = false
+        let round = try makeRound(draft, plays: [3: HolePlay(gross: ["sam": 2], greenie: "sam")])
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(!settlement.isPlayed(.skins))
+        #expect(settlement.partialField(.skins) == nil)
+        #expect(settlement.skins.holes.isEmpty)
+        #expect(settlement.ticks.isEmpty)
+        #expect(SettlementText.ticks(settlement) == nil)
+        #expect(settlement.players.allSatisfy { $0.skinsCents == 0 })
+        #expect(settlement.unresolvedSkinsCarryoverCents == nil)
+        #expect(settlement.isFinal)
+        #expect(settlement.players.map(\.greeniesCents) == [-500, 1000, -500])
+        #expect(settlement.players.map(\.netCents) == [-500, 1000, -500])
+        #expect(settlement.payments.map(SettlementText.payment) == ["Alex pays Sam $5.00", "Zach pays Sam $5.00"])
+    }
+
+    // MARK: Who owes whom
+
+    /// Each player's pairwise nets add up to their position from the settlement.
+    func expectDebtsMatchPositions(_ settlement: RoundSettlement) {
+        var net: [String: Int] = [:]
+        for debt in settlement.debts {
+            net[debt.fromID, default: 0] -= debt.amountCents
+            net[debt.toID, default: 0] += debt.amountCents
+        }
+        for player in settlement.players {
+            #expect(net[player.playerID, default: 0] == player.netCents, "\(player.name)")
+        }
+    }
+
+    /// Zach (15) gets a stroke on hole 1; Sam and Alex (7) do not. $5 skins, $5 greenies.
+    /// Hole 1 (par 4), all par: Zach nets 3 and wins $5 from Sam and Alex.
+    /// Hole 2 (par 5): Sam 4 wins $5 from Zach and Alex.
+    /// Hole 3 (par 3), all par: push; Zach's greenie pays $5 from each.
+    /// Pairs: Alex owes Sam 5 (skin 2); Alex owes Zach 5 + 5 = 10;
+    /// Sam owes Zach 5 - 5 + 5 = 5. Positions: Zach +15, Sam 0, Alex -15, so
+    /// the one payment is Alex to Zach, while Sam and Zach still see why.
+    @Test func whoOwesWhomWithTheReasons() throws {
+        let plays: [Int: HolePlay] = [2: HolePlay(gross: ["sam": 4]), 3: HolePlay(greenie: "zach")]
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), plays: plays, holes: 1...3)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.debts.map(\.id) == ["alex>sam", "alex>zach", "sam>zach"])
+        #expect(settlement.debts.map(SettlementText.debt) == [
+            StatusLine(title: "Alex owes Sam $5", detail: "skins on hole 2 ($5)"),
+            StatusLine(title: "Alex owes Zach $10", detail: "skins on hole 1 ($5), the greenie on hole 3 ($5)"),
+            StatusLine(
+                title: "Sam owes Zach $5",
+                detail: "skins on hole 1 ($5), less skins on hole 2 ($5), the greenie on hole 3 ($5)"
+            ),
+        ])
+        #expect(settlement.payments.map(SettlementText.payment) == ["Alex pays Zach $15.00"])
+        expectDebtsMatchPositions(settlement)
+    }
+
+    /// Zach wins hole 1 and Sam hole 2, $5 each: Zach and Sam are square and
+    /// have no row; Alex owes each of them $5.
+    @Test func aPairThatIsSquareHasNoRow() throws {
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), plays: [2: HolePlay(gross: ["sam": 4])], holes: 1...2)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(settlement.debts.map(SettlementText.owes) == ["Alex owes Sam $5", "Alex owes Zach $5"])
+        #expect(!settlement.debts.contains { Set([$0.fromID, $0.toID]) == ["sam", "zach"] })
+        expectDebtsMatchPositions(settlement)
+    }
+
+    @Test func theFullRoundsDebtsAddUpToThePositions() throws {
+        let round = try makeRound(RoundFixtures.fourPlayerDraft(), plays: Self.fullRound)
+        let settlement = try RoundSettlement(round: round, bridge: bridge)
+
+        #expect(!settlement.debts.isEmpty)
+        expectDebtsMatchPositions(settlement)
+        // The Wad pays the holder of each nine: Sam the front ($13), Alex the back ($9).
+        let joToSam = try #require(settlement.debts.first { $0.id == "jo>sam" })
+        #expect(joToSam.items.contains(Engine.LedgerItem(game: .wad, holes: [], segments: [.front], points: 0, amountCents: 1300)))
+    }
+
+    @Test func aRoundWithoutScoresOwesNobody() throws {
+        let round = try makeRound(RoundFixtures.threePlayerDraft(), holes: nil)
+        #expect(try RoundSettlement(round: round, bridge: bridge).debts.isEmpty)
+    }
+
+    @Test func wordsTheReasons() {
+        func item(_ game: Engine.LedgerGame, holes: [Int] = [], segments: [Engine.WadSegment] = [], points: Int = 0, _ cents: Int)
+            -> Engine.LedgerItem {
+            Engine.LedgerItem(game: game, holes: holes, segments: segments, points: points, amountCents: cents)
+        }
+        #expect(SettlementText.list([]) == "")
+        #expect(SettlementText.list(["1"]) == "1")
+        #expect(SettlementText.list(["1", "6"]) == "1 and 6")
+        #expect(SettlementText.list(["1", "6", "9"]) == "1, 6 and 9")
+        #expect(SettlementText.holeList([14]) == "hole 14")
+        #expect(SettlementText.holeList([3, 11]) == "holes 3 and 11")
+
+        #expect(SettlementText.shortDollars(2500) == "$25")
+        #expect(SettlementText.shortDollars(-750) == "$7.50")
+        #expect(SettlementText.owes(from: "Zach", to: "Jay", cents: 2500) == "Zach owes Jay $25")
+
+        #expect(SettlementText.reasons([
+            item(.skins, holes: [1, 6, 9], 1500),
+            item(.greenies, holes: [3, 11], 1000),
+        ]) == "skins on holes 1, 6 and 9 ($15), greenies on holes 3 and 11 ($10)")
+        #expect(SettlementText.reason(item(.skins, holes: [14], -500)) == "less skins on hole 14 ($5)")
+        #expect(SettlementText.reason(item(.greenies, holes: [3], 500)) == "the greenie on hole 3 ($5)")
+        #expect(SettlementText.reason(item(.greenies, holes: [3, 6], -1000)) == "less greenies on holes 3 and 6 ($10)")
+        #expect(SettlementText.reason(item(.wad, segments: [.front], 700)) == "the Wad on the front nine ($7)")
+        #expect(SettlementText.reason(item(.wad, segments: [.back], -900)) == "less the Wad on the back nine ($9)")
+        #expect(SettlementText.reason(item(.wad, segments: [.front, .back], 1600)) == "the Wad on the front and back nines ($16)")
+        #expect(SettlementText.reason(item(.wolf, points: 3, 300)) == "Wolf, 3 points ($3)")
+        #expect(SettlementText.reason(item(.wolf, points: 1, 50)) == "Wolf, 1 point ($0.50)")
+        #expect(SettlementText.reason(item(.wolf, points: -2, -200)) == "less Wolf, 2 points ($2)")
     }
 
     // MARK: Wording

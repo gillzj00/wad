@@ -254,7 +254,7 @@ struct EventCenterTests {
     }
 
     /// Pars by Sam and Alex on hole 1, then Zach's birdie completes it: Zach
-    /// (a tick on hole 1) wins the skin.
+    /// (a stroke on hole 1) wins the skin.
     func scoreHole1() throws {
         try scorer.setGross(4, playerID: "sam", hole: 1)
         try scorer.setGross(4, playerID: "alex", hole: 1)

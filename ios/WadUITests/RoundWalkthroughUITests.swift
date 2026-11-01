@@ -24,11 +24,8 @@ final class RoundWalkthroughUITests: XCTestCase {
         setUpCourse()
         setUpPlayers()
 
-        // Games: the default amounts. The holes start unscored by default, to score them here.
+        // Games: the default amounts. The holes start unscored, to score them here.
         XCTAssertTrue(app.navigationBars["Games"].waitForExistence(timeout: 5))
-        let startsAtPar = app.switches["setup.startsAtPar"].firstMatch
-        scrollTo(startsAtPar)
-        XCTAssertEqual(startsAtPar.value as? String, "0")
         attachScreenshot("04-setup-games")
         app.buttons["Create"].tap()
 
@@ -128,8 +125,8 @@ final class RoundWalkthroughUITests: XCTestCase {
         XCTAssertEqual(app.buttons["score.value.Zach"].value as? String, "5")
         XCTAssertEqual(app.buttons["score.value.Sam"].value as? String, "4")
         XCTAssertEqual(app.buttons["score.value.Alex"].value as? String, "4")
-        XCTAssertEqual(label(of: "score.detail.Zach"), "1 tick, Net 4")
-        XCTAssertEqual(label(of: "score.detail.Sam"), "No ticks, Net 4")
+        XCTAssertEqual(label(of: "score.detail.Zach"), "1 stroke, Net 4")
+        XCTAssertEqual(label(of: "score.detail.Sam"), "No strokes, Net 4")
 
         // Clearing a score and entering it again.
         app.buttons["score.clear.Alex"].tap()
@@ -153,12 +150,12 @@ final class RoundWalkthroughUITests: XCTestCase {
         app.buttons["scoring.next"].tap()
     }
 
-    /// Par 4, stroke index 2: everyone makes 4, Zach's tick wins the carried skin.
+    /// Par 4, stroke index 2: everyone makes 4, Zach's stroke wins the carried skin.
     private func scoreHole2() {
         XCTAssertEqual(label(of: "scoring.hole.title"), "Hole 2")
         tap("scoring.parForRest")
         XCTAssertEqual(app.buttons["score.value.Zach"].value as? String, "4")
-        XCTAssertEqual(label(of: "score.detail.Zach"), "1 tick, Net 3")
+        XCTAssertEqual(label(of: "score.detail.Zach"), "1 stroke, Net 3")
         XCTAssertTrue(label(of: "status.wad").hasPrefix("Zach holds the Wad at $9.00"))
         scrollTo(element("status.skins"))
         XCTAssertTrue(label(of: "status.skins").hasPrefix("Zach wins $10.00 from each other player"))

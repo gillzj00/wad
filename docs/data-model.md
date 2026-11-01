@@ -13,7 +13,7 @@ Attributes `PK`/`SK` are the primary key. `GSI1PK`/`GSI1SK` back the secondary i
 | Course correction | `COURSE#<courseId>` | `CORRECTION#<submittedAt ISO>#<correctionId>` | A user's suggested fix in `correction` (`CourseCorrection` in `backend/src/shared/courseInput.ts`), with `status: "pending"` and `submittedBy`. Never applied to the course automatically. |
 | Course search | `COURSESEARCH#<normalized query>` | `RESULTS` | Cached provider search results. Has `ttl` (7 days); also checked on read because DynamoDB deletes expired items lazily. |
 | Round | `ROUND#<roundId>` | `META` | Course id, a copy of the tee (rating, slope, par and stroke index per hole), date, status, join code, creator, `games` (enabled games and their amounts in cents), `playerCount` and, once set, the tee order (see below). |
-| Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Display name, handicap index, computed course handicap for this round (null on an unrated tee), the handicap override (see below), `guest` flag, join time. Ticks are derived on read. A guest's `userId` starts `guest_`. |
+| Round player | `ROUND#<roundId>` | `PLAYER#<userId>` | Display name, handicap index, computed course handicap for this round (null on an unrated tee), the handicap override (see below), `guest` flag, join time. Handicap strokes are derived on read. A guest's `userId` starts `guest_`. |
 | Hole score | `ROUND#<roundId>` | `SCORE#<hole:02d>#<userId>` | One player's gross strokes for one hole. |
 | Hole events | `ROUND#<roundId>` | `HOLE#<hole:02d>` | Group-level facts for one hole (see below). Any participant can edit. |
 | Game config | `ROUND#<roundId>` | `GAME#<gameType>` | Reserved. Game settings currently live in `games` on the round item; nothing writes this item. |

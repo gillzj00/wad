@@ -20,11 +20,6 @@ final class Round {
     var skinsBaseCents: Int
     var greeniesAmountCents: Int
 
-    /// The round was created with par saved for every player on every hole,
-    /// to be changed as the round is played. Rounds from before this setting
-    /// exists read false.
-    var startsEveryHoleAtPar: Bool = false
-
     /// A pushed skins hole adds its value to the next hole. Off, a push pays
     /// nothing and the next hole is worth the base again. Rounds from before
     /// this setting exists read true, the only way skins was played.
@@ -65,7 +60,6 @@ final class Round {
         courseRating: Double? = nil,
         slope: Int? = nil,
         settings: GameSettings = .defaults,
-        startsEveryHoleAtPar: Bool = false,
         skinsCarryover: Bool = true
     ) {
         self.id = id
@@ -77,7 +71,6 @@ final class Round {
         self.wadStepCents = settings.wadStepCents
         self.skinsBaseCents = settings.skinsBaseCents
         self.greeniesAmountCents = settings.greeniesAmountCents
-        self.startsEveryHoleAtPar = startsEveryHoleAtPar
         self.skinsCarryover = skinsCarryover
     }
 
@@ -87,6 +80,21 @@ final class Round {
 
     var orderedPlayers: [RoundPlayer] {
         players.sorted { $0.position < $1.position }
+    }
+
+    /// The game's field: the players who are in it, in order.
+    func players(in game: SideGame) -> [RoundPlayer] {
+        orderedPlayers.filter { $0.plays(game) }
+    }
+
+    /// At least two players are in the game. Otherwise it is not played and moves no money.
+    func isPlayed(_ game: SideGame) -> Bool {
+        players(in: game).count >= SideGame.minimumPlayers
+    }
+
+    /// Every player is in the game.
+    func isEveryoneIn(_ game: SideGame) -> Bool {
+        players.allSatisfy { $0.plays(game) }
     }
 
     var totalPar: Int {
@@ -170,6 +178,12 @@ final class RoundPlayer {
     var courseHandicap: Int
     /// Venmo username without the "@". Optional.
     var venmoHandle: String?
+    /// Whether the player is in each side game, chosen in the setup and changed
+    /// with `RoundGamesEditor`. Rounds from before these settings exist read
+    /// true: everyone played every game.
+    var playsSkins: Bool = true
+    var playsWad: Bool = true
+    var playsGreenies: Bool = true
     var round: Round?
 
     init(
@@ -178,7 +192,10 @@ final class RoundPlayer {
         position: Int,
         handicapIndex: Double? = nil,
         courseHandicap: Int,
-        venmoHandle: String? = nil
+        venmoHandle: String? = nil,
+        playsSkins: Bool = true,
+        playsWad: Bool = true,
+        playsGreenies: Bool = true
     ) {
         self.playerID = playerID
         self.displayName = displayName
@@ -186,6 +203,34 @@ final class RoundPlayer {
         self.handicapIndex = handicapIndex
         self.courseHandicap = courseHandicap
         self.venmoHandle = venmoHandle
+        self.playsSkins = playsSkins
+        self.playsWad = playsWad
+        self.playsGreenies = playsGreenies
+    }
+
+    func plays(_ game: SideGame) -> Bool {
+        switch game {
+        case .skins: playsSkins
+        case .wad: playsWad
+        case .greenies: playsGreenies
+        }
+    }
+}
+
+/// The games each player opts in or out of in the setup. Wolf is not one of
+/// them: it is played by all four players or not at all.
+enum SideGame: CaseIterable, Sendable {
+    case skins, wad, greenies
+
+    /// A game with fewer players in is not played.
+    static let minimumPlayers = 2
+
+    var title: String {
+        switch self {
+        case .skins: "Skins"
+        case .wad: "Wad"
+        case .greenies: "Greenies"
+        }
     }
 }
 

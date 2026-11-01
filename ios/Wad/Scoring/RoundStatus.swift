@@ -3,22 +3,70 @@ import Foundation
 /// The state of every game for a round, scored by the engines from what has
 /// been recorded so far. Nothing here is computed in Swift.
 struct RoundStatus: Equatable, Sendable {
-    /// Ticks per player id, then per hole number.
-    var ticks: [Engine.UserID: Engine.TicksByHole]
+    /// Skins handicap strokes per player id, then per hole number: only the
+    /// players in Skins, and nobody when Skins is not played.
+    var strokes: [Engine.UserID: Engine.TicksByHole]
+    /// Skins won ("ticks") per player id: only the players in Skins, and nobody
+    /// when Skins is not played.
+    var ticks: [Engine.UserID: Int]
     var skins: Engine.SkinsResult
     var wad: Engine.WadResult
     var greenies: Engine.GreeniesResult
     /// Nil when Wolf is not played, or unavailable (not exactly four players).
     var wolf: Engine.WolfResult?
+    /// Who owes whom so far, pair by pair, with the holes of each game behind
+    /// it. Empty when nobody owes anything.
+    var ledger: [Engine.LedgerPair]
 
     @MainActor
     init(round: Round, bridge: EngineBridge) throws {
-        ticks = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
-        skins = try bridge.scoreSkins(round.skinsInput)
-        wad = try bridge.scoreWad(round.wadInput)
-        greenies = try bridge.scoreGreenies(round.greeniesInput)
+        // A game with fewer than two players in is not played: its engine does
+        // not run and its empty result moves no money.
+        strokes = try round.skinsStrokes(using: bridge)
+        skins = round.isPlayed(.skins) ? try bridge.scoreSkins(round.skinsInput) : Self.notPlayedSkins
+        ticks = Self.ticks(skins, players: round.isPlayed(.skins) ? round.enginePlayerIDs(in: .skins) : [])
+        wad = round.isPlayed(.wad) ? try bridge.scoreWad(round.wadInput) : Self.notPlayedWad
+        greenies = round.isPlayed(.greenies) ? try bridge.scoreGreenies(round.greeniesInput) : Self.notPlayedGreenies
         wolf = try round.wolfInput.flatMap(bridge.scoreWolf)
+        ledger = try bridge.pairwiseLedger(Self.ledgerInput(
+            round: round, skins: skins, wad: wad, greenies: greenies, wolf: wolf
+        ))
     }
+
+    /// Each played game's result with its field, as the ledger engine takes them.
+    @MainActor
+    static func ledgerInput(
+        round: Round,
+        skins: Engine.SkinsResult,
+        wad: Engine.WadResult,
+        greenies: Engine.GreeniesResult,
+        wolf: Engine.WolfResult?
+    ) -> Engine.LedgerInput {
+        Engine.LedgerInput(
+            skins: round.isPlayed(.skins) ? .init(players: round.enginePlayerIDs(in: .skins), result: skins) : nil,
+            wad: round.isPlayed(.wad) ? .init(players: round.enginePlayerIDs(in: .wad), result: wad) : nil,
+            greenies: round.isPlayed(.greenies)
+                ? .init(players: round.enginePlayerIDs(in: .greenies), result: greenies, amountCents: round.greeniesAmountCents)
+                : nil,
+            wolf: wolf.flatMap { result in round.wolfPointCents.map { .init(result: result, pointCents: $0) } }
+        )
+    }
+
+    /// The engine's won holes per player: zero for a player in Skins who has
+    /// won none, and no entry for a player out of it. A pushed hole counts for nobody.
+    static func ticks(_ skins: Engine.SkinsResult, players: [Engine.UserID]) -> [Engine.UserID: Int] {
+        var ticks = Dictionary(players.map { ($0, 0) }, uniquingKeysWith: { first, _ in first })
+        for hole in skins.holes where hole.status == .won {
+            if let winner = hole.winnerUserId, ticks[winner] != nil {
+                ticks[winner, default: 0] += 1
+            }
+        }
+        return ticks
+    }
+
+    static let notPlayedSkins = Engine.SkinsResult(holes: [], deltas: [:], complete: false, carryOutCents: 0)
+    static let notPlayedWad = Engine.WadResult(instances: [], deltas: [:], ignored: [])
+    static let notPlayedGreenies = Engine.GreeniesResult(holes: [], deltas: [:])
 
     /// Per-game deltas in the order skins, wad, greenies, then Wolf when it is
     /// played: the input of `EngineBridge.settle`.
@@ -26,8 +74,8 @@ struct RoundStatus: Equatable, Sendable {
         [skins.deltas, wad.deltas, greenies.deltas] + (wolf.map { [$0.deltas] } ?? [])
     }
 
-    func ticks(playerID: String, hole: Int) -> Int? {
-        ticks[playerID]?[hole]
+    func strokes(playerID: String, hole: Int) -> Int? {
+        strokes[playerID]?[hole]
     }
 
     /// The engine's net score. Nil until every player has a score on the hole.

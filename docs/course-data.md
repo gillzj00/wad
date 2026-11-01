@@ -1,6 +1,6 @@
 # Course & Scorecard Data
 
-We need, per course and tee set: **par per hole**, **stroke index per hole** (1-18 difficulty), **yardage per tee**, **course rating**, and **slope rating**. This drives the scorecard UI and the handicap-tick allocation for Skins.
+We need, per course and tee set: **par per hole**, **stroke index per hole** (1-18 difficulty), **yardage per tee**, **course rating**, and **slope rating**. This drives the scorecard UI and the handicap-stroke allocation for Skins.
 
 ## Decision
 

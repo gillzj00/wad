@@ -14,9 +14,18 @@ enum ScoringText {
         "$" + Money.dollars(fromCents: cents)
     }
 
+    static func strokes(_ strokes: Int) -> String {
+        switch strokes {
+        case 0: "No strokes"
+        case 1: "1 stroke"
+        default: "\(strokes) strokes"
+        }
+    }
+
+    /// Ticks are skins won.
     static func ticks(_ ticks: Int) -> String {
         switch ticks {
-        case 0: "No ticks"
+        case 0: "No ticks yet"
         case 1: "1 tick"
         default: "\(ticks) ticks"
         }

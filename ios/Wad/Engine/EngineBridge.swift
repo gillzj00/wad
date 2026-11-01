@@ -77,7 +77,8 @@ final class EngineBridge {
         try call("courseHandicap", arguments: [handicapIndex, tee])
     }
 
-    /// Ticks per player, keyed by user id and then hole number.
+    /// Handicap strokes per player, keyed by user id and then hole number. The
+    /// engine calls them "ticks"; the app calls them strokes.
     func allocateTicks(players: [Engine.Player], holes: [Engine.HoleInfo]) throws -> [Engine.UserID: Engine.TicksByHole] {
         try call("allocateTicks", arguments: [players, holes])
     }
@@ -85,6 +86,12 @@ final class EngineBridge {
     /// Nets the per-game deltas into positions and pairwise transfers.
     func settle(_ gameDeltas: [Engine.Deltas]) throws -> Engine.Settlement {
         try call("settle", arguments: gameDeltas)
+    }
+
+    /// Who owes whom, pair by pair, and from which holes of which game. Pairs
+    /// are ordered by the debtor's id, then the creditor's.
+    func pairwiseLedger(_ input: Engine.LedgerInput) throws -> [Engine.LedgerPair] {
+        try call("pairwiseLedger", arguments: [input])
     }
 
     private func call<Result: Decodable>(_ function: String, arguments: [any Encodable]) throws -> Result {

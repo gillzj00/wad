@@ -92,8 +92,28 @@ struct RoundDraft: Equatable, Sendable {
         var overridesCourseHandicap = false
         /// Optional. With or without the leading "@".
         var venmoHandleText = ""
+        /// Whether the player is in each side game. Everyone starts in.
+        var playsSkins = true
+        var playsWad = true
+        var playsGreenies = true
 
         var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        func plays(_ game: SideGame) -> Bool {
+            switch game {
+            case .skins: playsSkins
+            case .wad: playsWad
+            case .greenies: playsGreenies
+            }
+        }
+
+        mutating func setPlays(_ game: SideGame, _ plays: Bool) {
+            switch game {
+            case .skins: playsSkins = plays
+            case .wad: playsWad = plays
+            case .greenies: playsGreenies = plays
+            }
+        }
     }
 
     var courseName = ""
@@ -114,13 +134,6 @@ struct RoundDraft: Equatable, Sendable {
     var greeniesAmountText = Money.dollars(fromCents: GameSettings.defaults.greeniesAmountCents)
     /// Off unless the group turns it on; needs exactly four players.
     var wolf = WolfDraft()
-
-    /// Save par for every player on every hole when the round is created, so
-    /// that scoring is changing the holes that went differently. Off unless
-    /// the group turns it on: the scorecard starts blank, and a hole's shows
-    /// play once every player's score is in. On, every hole is complete from
-    /// the start and each score change can play a show.
-    var startsEveryHoleAtPar = false
 
     // MARK: Course
 
@@ -253,6 +266,16 @@ struct RoundDraft: Equatable, Sendable {
         )
     }
 
+    /// The game's field: the players who are in it, in order.
+    func players(in game: SideGame) -> [Player] {
+        players.filter { $0.plays(game) }
+    }
+
+    /// At least two players are in the game. Fewer is allowed: the game is not played.
+    func isPlayed(_ game: SideGame) -> Bool {
+        players(in: game).count >= SideGame.minimumPlayers
+    }
+
     func gameIssues() -> [SetupIssue] {
         [
             ("Wad start", wadStartText),
@@ -281,7 +304,6 @@ struct RoundDraft: Equatable, Sendable {
             courseRating: tee?.courseRating,
             slope: tee?.slope,
             settings: settings,
-            startsEveryHoleAtPar: startsEveryHoleAtPar,
             skinsCarryover: skinsCarryover
         )
         round.holes = holes.map { RoundHole(number: $0.number, par: $0.par, strokeIndex: $0.strokeIndex ?? 0) }
@@ -295,17 +317,13 @@ struct RoundDraft: Equatable, Sendable {
                 position: offset,
                 handicapIndex: tee == nil ? nil : SetupText.handicapIndex(player.handicapIndexText),
                 courseHandicap: courseHandicap,
-                venmoHandle: VenmoHandle.normalized(player.venmoHandleText)
+                venmoHandle: VenmoHandle.normalized(player.venmoHandleText),
+                playsSkins: player.playsSkins,
+                playsWad: player.playsWad,
+                playsGreenies: player.playsGreenies
             )
         }
         wolf.apply(to: round, players: players)
-        if startsEveryHoleAtPar {
-            for hole in round.holes {
-                for player in round.players {
-                    round.setGross(hole.par, playerID: player.playerID, hole: hole.number)
-                }
-            }
-        }
         return round
     }
 }
@@ -318,7 +336,6 @@ extension RoundDraft {
         let pars = [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
         let strokeIndexes = [7, 11, 17, 3, 1, 15, 9, 5, 13, 8, 18, 2, 10, 6, 12, 16, 4, 14]
         var draft = RoundDraft()
-        draft.startsEveryHoleAtPar = false
         draft.courseName = "Sample Links"
         draft.ratingText = "72.5"
         draft.slopeText = "131"

@@ -13,6 +13,7 @@ struct CourseDetailView: View {
     let model: CoursesModel
 
     @Environment(AppNavigation.self) private var navigation: AppNavigation?
+    @Environment(ProfileStore.self) private var profile: ProfileStore?
     @State private var state = LoadState.loading
     @State private var selectedTeeID: String?
     @State private var setup: RoundsView.SetupPresentation?
@@ -70,7 +71,8 @@ struct CourseDetailView: View {
 
     private func start(course: Course, tee: CourseTee) {
         do {
-            setup = RoundsView.SetupPresentation(draft: try model.draft(for: course, tee: tee), step: .course)
+            let draft = try model.draft(for: course, tee: tee).prefilled(from: profile?.profile ?? Profile())
+            setup = RoundsView.SetupPresentation(draft: draft, step: .course)
             problem = nil
         } catch CourseFillError.teeNotUsable(let reason) {
             problem = "\(tee.name) tees: \(reason)."

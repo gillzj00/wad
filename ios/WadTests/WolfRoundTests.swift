@@ -24,7 +24,7 @@ struct WolfRoundTests {
         self.bridge = bridge
     }
 
-    /// Zach, Sam, Alex and Jo with the same handicap (no ticks), Wolf on at $1 a
+    /// Zach, Sam, Alex and Jo with the same handicap (no strokes), Wolf on at $1 a
     /// point, holes unscored. Pars 4 5 3 4 4 3 5 4 4 / 4 3 5 4 4 5 3 4 4.
     static func wolfDraft() -> RoundDraft {
         var draft = RoundFixtures.fourPlayerDraft()
@@ -95,10 +95,9 @@ struct WolfRoundTests {
         #expect(throws: WolfScoringError.teeOrderLocked) { try scorer.setWolfTeeOrder(["zach", "sam", "alex", "jo"]) }
     }
 
-    @Test func aRoundThatStartsAtParIsLockedFromTheStart() throws {
-        var draft = Self.wolfDraft()
-        draft.startsEveryHoleAtPar = true
-        let round = try makeRound(draft)
+    @Test func aFullyScoredRoundIsLocked() throws {
+        let round = try makeRound()
+        RoundFixtures.scoreEveryHoleAtPar(round)
         #expect(round.isWolfTeeOrderLocked)
     }
 

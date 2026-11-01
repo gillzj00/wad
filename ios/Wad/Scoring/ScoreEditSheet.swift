@@ -38,7 +38,7 @@ struct ScoreEditSheet: View {
                             name: player.displayName,
                             par: hole.par,
                             gross: round.gross(playerID: player.playerID, hole: hole.number),
-                            ticks: status?.ticks(playerID: player.playerID, hole: hole.number),
+                            strokes: status?.strokes(playerID: player.playerID, hole: hole.number),
                             net: status?.net(playerID: player.playerID, hole: hole.number),
                             onStep: { delta in
                                 perform { try scorer.stepGross(by: delta, playerID: player.playerID, hole: hole.number) }

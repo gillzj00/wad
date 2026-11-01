@@ -161,7 +161,7 @@ struct RoundEngineMappingTests {
         }
         var input = round.skinsInput
         input.carryover = nil
-        // Hole 1 is a tick for Zach (stroke index 7 is within 8 ticks): he wins it. Hole 2 pushes, hole 3 carries.
+        // Hole 1 is a stroke for Zach (stroke index 7 is within 8 strokes): he wins it. Hole 2 pushes, hole 3 carries.
         let result = try bridge.scoreSkins(input)
         #expect(result.holes[0].status == .won)
         #expect(result.holes[1].status == .pushed)
@@ -173,12 +173,12 @@ struct RoundEngineMappingTests {
     @Test func enginesAcceptTheMappedInputs() throws {
         let round = try makeRound(RoundFixtures.unratedDraft())
 
-        // 15 against 7: Zach gets 8 ticks, on stroke indexes 1 to 8.
-        let ticks = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
-        #expect(ticks["zach"]?.values.reduce(0, +) == 8)
-        #expect(ticks["sam"]?.values.reduce(0, +) == 0)
-        #expect(ticks["zach"]?[5] == 1)
-        #expect(ticks["zach"]?[3] == 0)
+        // 15 against 7: Zach gets 8 strokes, on stroke indexes 1 to 8.
+        let strokes = try bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
+        #expect(strokes["zach"]?.values.reduce(0, +) == 8)
+        #expect(strokes["sam"]?.values.reduce(0, +) == 0)
+        #expect(strokes["zach"]?[5] == 1)
+        #expect(strokes["zach"]?[3] == 0)
 
         // Hole 3 (par 3, stroke index 17): Sam's 3 beats Zach's 4 and wins the greenie.
         round.setGross(4, playerID: "zach", hole: 3)
@@ -200,5 +200,55 @@ struct RoundEngineMappingTests {
         #expect(front.holderUserId == "sam")
         #expect(front.valueCents == 900)
         #expect(wad.ignored.isEmpty)
+    }
+
+    // MARK: Participation
+
+    /// Scores for every player on holes 1 and 3, a Wad make by Sam and a greenie by Zach.
+    func scoredRound(_ draft: RoundDraft) throws -> Round {
+        let round = try makeRound(draft)
+        let scorer = RoundScorer(round: round)
+        try scorer.setParForUnscored(hole: 1)
+        try scorer.setParForUnscored(hole: 3)
+        try scorer.addWadMaker(playerID: "sam", hole: 1)
+        try scorer.setGreenieWinner("zach", hole: 3)
+        return round
+    }
+
+    @Test func aPlayerOutOfAGameIsLeftOutOfItsInput() throws {
+        var draft = RoundFixtures.fourPlayerDraft()
+        draft.players[3].playsGreenies = false
+        draft.players[2].playsSkins = false
+        draft.players[0].playsWad = false
+        let round = try scoredRound(draft)
+
+        #expect(round.greeniesInput.players == ["zach", "sam", "alex"])
+        #expect(round.greeniesInput.scores.count == 6)
+        #expect(!round.greeniesInput.scores.contains { $0.userId == "jo" })
+
+        #expect(round.skinsInput.players.map(\.userId) == ["zach", "sam", "jo"])
+        #expect(round.skinsInput.scores.count == 6)
+        #expect(!round.skinsInput.scores.contains { $0.userId == "alex" })
+
+        #expect(round.wadInput.players == ["sam", "alex", "jo"])
+        #expect(round.wadInput.scores.count == 6)
+        #expect(!round.wadInput.scores.contains { $0.userId == "zach" })
+
+        // The hole events and the rest stay whole.
+        #expect(round.wadInput.holeEvents == round.engineHoleEvents)
+        #expect(round.greeniesInput.holeEvents == round.engineHoleEvents)
+        #expect(round.enginePlayerIDs == ["zach", "sam", "alex", "jo"])
+        #expect(round.engineScores.count == 8)
+    }
+
+    @Test func everyoneInMapsEveryPlayerAndScore() throws {
+        let round = try scoredRound(RoundFixtures.fourPlayerDraft())
+
+        #expect(round.skinsInput.players == round.enginePlayers)
+        #expect(round.wadInput.players == round.enginePlayerIDs)
+        #expect(round.greeniesInput.players == round.enginePlayerIDs)
+        #expect(round.skinsInput.scores == round.engineScores)
+        #expect(round.wadInput.scores == round.engineScores)
+        #expect(round.greeniesInput.scores == round.engineScores)
     }
 }

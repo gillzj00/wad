@@ -10,7 +10,6 @@ enum RoundFixtures {
     /// directly. Its holes start unscored, like every draft built on it.
     static func unratedDraft() -> RoundDraft {
         var draft = RoundDraft()
-        draft.startsEveryHoleAtPar = false
         draft.courseName = "Pebble Beach"
         draft.holes = (0..<18).map {
             RoundDraft.Hole(number: $0 + 1, par: pars[$0], strokeIndexText: String(strokeIndexes[$0]))
@@ -22,14 +21,14 @@ enum RoundFixtures {
         return draft
     }
 
-    /// The unrated draft with a third player: Zach (15) gets 8 ticks against Sam and Alex (7).
+    /// The unrated draft with a third player: Zach (15) gets 8 strokes against Sam and Alex (7).
     static func threePlayerDraft() -> RoundDraft {
         var draft = unratedDraft()
         draft.players.append(RoundDraft.Player(id: "alex", name: "Alex", courseHandicapText: "7"))
         return draft
     }
 
-    /// The unrated draft with four players: Zach (15) gets 8 ticks and Alex (10)
+    /// The unrated draft with four players: Zach (15) gets 8 strokes and Alex (10)
     /// gets 3 against Sam and Jo (7).
     static func fourPlayerDraft() -> RoundDraft {
         var draft = unratedDraft()
@@ -40,7 +39,7 @@ enum RoundFixtures {
 
     /// The course and players of the UI walkthrough: every hole a par 4 except
     /// the third (par 3), stroke indexes 1 to 18 in order, so Zach (15) gets a
-    /// tick on holes 1 to 8 against Sam and Alex (7).
+    /// stroke on holes 1 to 8 against Sam and Alex (7).
     static func walkthroughDraft() -> RoundDraft {
         var draft = threePlayerDraft()
         draft.courseName = "Walkthrough Links"
@@ -48,6 +47,15 @@ enum RoundFixtures {
             RoundDraft.Hole(number: $0, par: $0 == 3 ? 3 : 4, strokeIndexText: String($0))
         }
         return draft
+    }
+
+    /// Saves par for every player on every hole, so the round is complete.
+    static func scoreEveryHoleAtPar(_ round: Round) {
+        for hole in round.orderedHoles {
+            for player in round.orderedPlayers {
+                round.setGross(hole.par, playerID: player.playerID, hole: hole.number)
+            }
+        }
     }
 
     /// A valid draft on a rated tee (72.5 / 131) with four players, one overridden.

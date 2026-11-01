@@ -2,24 +2,25 @@ import SwiftData
 import SwiftUI
 
 /// A round: the way into scoring, its progress and scorecard, and its setup
-/// (course, players with the handicaps and ticks they play with, game amounts).
+/// (course, players with the handicaps and strokes they play with and the skins
+/// they have won, game amounts).
 struct RoundDetailView: View {
     let round: Round
 
     @State private var handleEdit: VenmoHandleEdit?
     @State private var scoreEdit: ScoreEdit?
+    @State private var editsGames = false
 
-    /// Total ticks per player id, from the engine. Nil if the engine failed.
-    private var totalTicks: [String: Int]? {
-        guard
-            let bridge = SharedEngine.bridge,
-            let ticks = try? bridge.allocateTicks(players: round.enginePlayers, holes: round.engineHoles)
-        else { return nil }
-        return ticks.mapValues { $0.values.reduce(0, +) }
+    /// The engines' view of the round; nil if they failed.
+    private var status: RoundStatus? {
+        guard let bridge = SharedEngine.bridge else { return nil }
+        return try? RoundStatus(round: round, bridge: bridge)
     }
 
     var body: some View {
-        let totalTicks = totalTicks
+        let status = status
+        // Total Skins strokes per player id; a player out of Skins has none.
+        let totalStrokes = status?.strokes.mapValues { $0.values.reduce(0, +) }
         let scorecard = Scorecard(round: round)
         List {
             Section {
@@ -90,9 +91,15 @@ struct RoundDetailView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text("Course handicap \(SetupText.display(courseHandicap: player.courseHandicap))")
-                                Text(ticksText(totalTicks?[player.playerID]))
+                                Text(strokesText(totalStrokes?[player.playerID]))
                                     .font(.caption)
                                     .foregroundStyle(Theme.Palette.ash)
+                                if let ticks = status?.ticks[player.playerID] {
+                                    Text(ScoringText.ticks(ticks))
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.Palette.ash)
+                                        .accessibilityIdentifier("detail.ticks.\(player.displayName)")
+                                }
                             }
                             .monospacedDigit()
                         }
@@ -111,10 +118,10 @@ struct RoundDetailView: View {
                 } header: {
                     SectionHeader("Players", systemImage: "person.2.fill")
                 } footer: {
-                    if totalTicks == nil {
-                        SectionFooter("Ticks could not be computed.")
+                    if totalStrokes == nil {
+                        SectionFooter("Strokes and ticks could not be computed.")
                     } else {
-                        SectionFooter("Ticks are strokes received relative to the lowest course handicap in the group.")
+                        SectionFooter("Strokes are received in Skins, relative to the lowest course handicap among the players in Skins. A tick is a skin won.")
                     }
                 }
 
@@ -124,6 +131,10 @@ struct RoundDetailView: View {
                     LabeledContent("Skins, per skin", value: "$" + Money.dollars(fromCents: round.skinsBaseCents))
                     LabeledContent("Skins carryover", value: round.skinsCarryover ? "On" : "Off")
                     LabeledContent("Greenies, per greenie", value: "$" + Money.dollars(fromCents: round.greeniesAmountCents))
+                    ForEach(SideGame.allCases.filter { !round.isEveryoneIn($0) }, id: \.self) { game in
+                        LabeledContent("\(game.title), who's in", value: SetupText.field(round.players(in: game).map(\.displayName)))
+                            .accessibilityIdentifier("detail.field.\(game.title)")
+                    }
                     if let pointCents = round.wolfPointCents {
                         LabeledContent("Wolf, per point", value: "$" + Money.dollars(fromCents: pointCents))
                             .accessibilityIdentifier("detail.wolfPoint")
@@ -135,8 +146,16 @@ struct RoundDetailView: View {
                         )
                         .accessibilityIdentifier("detail.wolfTeeOrder")
                     }
+                    Button {
+                        editsGames = true
+                    } label: {
+                        Label("Edit games", systemImage: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("detail.editGames")
                 } header: {
                     SectionHeader("Games", systemImage: "dollarsign.circle")
+                } footer: {
+                    SectionFooter("Who's in each game and the skins carryover can be changed at any time.")
                 }
 
                 LiveShareSection(round: round)
@@ -152,6 +171,9 @@ struct RoundDetailView: View {
         }
         .sheet(item: $scoreEdit) { edit in
             ScoreEditSheet(round: round, edit: edit)
+        }
+        .sheet(isPresented: $editsGames) {
+            GamesEditSheet(round: round)
         }
     }
 
@@ -185,8 +207,7 @@ struct RoundDetailView: View {
         )
     }
 
-    private func ticksText(_ ticks: Int?) -> String {
-        guard let ticks else { return "-" }
-        return ticks == 1 ? "1 tick" : "\(ticks) ticks"
+    private func strokesText(_ strokes: Int?) -> String {
+        strokes.map(ScoringText.strokes) ?? "-"
     }
 }

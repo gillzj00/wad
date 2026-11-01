@@ -16,12 +16,10 @@ struct HoleScoringView: View {
     @State private var summaryRequested = false
 
     /// Opens on `startHole`, or on the first hole that is not complete. A
-    /// round that started every hole at par has no such hole; it opens on hole 1.
+    /// complete round opens on its last hole.
     init(round: Round, startHole: Int? = nil) {
         self.round = round
-        let resume = round.startsEveryHoleAtPar
-            ? round.orderedHoles.first?.number
-            : round.firstIncompleteHole ?? round.orderedHoles.last?.number
+        let resume = round.firstIncompleteHole ?? round.orderedHoles.last?.number
         _holeNumber = State(initialValue: startHole ?? resume ?? 1)
     }
 
@@ -45,11 +43,14 @@ struct HoleScoringView: View {
                     if round.playsWolf {
                         WolfHoleSection(round: round, hole: hole, status: status, perform: perform)
                     }
-                    wad(hole, status: status)
-                    if hole.par == 3 || hole.greenieWinnerID != nil {
+                    if round.isPlayed(.wad) {
+                        wad(hole, status: status)
+                    }
+                    if round.isPlayed(.greenies), hole.par == 3 || hole.greenieWinnerID != nil {
                         greenie(hole, status: status)
                     }
                     skins(hole, status: status)
+                    owed(status: status)
                 }
                 .themedRows()
             }
@@ -131,7 +132,7 @@ struct HoleScoringView: View {
                     name: player.displayName,
                     par: hole.par,
                     gross: round.gross(playerID: player.playerID, hole: hole.number),
-                    ticks: status?.ticks(playerID: player.playerID, hole: hole.number),
+                    strokes: status?.strokes(playerID: player.playerID, hole: hole.number),
                     net: status?.net(playerID: player.playerID, hole: hole.number),
                     onStep: { delta in
                         perform { try scorer.stepGross(by: delta, playerID: player.playerID, hole: hole.number) }
@@ -151,7 +152,7 @@ struct HoleScoringView: View {
             SectionHeader("Scores", systemImage: "pencil.and.list.clipboard")
         } footer: {
             if status == nil {
-                SectionFooter("Ticks and the games could not be computed.")
+                SectionFooter("Strokes and the games could not be computed.")
             }
         }
     }
@@ -190,10 +191,30 @@ struct HoleScoringView: View {
         }
     }
 
+    /// Who owes whom so far, from the ledger the status already holds; hidden
+    /// when nobody owes anything.
+    @ViewBuilder
+    private func owed(status: RoundStatus?) -> some View {
+        if let ledger = status?.ledger, !ledger.isEmpty {
+            Section {
+                ForEach(ledger) { pair in
+                    let from = name(pair.from)
+                    let to = name(pair.to)
+                    Text(SettlementText.owes(from: from, to: to, cents: pair.amountCents))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.Palette.bone)
+                        .accessibilityIdentifier("scoring.owes.\(from).\(to)")
+                }
+            } header: {
+                SectionHeader("Owed so far", systemImage: "person.2")
+            }
+        }
+    }
+
     private func wad(_ hole: RoundHole, status: RoundStatus?) -> some View {
         Section {
             ChoiceGrid {
-                ForEach(round.orderedPlayers) { player in
+                ForEach(round.players(in: .wad)) { player in
                     let order = scorer.wadOrder(playerID: player.playerID, hole: hole.number)
                     ChoiceChip(
                         title: player.displayName,
@@ -448,7 +469,7 @@ struct PlayerScoreRow: View {
     let name: String
     let par: Int
     let gross: Int?
-    let ticks: Int?
+    let strokes: Int?
     let net: Int?
     let onStep: (Int) -> Void
     let onClear: () -> Void
@@ -459,7 +480,7 @@ struct PlayerScoreRow: View {
 
     private var detail: String {
         var parts: [String] = []
-        if let ticks { parts.append(ScoringText.ticks(ticks)) }
+        if let strokes { parts.append(ScoringText.strokes(strokes)) }
         if let net { parts.append("Net \(net)") }
         return parts.joined(separator: ", ")
     }

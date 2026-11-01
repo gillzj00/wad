@@ -27,13 +27,95 @@ enum SettlementText {
 
     /// With `wolf`, the round plays Wolf and its column is included.
     static func games(_ player: RoundSettlement.PlayerResult, wolf: Bool) -> String {
-        "\(player.name): Skins \(signed(player.skinsCents)), Wad \(signed(player.wadCents)), "
-            + "Greenies \(signed(player.greeniesCents))"
+        "\(player.name): "
+            + SideGame.allCases.map { game in
+                "\(game.title) " + (player.plays(game) ? signed(player.cents(game)) : "out")
+            }.joined(separator: ", ")
             + (wolf ? ", Wolf \(signed(player.wolfCents))" : "")
+    }
+
+    /// A player's amount in a game for the table: "-" when out of it.
+    static func amount(_ player: RoundSettlement.PlayerResult, _ game: SideGame) -> String {
+        player.plays(game) ? signed(player.cents(game)) : "-"
+    }
+
+    /// "Players in: Zach, Sam, Alex".
+    static func field(_ names: [String]) -> String {
+        "Players in: " + names.joined(separator: ", ")
+    }
+
+    /// "Ticks: Zach 3, Sam 1, Alex 0": the skins won by each player in Skins,
+    /// in order. Nil when Skins is not played.
+    static func ticks(_ settlement: RoundSettlement) -> String? {
+        let counts = settlement.players.compactMap { player in
+            settlement.ticks[player.playerID].map { "\(player.name) \($0)" }
+        }
+        return counts.isEmpty ? nil : "Ticks: " + counts.joined(separator: ", ")
     }
 
     static func holes(_ holes: [Int]) -> String {
         (holes.count == 1 ? "hole " : "holes ") + holes.map(String.init).joined(separator: ", ")
+    }
+
+    // MARK: Who owes whom
+
+    static let owesHeader = "Who owes whom"
+    static let owesFooter = "The payments below combine these into the fewest transfers."
+
+    /// "$25" for whole dollars, "$7.50" otherwise. Always positive.
+    static func shortDollars(_ cents: Int) -> String {
+        let magnitude = abs(cents)
+        return magnitude % 100 == 0 ? "$\(magnitude / 100)" : "$" + Money.dollars(fromCents: magnitude)
+    }
+
+    /// "Zach owes Jay $25".
+    static func owes(from: String, to: String, cents: Int) -> String {
+        "\(from) owes \(to) \(shortDollars(cents))"
+    }
+
+    static func owes(_ debt: RoundSettlement.Debt) -> String {
+        owes(from: debt.fromName, to: debt.toName, cents: debt.amountCents)
+    }
+
+    /// "Zach owes Jay $25" over the reasons.
+    static func debt(_ debt: RoundSettlement.Debt) -> StatusLine {
+        StatusLine(title: owes(debt), detail: reasons(debt.items))
+    }
+
+    /// "1", "1 and 6", "1, 6 and 9".
+    static func list(_ items: [String]) -> String {
+        guard let last = items.last else { return "" }
+        guard items.count > 1 else { return last }
+        return items.dropLast().joined(separator: ", ") + " and " + last
+    }
+
+    /// "hole 14" or "holes 1, 6 and 9".
+    static func holeList(_ holes: [Int]) -> String {
+        (holes.count == 1 ? "hole " : "holes ") + list(holes.map(String.init))
+    }
+
+    /// One reason, in the owner's phrasing: "skins on holes 1, 6 and 9 ($15)",
+    /// "the greenie on hole 3 ($5)", "the Wad on the front nine ($7)", "Wolf, 3
+    /// points ($3)". An item the debtor won back starts with "less".
+    static func reason(_ item: Engine.LedgerItem) -> String {
+        let what = switch item.game {
+        case .skins:
+            "skins on \(holeList(item.holes))"
+        case .greenies:
+            (item.holes.count == 1 ? "the greenie on " : "greenies on ") + holeList(item.holes)
+        case .wad:
+            item.segments.count == 1
+                ? "the Wad on the \(item.segments[0] == .front ? "front" : "back") nine"
+                : "the Wad on the front and back nines"
+        case .wolf:
+            "Wolf, \(abs(item.points)) \(abs(item.points) == 1 ? "point" : "points")"
+        }
+        return (item.amountCents < 0 ? "less " : "") + "\(what) (\(shortDollars(item.amountCents)))"
+    }
+
+    /// "skins on holes 1, 6 and 9 ($15), the greenie on hole 3 ($5)".
+    static func reasons(_ items: [Engine.LedgerItem]) -> String {
+        items.map(reason).joined(separator: ", ")
     }
 
     static func status(_ settlement: RoundSettlement) -> StatusLine {

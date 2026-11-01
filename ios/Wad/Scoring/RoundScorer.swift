@@ -8,6 +8,8 @@ enum ScoringError: Error, Equatable, Sendable {
     case greenieNotOnPar3(hole: Int)
     /// The player has no score of par or better on the hole.
     case greenieNotEligible(playerID: String, hole: Int)
+    /// The player is out of the Wad for this round.
+    case notInWad(playerID: String)
 }
 
 /// Records what happened on a hole: gross scores, the ordered Wad makers and
@@ -69,6 +71,9 @@ struct RoundScorer {
     func addWadMaker(playerID: String, hole: Int) throws -> Bool {
         let roundHole = try roundHole(hole)
         try requirePlayer(playerID)
+        guard round.players(in: .wad).contains(where: { $0.playerID == playerID }) else {
+            throw ScoringError.notInWad(playerID: playerID)
+        }
         guard !roundHole.wadMakerIDs.contains(playerID) else { return false }
         roundHole.wadMakerIDs = roundHole.wadMakerIDs + [playerID]
         try save()
@@ -92,11 +97,11 @@ struct RoundScorer {
 
     // MARK: Greenies
 
-    /// The players who can be offered as the greenie winner: a par 3, and a
-    /// gross score of par or better on it.
+    /// The players who can be offered as the greenie winner: in Greenies, a
+    /// par 3, and a gross score of par or better on it.
     func greenieCandidates(hole: Int) -> [RoundPlayer] {
-        guard let roundHole = round.hole(hole), roundHole.par == 3 else { return [] }
-        return round.orderedPlayers.filter {
+        guard let roundHole = round.hole(hole), roundHole.par == 3, round.isPlayed(.greenies) else { return [] }
+        return round.players(in: .greenies).filter {
             guard let gross = round.gross(playerID: $0.playerID, hole: hole) else { return false }
             return gross <= roundHole.par
         }

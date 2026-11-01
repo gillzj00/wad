@@ -26,17 +26,19 @@ final class AppNavigation {
     }
 }
 
-/// Top-level tab shell. Profile is a placeholder until its milestone lands.
+/// Top-level tab shell.
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var events: EventCenter
     @State private var live: LiveCenter
     @State private var navigation = AppNavigation()
+    @State private var profile: ProfileStore
 
     init() {
         let events = EventCenter()
         _events = State(initialValue: events)
         _live = State(initialValue: LiveCenter(events: events))
+        _profile = State(initialValue: ProfileStore(defaults: ProfileStore.launchDefaults()))
     }
 
     var body: some View {
@@ -48,7 +50,7 @@ struct RootView: View {
             CoursesView()
                 .tabItem { Label("Courses", systemImage: "map") }
                 .tag(AppTab.courses)
-            PlaceholderView(title: "Profile", message: "Sign in and your handicap arrive in M1.")
+            ProfileView()
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
                 .tag(AppTab.profile)
         }
@@ -56,6 +58,7 @@ struct RootView: View {
         .environment(events)
         .environment(live)
         .environment(navigation)
+        .environment(profile)
         // A connection suspended in the background is made again on return.
         .onChange(of: scenePhase) { previous, phase in
             if phase == .active, previous == .background {
@@ -103,19 +106,6 @@ struct RootView: View {
         events.enqueue(sample.events.filter { kinds.contains($0.kind) })
     }
     #endif
-}
-
-struct PlaceholderView: View {
-    let title: String
-    let message: String
-
-    var body: some View {
-        NavigationStack {
-            EmptyStateView(title: title, message: message)
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-        }
-    }
 }
 
 #Preview {
